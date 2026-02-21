@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
-async function generatePrompt(existingStory) {
+async function generatePrompt(existingStory, chapter = 1, isNewChapter = false) {
   const storyContext = existingStory.length > 0
     ? existingStory.slice(-3).map((e) => e.text).join("\n\n")
     : "";
@@ -20,9 +20,14 @@ Bad examples (DO NOT do these):
 
 Output ONLY the question. No quotes. Under 12 words.`;
 
-  const userMessage = existingStory.length === 0
-    ? "Generate an opening question to start a collaborative story."
-    : `STORY SO FAR (last passages):\n"""${storyContext}"""\n\nGenerate a short question about what happens next, based on the story so far.`;
+  let userMessage;
+  if (existingStory.length === 0) {
+    userMessage = "Generate an opening question to start a collaborative story.";
+  } else if (isNewChapter) {
+    userMessage = `STORY SO FAR (last passages):\n"""${storyContext}"""\n\nYou are starting Chapter ${chapter} of the story. Generate an opening question for this new chapter that shifts the setting, introduces a new thread, or jumps forward in time. It should feel like a fresh start while still connected to the world established so far.`;
+  } else {
+    userMessage = `STORY SO FAR (last passages):\n"""${storyContext}"""\n\nGenerate a short question about what happens next in Chapter ${chapter}, based on the story so far.`;
+  }
 
   try {
     const resp = await fetch("/api/anthropic/v1/messages", {
@@ -93,7 +98,73 @@ function getStyleInstructions(settings) {
 - Dialogue: ${dialogueDesc}`;
 }
 
-async function callClaudeAPI(existingStory, prompt, userAnswer, styleSettings) {
+async function shouldEndChapter(story, currentChapter) {
+  const chapterPassages = story.filter((e) => e.chapter === currentChapter);
+  if (chapterPassages.length < 4) return false;
+
+  const chapterText = chapterPassages.map((e) => e.text).join("\n\n");
+
+  try {
+    const resp = await fetch("/api/anthropic/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 10,
+        system: `You are a narrative structure analyst. Given the passages of a story chapter, determine if the chapter's narrative arc feels complete — has it built tension and reached a natural resolution or resting point? Consider: has there been a setup, development, and some form of payoff or shift? Chapters typically run 5-8 passages but can be shorter if the arc resolves early. Respond with ONLY "yes" or "no".`,
+        messages: [{ role: "user", content: `Here are the passages of Chapter ${currentChapter}:\n\n${chapterText}\n\nIs this chapter's narrative arc complete?` }],
+      }),
+    });
+
+    if (!resp.ok) return false;
+    const data = await resp.json();
+    const answer = data.content
+      .filter((b) => b.type === "text")
+      .map((b) => b.text)
+      .join("")
+      .trim()
+      .toLowerCase();
+    return answer.startsWith("yes");
+  } catch (err) {
+    console.warn("Chapter check failed:", err.message);
+    return false;
+  }
+}
+
+async function generateChapterTitle(story, chapter) {
+  const chapterText = story
+    .filter((e) => e.chapter === chapter)
+    .map((e) => e.text)
+    .join("\n\n");
+
+  try {
+    const resp = await fetch("/api/anthropic/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 30,
+        system: `You are a literary editor. Given the text of a story chapter, produce a short, evocative chapter title. Output ONLY the title — no quotes, no "Chapter N:", no punctuation unless it's part of the title. 2-5 words.`,
+        messages: [{ role: "user", content: `Here is Chapter ${chapter}:\n\n${chapterText}\n\nWhat should this chapter be titled?` }],
+      }),
+    });
+
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    const title = data.content
+      .filter((b) => b.type === "text")
+      .map((b) => b.text)
+      .join("")
+      .trim()
+      .replace(/^["']|["']$/g, "");
+    return title && title.length > 0 ? title : null;
+  } catch (err) {
+    console.warn("Chapter title generation failed:", err.message);
+    return null;
+  }
+}
+
+async function callClaudeAPI(existingStory, prompt, userAnswer, styleSettings, chapter = 1) {
   const storyContext =
     existingStory.length > 0
       ? existingStory
@@ -104,13 +175,14 @@ async function callClaudeAPI(existingStory, prompt, userAnswer, styleSettings) {
 
   const styleInstructions = getStyleInstructions(styleSettings);
 
-  const systemPrompt = `You are a collaborative storyteller. You take a user's brief answer to a creative writing prompt and transform it into prose that continues an evolving collaborative story.
+  const systemPrompt = `You are a collaborative storyteller writing Chapter ${chapter} of an evolving collaborative story. You take a user's brief answer to a creative writing prompt and transform it into prose that continues the story.
 
 CRITICAL RULES:
 - Write ONLY the story text. No preamble, no explanation, no quotes around it.
 - Write in third person, past tense.
 - Seamlessly continue from the existing story if provided.
 - The output must be substantially different and richer than the user's raw input.
+- Build toward a satisfying narrative arc within this chapter.
 
 YOU MUST STRICTLY FOLLOW THESE STYLE SETTINGS — they are the most important constraint:
 ${styleInstructions}
@@ -227,9 +299,9 @@ async function fetchLocation() {
   }
 }
 
-async function generateStoryPassage(existingStory, prompt, userAnswer, styleSettings) {
+async function generateStoryPassage(existingStory, prompt, userAnswer, styleSettings, chapter = 1) {
   try {
-    const aiText = await callClaudeAPI(existingStory, prompt, userAnswer, styleSettings);
+    const aiText = await callClaudeAPI(existingStory, prompt, userAnswer, styleSettings, chapter);
     return { text: aiText, source: "ai" };
   } catch (err) {
     console.warn("AI generation failed, using local expansion:", err.message);
@@ -370,6 +442,8 @@ export default function CollaborativeStoryApp() {
   const [generationSource, setGenerationSource] = useState("");
   const [loading, setLoading] = useState(true);
   const [contributorCount, setContributorCount] = useState(0);
+  const [currentChapter, setCurrentChapter] = useState(1);
+  const [chapterTitles, setChapterTitles] = useState({});
   const [showStory, setShowStory] = useState(false);
   const [error, setError] = useState(null);
   const [tone, setTone] = useState(5);
@@ -387,11 +461,31 @@ export default function CollaborativeStoryApp() {
     try {
       const storyResult = await window.storage.get("story-v3", true);
       const countResult = await window.storage.get("count-v3", true);
+      const chapterResult = await window.storage.get("chapter-v1", true);
+      const titlesResult = await window.storage.get("chapter-titles-v1", true);
       const loadedStory = storyResult ? JSON.parse(storyResult.value) : [];
+      const loadedChapter = chapterResult ? parseInt(chapterResult.value, 10) : 1;
+      const loadedTitles = titlesResult ? JSON.parse(titlesResult.value) : {};
       if (storyResult) setStory(loadedStory);
       if (countResult) setContributorCount(parseInt(countResult.value, 10));
+      setCurrentChapter(loadedChapter);
+      setChapterTitles(loadedTitles);
       if (isInitial) {
-        const prompt = await generatePrompt(loadedStory);
+        // Backfill titles for completed chapters that don't have one
+        const allChapters = [...new Set(loadedStory.map((e) => e.chapter || 1))];
+        const completedWithoutTitle = allChapters.filter(
+          (ch) => ch < loadedChapter && !loadedTitles[ch]
+        );
+        if (completedWithoutTitle.length > 0) {
+          const backfilled = { ...loadedTitles };
+          await Promise.all(completedWithoutTitle.map(async (ch) => {
+            const title = await generateChapterTitle(loadedStory, ch);
+            if (title) backfilled[ch] = title;
+          }));
+          setChapterTitles(backfilled);
+          await window.storage.set("chapter-titles-v1", JSON.stringify(backfilled), true);
+        }
+        const prompt = await generatePrompt(loadedStory, loadedChapter);
         setCurrentPrompt(prompt);
         await window.storage.set("prompt-v4", prompt, true);
       }
@@ -419,7 +513,7 @@ export default function CollaborativeStoryApp() {
     const userAnswer = answer.trim();
 
     try {
-      const result = await generateStoryPassage(story, currentPrompt, userAnswer, { tone, length, mood, dialogue });
+      const result = await generateStoryPassage(story, currentPrompt, userAnswer, { tone, length, mood, dialogue }, currentChapter);
       setGeneratedText(result.text);
       setGenerationSource(result.source);
       setPhase("reveal");
@@ -446,19 +540,38 @@ export default function CollaborativeStoryApp() {
       location: location,
       time: timeStr,
       ts: Date.now(),
+      chapter: currentChapter,
     };
 
     const updatedStory = [...story, newEntry];
 
     try {
-      const nextPrompt = await generatePrompt(updatedStory);
+      // Check if the current chapter should end
+      let nextChapter = currentChapter;
+      let isNewChapter = false;
+      let updatedTitles = chapterTitles;
+      const chapterEnded = await shouldEndChapter(updatedStory, currentChapter);
+      if (chapterEnded) {
+        nextChapter = currentChapter + 1;
+        isNewChapter = true;
+        const title = await generateChapterTitle(updatedStory, currentChapter);
+        if (title) {
+          updatedTitles = { ...chapterTitles, [currentChapter]: title };
+          await window.storage.set("chapter-titles-v1", JSON.stringify(updatedTitles), true);
+        }
+      }
+
+      const nextPrompt = await generatePrompt(updatedStory, nextChapter, isNewChapter);
       await window.storage.set("story-v3", JSON.stringify(updatedStory), true);
       await window.storage.set("prompt-v4", nextPrompt, true);
       await window.storage.set("count-v3", String(newCount), true);
+      await window.storage.set("chapter-v1", String(nextChapter), true);
 
       setStory(updatedStory);
       setCurrentPrompt(nextPrompt);
       setContributorCount(newCount);
+      setCurrentChapter(nextChapter);
+      setChapterTitles(updatedTitles);
       setAnswer("");
       setGeneratedText("");
       setGenerationSource("");
@@ -473,7 +586,7 @@ export default function CollaborativeStoryApp() {
     setPhase("generating");
     setError(null);
     try {
-      const result = await generateStoryPassage(story, currentPrompt, answer.trim(), { tone, length, mood, dialogue });
+      const result = await generateStoryPassage(story, currentPrompt, answer.trim(), { tone, length, mood, dialogue }, currentChapter);
       setGeneratedText(result.text);
       setGenerationSource(result.source);
       setPhase("reveal");
@@ -488,11 +601,15 @@ export default function CollaborativeStoryApp() {
       await window.storage.delete("story-v3", true);
       await window.storage.delete("prompt-v4", true);
       await window.storage.delete("count-v3", true);
+      await window.storage.delete("chapter-v1", true);
+      await window.storage.delete("chapter-titles-v1", true);
     } catch (e) {}
     const freshPrompt = await generatePrompt([]);
     setStory([]);
     setCurrentPrompt(freshPrompt);
     setContributorCount(0);
+    setCurrentChapter(1);
+    setChapterTitles({});
     setPhase("input");
     setAnswer("");
     setGeneratedText("");
@@ -534,6 +651,38 @@ export default function CollaborativeStoryApp() {
         background: "#0f0e0c",
         position: "relative",
       }}>
+        {(() => {
+          const chapters = [...new Set(story.map((e) => e.chapter || 1))].sort((a, b) => a - b);
+          if (chapters.length <= 1) return null;
+          return (
+            <nav style={{
+              position: "fixed", left: "24px", top: "60px",
+              fontFamily: MONO, fontSize: "12px",
+              display: "flex", flexDirection: "column", gap: "8px",
+              zIndex: 5,
+            }}>
+              {chapters.map((ch) => (
+                <button
+                  key={ch}
+                  onClick={() => document.getElementById(`chapter-${ch}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                  style={{
+                    background: "none", border: "none", padding: 0,
+                    fontFamily: MONO, fontSize: "12px",
+                    color: "rgba(255,255,255,0.25)",
+                    cursor: "pointer", textAlign: "left",
+                    letterSpacing: "0.5px",
+                    display: "flex", alignItems: "baseline", gap: "8px",
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
+                  onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.25)"}
+                >
+                  <span>{ch}</span>
+                  <span>{ch === currentChapter ? "In progress" : (chapterTitles[ch] || "")}</span>
+                </button>
+              ))}
+            </nav>
+          );
+        })()}
         <div ref={contentRef} style={{ maxWidth: "600px", margin: "0 auto", padding: "60px 24px 40px" }}>
 
           {/* ── Header ── */}
@@ -555,9 +704,40 @@ export default function CollaborativeStoryApp() {
                   display: "flex", flexDirection: "column", gap: "24px",
                 }}
               >
-                {story.map((entry, i) => (
-                  <StoryLine key={entry.ts || i} entry={entry} onHover={(e, top) => { setHoveredEntry(e); setPopoverTop(top); }} onLeave={() => setHoveredEntry(null)} />
-                ))}
+                {story.map((entry, i) => {
+                  const showChapterHeading = i === 0 || entry.chapter !== story[i - 1].chapter;
+                  return (
+                    <div key={entry.ts || i}>
+                      {showChapterHeading && (
+                        <div id={`chapter-${entry.chapter || 1}`} style={{
+                          textAlign: "center",
+                          marginTop: i === 0 ? 0 : "72px",
+                          marginBottom: chapterTitles[entry.chapter || 1] ? "72px" : "16px",
+                        }}>
+                          <div style={{
+                            fontFamily: MONO, fontSize: "12px",
+                            color: "rgba(255,255,255,0.25)",
+                            letterSpacing: "0.5px",
+                            textTransform: "uppercase",
+                          }}>
+                            Chapter {entry.chapter || 1}
+                          </div>
+                          {chapterTitles[entry.chapter || 1] && (
+                            <div style={{
+                              fontFamily: SERIF, fontSize: "28px",
+                              color: "#e8ddd0",
+                              fontWeight: 700,
+                              marginTop: "8px",
+                            }}>
+                              {chapterTitles[entry.chapter || 1]}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      <StoryLine entry={entry} onHover={(e, top) => { setHoveredEntry(e); setPopoverTop(top); }} onLeave={() => setHoveredEntry(null)} />
+                    </div>
+                  );
+                })}
                 <div ref={storyEndRef} />
               </div>
               {hoveredEntry && (
