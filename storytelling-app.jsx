@@ -1,37 +1,62 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
-const PROMPTS_POOL = [
-  "What's something unusual you noticed today?",
-  "A stranger appeared at the edge of town carrying what?",
-  "The sky changed color suddenly because...",
-  "Someone whispered a secret — what was it?",
-  "An unexpected sound echoed through the streets...",
-  "A door that was always locked finally opened, revealing...",
-  "The old clock in the square struck thirteen and then...",
-  "A letter arrived with no return address. It said...",
-  "The river started flowing backwards because...",
-  "Everyone stopped and stared at the horizon when...",
-  "A child found something glowing in the garden...",
-  "The last train of the night carried an unusual passenger...",
-  "The map showed a place that shouldn't exist...",
-  "All the birds suddenly flew in the same direction toward...",
-  "A voice on the radio said something no one expected...",
-  "The fog rolled in and with it came...",
-  "Someone left a mysterious object on every doorstep...",
-  "The old tree in the center of town began to...",
-  "A melody drifted through the air that made people...",
-  "The reflection in the water showed something different than...",
-  "A crack appeared in the ground and from it emerged...",
-  "The lighthouse beam revealed something moving in the dark...",
-  "An ancient book fell open to a page that read...",
-  "The market stall at the end of the row sold only...",
-  "When the snow melted, it uncovered...",
-];
+async function generatePrompt(existingStory) {
+  const storyContext = existingStory.length > 0
+    ? existingStory.slice(-3).map((e) => e.text).join("\n\n")
+    : "";
 
-function getNextPrompt(currentIndex, storyLength) {
-  const base = (currentIndex + 1) % PROMPTS_POOL.length;
-  const offset = storyLength % 7;
-  return (base + offset) % PROMPTS_POOL.length;
+  const systemPrompt = `Generate a single question that a person can answer in a few words. It must be a question ending with "?" that invites a short, imaginative response. NOT a story sentence. NOT a statement. It should feel like a question a friend asks you.
+
+Good examples:
+- "What did the stranger have in their pocket?"
+- "What was written on the note?"
+- "What woke everyone up at 3am?"
+- "What did it smell like inside?"
+
+Bad examples (DO NOT do these):
+- "The door creaked open revealing..." (this is a statement, not a question)
+- "A mysterious light appeared in the sky." (this is a story sentence)
+- "Continue the story about..." (this is an instruction)
+
+Output ONLY the question. No quotes. Under 12 words.`;
+
+  const userMessage = existingStory.length === 0
+    ? "Generate an opening question to start a collaborative story."
+    : `STORY SO FAR (last passages):\n"""${storyContext}"""\n\nGenerate a short question about what happens next, based on the story so far.`;
+
+  try {
+    const resp = await fetch("/api/anthropic/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 100,
+        system: systemPrompt,
+        messages: [{ role: "user", content: userMessage }],
+      }),
+    });
+
+    if (!resp.ok) throw new Error(`API ${resp.status}`);
+    const data = await resp.json();
+    const text = data.content
+      .filter((b) => b.type === "text")
+      .map((b) => b.text)
+      .join("")
+      .trim();
+    if (text && text.length > 5) return text;
+  } catch (err) {
+    console.warn("Prompt generation failed:", err.message);
+  }
+
+  // Fallback
+  const fallbacks = [
+    "What happened next?",
+    "Something unexpected appeared...",
+    "A sound broke the silence...",
+    "Someone arrived with news...",
+    "The weather suddenly changed...",
+  ];
+  return fallbacks[Math.floor(Math.random() * fallbacks.length)];
 }
 
 /* ────────────────────────────────────────────
@@ -237,7 +262,7 @@ function TypewriterReveal({ text }) {
 
   return (
     <p style={{
-      fontFamily: "'Faustina', serif", fontSize: "16px",
+      fontFamily: "'Faustina', serif", fontSize: "22px", fontWeight: 300,
       lineHeight: 1.8, color: "#e8ddd0", fontStyle: "italic", margin: 0,
     }}>
       {displayed}
@@ -266,7 +291,7 @@ function StoryLine({ entry }) {
       style={{ position: "relative" }}
     >
       <p style={{
-        fontFamily: "'Faustina', serif", fontSize: "16px", lineHeight: 1.8,
+        fontFamily: "'Faustina', serif", fontSize: "22px", fontWeight: 300, lineHeight: 1.8,
         color: "#e8ddd0", margin: 0,
       }}>
         {entry.text}
@@ -325,7 +350,7 @@ const SERIF = "'Faustina', serif";
 
 export default function CollaborativeStoryApp() {
   const [story, setStory] = useState([]);
-  const [currentPromptIndex, setCurrentPromptIndex] = useState(0);
+  const [currentPrompt, setCurrentPrompt] = useState("");
   const [answer, setAnswer] = useState("");
   const [phase, setPhase] = useState("input");
   const [generatedText, setGeneratedText] = useState("");
@@ -342,21 +367,25 @@ export default function CollaborativeStoryApp() {
   const storyEndRef = useRef(null);
   const pollRef = useRef(null);
 
-  const loadState = useCallback(async () => {
+  const loadState = useCallback(async (isInitial) => {
     try {
       const storyResult = await window.storage.get("story-v3", true);
-      const promptResult = await window.storage.get("prompt-v3", true);
       const countResult = await window.storage.get("count-v3", true);
-      if (storyResult) setStory(JSON.parse(storyResult.value));
-      if (promptResult) setCurrentPromptIndex(parseInt(promptResult.value, 10));
+      const loadedStory = storyResult ? JSON.parse(storyResult.value) : [];
+      if (storyResult) setStory(loadedStory);
       if (countResult) setContributorCount(parseInt(countResult.value, 10));
+      if (isInitial) {
+        const prompt = await generatePrompt(loadedStory);
+        setCurrentPrompt(prompt);
+        await window.storage.set("prompt-v4", prompt, true);
+      }
     } catch (e) { /* first run */ }
     setLoading(false);
   }, []);
 
   useEffect(() => {
-    loadState();
-    pollRef.current = setInterval(loadState, 5000);
+    loadState(true);
+    pollRef.current = setInterval(() => loadState(false), 5000);
     return () => clearInterval(pollRef.current);
   }, [loadState]);
 
@@ -371,11 +400,10 @@ export default function CollaborativeStoryApp() {
     setPhase("generating");
     setError(null);
 
-    const prompt = PROMPTS_POOL[currentPromptIndex];
     const userAnswer = answer.trim();
 
     try {
-      const result = await generateStoryPassage(story, prompt, userAnswer, { tone, length, mood, dialogue });
+      const result = await generateStoryPassage(story, currentPrompt, userAnswer, { tone, length, mood, dialogue });
       setGeneratedText(result.text);
       setGenerationSource(result.source);
       setPhase("reveal");
@@ -397,7 +425,7 @@ export default function CollaborativeStoryApp() {
     const newEntry = {
       text: generatedText,
       originalAnswer: answer.trim(),
-      prompt: PROMPTS_POOL[currentPromptIndex],
+      prompt: currentPrompt,
       author: newCount,
       location: location,
       time: timeStr,
@@ -405,15 +433,15 @@ export default function CollaborativeStoryApp() {
     };
 
     const updatedStory = [...story, newEntry];
-    const nextPromptIdx = getNextPrompt(currentPromptIndex, updatedStory.length);
 
     try {
+      const nextPrompt = await generatePrompt(updatedStory);
       await window.storage.set("story-v3", JSON.stringify(updatedStory), true);
-      await window.storage.set("prompt-v3", String(nextPromptIdx), true);
+      await window.storage.set("prompt-v4", nextPrompt, true);
       await window.storage.set("count-v3", String(newCount), true);
 
       setStory(updatedStory);
-      setCurrentPromptIndex(nextPromptIdx);
+      setCurrentPrompt(nextPrompt);
       setContributorCount(newCount);
       setAnswer("");
       setGeneratedText("");
@@ -428,9 +456,8 @@ export default function CollaborativeStoryApp() {
   const handleRewrite = async () => {
     setPhase("generating");
     setError(null);
-    const prompt = PROMPTS_POOL[currentPromptIndex];
     try {
-      const result = await generateStoryPassage(story, prompt, answer.trim(), { tone, length, mood, dialogue });
+      const result = await generateStoryPassage(story, currentPrompt, answer.trim(), { tone, length, mood, dialogue });
       setGeneratedText(result.text);
       setGenerationSource(result.source);
       setPhase("reveal");
@@ -443,19 +470,19 @@ export default function CollaborativeStoryApp() {
   const handleReset = async () => {
     try {
       await window.storage.delete("story-v3", true);
-      await window.storage.delete("prompt-v3", true);
+      await window.storage.delete("prompt-v4", true);
       await window.storage.delete("count-v3", true);
     } catch (e) {}
+    const freshPrompt = await generatePrompt([]);
     setStory([]);
-    setCurrentPromptIndex(0);
+    setCurrentPrompt(freshPrompt);
     setContributorCount(0);
     setPhase("input");
     setAnswer("");
     setGeneratedText("");
     setError(null);
+    try { await window.storage.set("prompt-v4", freshPrompt, true); } catch (e) {}
   };
-
-  const currentPrompt = PROMPTS_POOL[currentPromptIndex];
 
   if (loading) {
     return (
