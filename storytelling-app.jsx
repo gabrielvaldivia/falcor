@@ -262,8 +262,12 @@ function TypewriterReveal({ text }) {
 
   return (
     <p style={{
-      fontFamily: "'Faustina', serif", fontSize: "22px", fontWeight: 300,
+      fontFamily: "'Faustina', serif", fontSize: "19px", fontWeight: 300,
       lineHeight: 1.8, color: "#e8ddd0", fontStyle: "italic", margin: 0,
+      textRendering: "optimizeLegibility", fontOpticalSizing: "auto",
+      fontFeatureSettings: '"kern", "liga", "calt"',
+      hangingPunctuation: "first last", textWrap: "pretty",
+      overflowWrap: "break-word", maxWidth: "65ch",
     }}>
       {displayed}
       {displayed.length < text.length && (
@@ -281,59 +285,68 @@ function TypewriterReveal({ text }) {
    Story Entry (minimal)
    ──────────────────────────────────────────── */
 
-function StoryLine({ entry }) {
-  const [hovered, setHovered] = useState(false);
-
+function StoryLine({ entry, onHover, onLeave }) {
+  const ref = useRef(null);
   return (
     <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{ position: "relative" }}
+      ref={ref}
+      onMouseEnter={() => {
+        const rect = ref.current.getBoundingClientRect();
+        onHover(entry, rect.top);
+      }}
+      onMouseLeave={onLeave}
     >
       <p style={{
-        fontFamily: "'Faustina', serif", fontSize: "22px", fontWeight: 300, lineHeight: 1.8,
+        fontFamily: "'Faustina', serif", fontSize: "19px", fontWeight: 300, lineHeight: 1.8,
         color: "#e8ddd0", margin: 0,
+        textRendering: "optimizeLegibility", fontOpticalSizing: "auto",
+        fontFeatureSettings: '"kern", "liga", "calt"',
+        hangingPunctuation: "first last", textWrap: "pretty",
+        overflowWrap: "break-word", maxWidth: "65ch",
       }}>
         {entry.text}
       </p>
-      {hovered && (
-        <div style={{
-          position: "absolute",
-          left: "calc(100% + 16px)", top: 0, zIndex: 10,
-          background: "#1a1917",
-          border: "1px solid rgba(255,255,255,0.1)",
-          borderRadius: "6px",
-          padding: "14px 16px",
-          fontFamily: "'SF Mono', 'Menlo', 'Courier New', monospace",
-          fontSize: "12px", color: "rgba(255,255,255,0.4)",
-          lineHeight: 1.6,
-          width: "320px",
-          display: "flex", flexDirection: "column", gap: "8px",
-        }}>
-          {entry.location && (
-            <div>
-              <div style={{ color: "rgba(255,255,255,0.25)", fontSize: "10px", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Location</div>
-              <div style={{ color: "rgba(255,255,255,0.5)" }}>{entry.location}</div>
-            </div>
-          )}
-          {entry.time && (
-            <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "8px" }}>
-              <div style={{ color: "rgba(255,255,255,0.25)", fontSize: "10px", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Date</div>
-              <div style={{ color: "rgba(255,255,255,0.5)" }}>{entry.time}</div>
-            </div>
-          )}
-          {entry.prompt && (
-            <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "8px" }}>
-              <div style={{ color: "rgba(255,255,255,0.25)", fontSize: "10px", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Prompt</div>
-              <div style={{ color: "rgba(255,255,255,0.5)" }}>{entry.prompt}</div>
-            </div>
-          )}
-          {entry.originalAnswer && (
-            <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "8px" }}>
-              <div style={{ color: "rgba(255,255,255,0.25)", fontSize: "10px", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Answer</div>
-              <div style={{ color: "rgba(255,255,255,0.5)" }}>{entry.originalAnswer}</div>
-            </div>
-          )}
+    </div>
+  );
+}
+
+function StoryPopover({ entry }) {
+  if (!entry) return null;
+  return (
+    <div style={{
+      zIndex: 10,
+      background: "#1a1917",
+      border: "1px solid rgba(255,255,255,0.1)",
+      borderRadius: "6px",
+      padding: "14px 16px",
+      fontFamily: "'SF Mono', 'Menlo', 'Courier New', monospace",
+      fontSize: "12px", color: "rgba(255,255,255,0.4)",
+      lineHeight: 1.6,
+      width: "280px",
+      display: "flex", flexDirection: "column", gap: "8px",
+    }}>
+      {entry.location && (
+        <div>
+          <div style={{ color: "rgba(255,255,255,0.25)", fontSize: "10px", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Location</div>
+          <div style={{ color: "rgba(255,255,255,0.5)" }}>{entry.location}</div>
+        </div>
+      )}
+      {entry.time && (
+        <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "8px" }}>
+          <div style={{ color: "rgba(255,255,255,0.25)", fontSize: "10px", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Date</div>
+          <div style={{ color: "rgba(255,255,255,0.5)" }}>{entry.time}</div>
+        </div>
+      )}
+      {entry.prompt && (
+        <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "8px" }}>
+          <div style={{ color: "rgba(255,255,255,0.25)", fontSize: "10px", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Prompt</div>
+          <div style={{ color: "rgba(255,255,255,0.5)" }}>{entry.prompt}</div>
+        </div>
+      )}
+      {entry.originalAnswer && (
+        <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "8px" }}>
+          <div style={{ color: "rgba(255,255,255,0.25)", fontSize: "10px", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Answer</div>
+          <div style={{ color: "rgba(255,255,255,0.5)" }}>{entry.originalAnswer}</div>
         </div>
       )}
     </div>
@@ -364,7 +377,10 @@ export default function CollaborativeStoryApp() {
   const [mood, setMood] = useState(5);
   const [dialogue, setDialogue] = useState(2);
   const [showSliders, setShowSliders] = useState(false);
+  const [hoveredEntry, setHoveredEntry] = useState(null);
+  const [popoverTop, setPopoverTop] = useState(0);
   const storyEndRef = useRef(null);
+  const contentRef = useRef(null);
   const pollRef = useRef(null);
 
   const loadState = useCallback(async (isInitial) => {
@@ -501,7 +517,7 @@ export default function CollaborativeStoryApp() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Faustina:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #0f0e0c; overflow-x: hidden; }
+        body { background: #0f0e0c; overflow-x: hidden; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
         textarea:focus { outline: none; }
         textarea::placeholder { color: rgba(255,255,255,0.25); }
@@ -518,7 +534,7 @@ export default function CollaborativeStoryApp() {
         background: "#0f0e0c",
         position: "relative",
       }}>
-        <div style={{ maxWidth: "600px", margin: "0 auto", padding: "60px 24px 40px" }}>
+        <div ref={contentRef} style={{ maxWidth: "600px", margin: "0 auto", padding: "60px 24px 40px" }}>
 
           {/* ── Header ── */}
           <header style={{ marginBottom: "48px" }}>
@@ -532,7 +548,7 @@ export default function CollaborativeStoryApp() {
 
           {/* ── Story ── */}
           {story.length > 0 && (
-            <div style={{ marginBottom: "48px" }}>
+            <div style={{ marginBottom: "48px", position: "relative" }}>
               <div
                 className="story-scroll"
                 style={{
@@ -540,10 +556,20 @@ export default function CollaborativeStoryApp() {
                 }}
               >
                 {story.map((entry, i) => (
-                  <StoryLine key={entry.ts || i} entry={entry} />
+                  <StoryLine key={entry.ts || i} entry={entry} onHover={(e, top) => { setHoveredEntry(e); setPopoverTop(top); }} onLeave={() => setHoveredEntry(null)} />
                 ))}
                 <div ref={storyEndRef} />
               </div>
+              {hoveredEntry && (
+                <div style={{
+                  position: "fixed",
+                  left: contentRef.current ? contentRef.current.getBoundingClientRect().right + 24 : 0,
+                  top: Math.max(40, popoverTop),
+                  pointerEvents: "none",
+                }}>
+                  <StoryPopover entry={hoveredEntry} />
+                </div>
+              )}
             </div>
           )}
 
