@@ -1396,6 +1396,7 @@ export default function CollaborativeStoryApp() {
   const [sliderSurprise, setSliderSurprise] = useState(3);
   const [sliderEmotion, setSliderEmotion] = useState(4);
   const [geoEnabled, setGeoEnabled] = useState(() => localStorage.getItem("falcor_geo_enabled") === "true");
+  const [geoLabel, setGeoLabel] = useState("");
   const storyEndRef = useRef(null);
   const contentRef = useRef(null);
   const pollRef = useRef(null);
@@ -1414,6 +1415,13 @@ export default function CollaborativeStoryApp() {
       : { tone: 5, length: 4, mood: 5, dialogue: 2 };
     return { ...base, length: sliderLength, dialogue: sliderDialogue, surprise: sliderSurprise, emotion: sliderEmotion };
   }, [activeStoryMeta, sliderLength, sliderDialogue, sliderSurprise, sliderEmotion]);
+
+  // Resolve geo label on mount if enabled
+  useEffect(() => {
+    if (geoEnabled) {
+      requestBrowserLocation().then((loc) => { if (loc) setGeoLabel(loc); });
+    }
+  }, []);
 
   // Load stories index on mount + check hash for deep link
   useEffect(() => {
@@ -2326,16 +2334,18 @@ export default function CollaborativeStoryApp() {
                               if (geoEnabled) {
                                 localStorage.removeItem("falcor_geo_enabled");
                                 setGeoEnabled(false);
+                                setGeoLabel("");
                               } else {
-                                // Enable immediately for visual feedback
                                 localStorage.setItem("falcor_geo_enabled", "true");
                                 setGeoEnabled(true);
                                 const loc = await requestBrowserLocation();
                                 console.log("[geo] button result:", loc);
-                                if (!loc) {
-                                  // Revert if geolocation failed or was denied
+                                if (loc) {
+                                  setGeoLabel(loc);
+                                } else {
                                   localStorage.removeItem("falcor_geo_enabled");
                                   setGeoEnabled(false);
+                                  setGeoLabel("");
                                 }
                               }
                             }}
@@ -2348,6 +2358,11 @@ export default function CollaborativeStoryApp() {
                             title={geoEnabled ? "Using precise location" : "Enable precise location"}
                           >
                             <GoLocation size={14} />
+                            {geoEnabled && geoLabel && (
+                              <span style={{ fontFamily: MONO, fontSize: "10px", marginLeft: "5px", color: "rgba(255,255,255,0.4)" }}>
+                                {geoLabel}
+                              </span>
+                            )}
                           </button>
                         )}
                       </div>
