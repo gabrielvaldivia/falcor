@@ -1202,9 +1202,9 @@ function AboutScreen({ onBack }) {
             How it works
           </h2>
           <p>
-            Start by choosing a genre and writing voice. These shape the tone
-            and style of the prose. You can optionally pick themes, a protagonist
-            type, and a central tension to give the story more direction.
+            Start by choosing a genre. Each genre unlocks its own curated set
+            of writing voices, themes, protagonist types, and narrative tensions,
+            all tailored to fit the kind of story you want to tell.
           </p>
           <p>
             Falcor generates a title and opening passage, then asks you
@@ -2405,11 +2405,15 @@ export default function CollaborativeStoryApp() {
                   <p style={{
                     fontFamily: SERIF, fontSize: "15px", fontStyle: "italic",
                     color: "rgba(255,255,255,0.25)",
-                    textAlign: "center", marginTop: "12px",
+                    textAlign: "center", marginTop: narrowViewport ? "0px" : "12px",
                   }}>
-                    {story.length} contribution{story.length !== 1 ? "s" : ""}
-                    {activeStoryMeta.updatedAt && (
-                      <> · Last updated: {new Date(activeStoryMeta.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</>
+                    {story.length === 0 ? "Loading..." : (
+                      <>
+                        {story.length} contribution{story.length !== 1 ? "s" : ""}
+                        {activeStoryMeta.updatedAt && (
+                          <> · Last updated: {new Date(activeStoryMeta.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</>
+                        )}
+                      </>
                     )}
                   </p>
                 </div>
