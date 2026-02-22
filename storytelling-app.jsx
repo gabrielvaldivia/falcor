@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { GoArrowLeft, GoInfo, GoPlus, GoDash, GoKebabHorizontal } from "react-icons/go";
+import { BsSliders2Vertical } from "react-icons/bs";
 
 /* ────────────────────────────────────────────
    Genre & Voice Constants + Preset Mappings
@@ -194,7 +195,7 @@ Output ONLY the question. No quotes. Under 12 words.`;
    ──────────────────────────────────────────── */
 
 function getStyleInstructions(settings) {
-  const { tone, length, mood, dialogue } = settings;
+  const { tone, length, mood, dialogue, surprise = 3, emotion = 4 } = settings;
 
   const toneDesc = tone <= 3
     ? `minimalist and spare (${tone}/9) — short declarative sentences, very few adjectives`
@@ -217,10 +218,24 @@ function getStyleInstructions(settings) {
     ? "occasional brief dialogue mixed with narration"
     : `dialogue-heavy (${dialogue}/9) — characters speaking to each other frequently`;
 
+  const surpriseDesc = surprise <= 2
+    ? "predictable and steady (keep the narrative on a familiar path)"
+    : surprise <= 5
+    ? "mild surprises (small twists or unexpected details woven in)"
+    : `highly unexpected (${surprise}/9) — surprising turns, subverted expectations, strange revelations`;
+
+  const emotionDesc = emotion <= 2
+    ? "emotionally restrained — understated feelings, mostly implied"
+    : emotion <= 5
+    ? "moderate emotional depth — characters show feelings but stay grounded"
+    : `emotionally expressive (${emotion}/9) — vivid inner life, strong feelings surfacing openly`;
+
   return `- Style: ${toneDesc}
 - Length: ${lengthDesc}
 - Mood: ${moodDesc}
-- Dialogue: ${dialogueDesc}`;
+- Dialogue: ${dialogueDesc}
+- Surprise: ${surpriseDesc}
+- Emotion: ${emotionDesc}`;
 }
 
 async function shouldEndChapter(story, currentChapter) {
@@ -356,7 +371,7 @@ These style settings override any other instinct you have. If the style says "sp
     throw new Error("AI echoed input verbatim");
   }
 
-  return text;
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 /* ────────────────────────────────────────────
@@ -423,7 +438,7 @@ The opening paragraph must read like page one of a published novel — establish
 
     return {
       title: titleMatch[1].trim().replace(/^["']|["']$/g, ""),
-      paragraph: paraMatch[1].trim(),
+      paragraph: paraMatch[1].trim().charAt(0).toUpperCase() + paraMatch[1].trim().slice(1),
     };
   } catch (err) {
     console.warn("Story opener generation failed:", err.message);
@@ -637,7 +652,7 @@ function StoryLine({ entry, onHover, onLeave, narrow, onShowDialog, onPinPopover
         display: "flex", flexDirection: "column", gap: "12px",
       }}>
         {splitIntoParagraphs(entry.text).map((para, i) => (
-          <p key={i} style={{ margin: 0 }}>{para}</p>
+          <p key={i} style={{ margin: 0 }}>{para.charAt(0).toUpperCase() + para.slice(1)}</p>
         ))}
       </div>
       {!narrow && (
@@ -924,7 +939,7 @@ function AboutScreen({ onBack }) {
             How it works
           </h2>
           <p>
-            Start by choosing a genre and writing voice — these shape the tone
+            Start by choosing a genre and writing voice. These shape the tone
             and style of the prose. You can optionally pick themes, a protagonist
             type, and a central tension to give the story more direction.
           </p>
@@ -932,7 +947,7 @@ function AboutScreen({ onBack }) {
             Falcor generates a title and opening passage, then asks you
             questions about what happens next. Your brief answers become the
             seeds for each new passage. The AI considers everything that came
-            before — building on earlier choices, tracking narrative arcs,
+            before, building on earlier choices, tracking narrative arcs,
             deciding when chapters should end, and generating chapter titles.
           </p>
           <p>
@@ -1331,6 +1346,11 @@ export default function CollaborativeStoryApp() {
   const [showStoryMenu, setShowStoryMenu] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [confirmDeleteMenu, setConfirmDeleteMenu] = useState(false);
+  const [showSliders, setShowSliders] = useState(false);
+  const [sliderLength, setSliderLength] = useState(4);
+  const [sliderDialogue, setSliderDialogue] = useState(2);
+  const [sliderSurprise, setSliderSurprise] = useState(3);
+  const [sliderEmotion, setSliderEmotion] = useState(4);
   const storyEndRef = useRef(null);
   const contentRef = useRef(null);
   const pollRef = useRef(null);
@@ -1344,9 +1364,11 @@ export default function CollaborativeStoryApp() {
   }, [activeStoryMeta]);
 
   const getActiveStyleSettings = useCallback(() => {
-    if (!activeStoryMeta) return { tone: 5, length: 4, mood: 5, dialogue: 2 };
-    return getStyleForStory(activeStoryMeta.genre, activeStoryMeta.writingStyle);
-  }, [activeStoryMeta]);
+    const base = activeStoryMeta
+      ? getStyleForStory(activeStoryMeta.genre, activeStoryMeta.writingStyle)
+      : { tone: 5, length: 4, mood: 5, dialogue: 2 };
+    return { ...base, length: sliderLength, dialogue: sliderDialogue, surprise: sliderSurprise, emotion: sliderEmotion };
+  }, [activeStoryMeta, sliderLength, sliderDialogue, sliderSurprise, sliderEmotion]);
 
   // Load stories index on mount + check hash for deep link
   useEffect(() => {
@@ -1429,8 +1451,16 @@ export default function CollaborativeStoryApp() {
     setShowStoryMenu(false);
     setLinkCopied(false);
     setConfirmDeleteMenu(false);
-    setView("story");
+    setShowSliders(false);
     const meta = storiesIndex.find((s) => s.id === id);
+    const defaults = meta
+      ? getStyleForStory(meta.genre, meta.writingStyle)
+      : { length: 4, dialogue: 2, surprise: 3, emotion: 4 };
+    setSliderLength(defaults.length);
+    setSliderDialogue(defaults.dialogue);
+    setSliderSurprise(defaults.surprise ?? 3);
+    setSliderEmotion(defaults.emotion ?? 4);
+    setView("story");
     window.location.hash = "story/" + (meta?.slug || id);
 
     await loadStoryData(id, true);
@@ -1600,6 +1630,15 @@ export default function CollaborativeStoryApp() {
       setAnswer("");
       setGeneratedText("");
       setGenerationSource("");
+      // Reset sliders to story defaults
+      const defaults = activeStoryMeta
+        ? getStyleForStory(activeStoryMeta.genre, activeStoryMeta.writingStyle)
+        : { length: 4, dialogue: 2, surprise: 3, emotion: 4 };
+      setSliderLength(defaults.length);
+      setSliderDialogue(defaults.dialogue);
+      setSliderSurprise(defaults.surprise ?? 3);
+      setSliderEmotion(defaults.emotion ?? 4);
+      setShowSliders(false);
       setPhase("done");
       setTimeout(() => setPhase("input"), 2000);
     } catch (e) {
@@ -1753,6 +1792,10 @@ export default function CollaborativeStoryApp() {
         .story-scroll::-webkit-scrollbar { width: 4px; }
         .story-scroll::-webkit-scrollbar-track { background: transparent; }
         .story-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+        .passage-slider { -webkit-appearance: none; appearance: none; height: 2px; background: rgba(255,255,255,0.1); border-radius: 1px; outline: none; }
+        .passage-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 10px; height: 10px; border-radius: 50%; background: #e8ddd0; cursor: pointer; }
+        .passage-slider::-moz-range-track { height: 2px; background: rgba(255,255,255,0.1); border-radius: 1px; border: none; }
+        .passage-slider::-moz-range-thumb { width: 10px; height: 10px; border-radius: 50%; background: #e8ddd0; cursor: pointer; border: none; }
       `}</style>
 
       {/* Mobile: fixed top bar with back, chapter title, menu */}
@@ -2147,7 +2190,7 @@ export default function CollaborativeStoryApp() {
                 padding: "24px",
               }}>
                 {(phase === "input" || phase === "generating") && (
-                  <div style={{ minHeight: "180px" }}>
+                  <div>
                     <p style={{
                       fontFamily: TYPEWRITER, fontSize: "16px",
                       color: "rgba(255,255,255,0.4)", lineHeight: 1.7,
@@ -2179,10 +2222,58 @@ export default function CollaborativeStoryApp() {
                         fontSize: "12px", color: "#c97a7a",
                       }}>{error}</p>
                     )}
+                    {showSliders && phase === "input" && (
+                      <div style={{
+                        display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 24px",
+                        padding: "12px 0 0",
+                      }}>
+                        {[
+                          { label: "Length", value: sliderLength, set: setSliderLength, labels: ["Brief", "Short", "Moderate", "Medium", "Standard", "Full", "Extended", "Long", "Very Long", "Epic"] },
+                          { label: "Dialogue", value: sliderDialogue, set: setSliderDialogue, labels: ["None", "Minimal", "Sparse", "Light", "Moderate", "Balanced", "Frequent", "Rich", "Heavy", "All Talk"] },
+                          { label: "Surprise", value: sliderSurprise, set: setSliderSurprise, labels: ["Steady", "Calm", "Gentle", "Mild", "Moderate", "Notable", "Bold", "Dramatic", "Shocking", "Wild"] },
+                          { label: "Emotion", value: sliderEmotion, set: setSliderEmotion, labels: ["Stoic", "Reserved", "Subtle", "Restrained", "Moderate", "Open", "Warm", "Vivid", "Intense", "Raw"] },
+                        ].map(({ label, value, set, labels }) => (
+                          <div key={label}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "4px" }}>
+                              <span style={{ fontFamily: MONO, fontSize: "10px", color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                                {label}
+                              </span>
+                              <span style={{ fontFamily: MONO, fontSize: "10px", color: "rgba(255,255,255,0.25)" }}>
+                                {labels[value]}
+                              </span>
+                            </div>
+                            <input
+                              type="range" min={0} max={9} step={1} value={value}
+                              onChange={(e) => set(Number(e.target.value))}
+                              className="passage-slider"
+                              style={{
+                                width: "100%", cursor: "pointer",
+                              }}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     <div style={{
-                      display: "flex", justifyContent: "flex-end", alignItems: "center",
-                      padding: "12px 0 0",
+                      display: "flex", justifyContent: "space-between", alignItems: "center",
+                      padding: "20px 0 0",
                     }}>
+                      <div>
+                        {phase !== "generating" && (
+                          <button
+                            onClick={() => setShowSliders((v) => !v)}
+                            style={{
+                              background: "none", border: "none",
+                              color: showSliders ? "#e8ddd0" : "rgba(255,255,255,0.25)",
+                              cursor: "pointer", padding: 0,
+                              display: "flex", alignItems: "center",
+                            }}
+                            title="Passage style sliders"
+                          >
+                            <BsSliders2Vertical size={14} />
+                          </button>
+                        )}
+                      </div>
                       {phase === "generating" ? (
                         <span style={{
                           fontFamily: MONO, fontSize: "13px",
@@ -2202,7 +2293,7 @@ export default function CollaborativeStoryApp() {
                             padding: 0,
                           }}
                         >
-                          Submit
+                          SUBMIT
                         </button>
                       )}
                     </div>
