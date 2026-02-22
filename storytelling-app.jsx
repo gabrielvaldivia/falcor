@@ -484,9 +484,7 @@ async function fetchLocation() {
     const resp = await fetch("https://ipapi.co/json/");
     if (!resp.ok) return null;
     const data = await resp.json();
-    if (data.city && data.country_name) {
-      return data.city + ", " + data.country_name;
-    }
+    if (data.region && data.country_name) return data.region + ", " + data.country_name;
     if (data.country_name) return data.country_name;
     return null;
   } catch {
@@ -1517,6 +1515,7 @@ export default function CollaborativeStoryApp() {
   };
 
   const handleConfirm = async () => {
+    setPhase("adding");
     const newCount = contributorCount + 1;
     const now = new Date();
     const timeStr = now.toLocaleString("en-US", {
@@ -2104,7 +2103,7 @@ export default function CollaborativeStoryApp() {
                   </div>
                 )}
 
-                {phase === "reveal" && (
+                {(phase === "reveal" || phase === "adding") && (
                   <div style={{ minHeight: "180px", display: "flex", flexDirection: "column" }}>
                     <div style={{ marginBottom: "8px" }}>
                       <button
@@ -2131,26 +2130,37 @@ export default function CollaborativeStoryApp() {
                     )}
 
                     <div style={{ display: "flex", gap: "20px", justifyContent: "flex-end" }}>
-                      <button
-                        onClick={handleRewrite}
-                        style={{
-                          background: "none", border: "none",
+                      {phase === "adding" ? (
+                        <span style={{
                           fontFamily: MONO, fontSize: "13px",
-                          color: "#999", cursor: "pointer", padding: 0,
-                        }}
-                      >
-                        Rewrite
-                      </button>
-                      <button
-                        onClick={handleConfirm}
-                        style={{
-                          background: "none", border: "none",
-                          fontFamily: MONO, fontSize: "13px",
-                          color: "#e8ddd0", cursor: "pointer", padding: 0,
-                        }}
-                      >
-                        Add
-                      </button>
+                          color: "#999",
+                        }}>
+                          Adding...
+                        </span>
+                      ) : (
+                        <>
+                          <button
+                            onClick={handleRewrite}
+                            style={{
+                              background: "none", border: "none",
+                              fontFamily: MONO, fontSize: "13px",
+                              color: "#999", cursor: "pointer", padding: 0,
+                            }}
+                          >
+                            Rewrite
+                          </button>
+                          <button
+                            onClick={handleConfirm}
+                            style={{
+                              background: "none", border: "none",
+                              fontFamily: MONO, fontSize: "13px",
+                              color: "#e8ddd0", cursor: "pointer", padding: 0,
+                            }}
+                          >
+                            Add
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}
