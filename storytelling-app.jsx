@@ -686,7 +686,7 @@ function StoryLine({ entry, onHover, onLeave, narrow, onShowDialog, onPinPopover
         ))}
       </div>
       {!narrow && (
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: "6px" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "center" }}>
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -699,6 +699,7 @@ function StoryLine({ entry, onHover, onLeave, narrow, onShowDialog, onPinPopover
               transition: "opacity 0.15s, color 0.15s",
               opacity: hideIcon ? 0 : (hovered ? 1 : 0),
               pointerEvents: hideIcon ? "none" : (hovered ? "auto" : "none"),
+              position: "sticky", top: "24px",
             }}
             onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
             onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.2)"}
@@ -1609,7 +1610,7 @@ export default function CollaborativeStoryApp() {
 
   // Track which chapter is currently visible on scroll
   useEffect(() => {
-    if (view !== "story" || !narrowViewport) return;
+    if (view !== "story") return;
     const onScroll = () => {
       const chapters = [...new Set(story.map((e) => e.chapter || 1))].sort((a, b) => a - b);
       let current = 0;
@@ -1622,7 +1623,7 @@ export default function CollaborativeStoryApp() {
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [view, narrowViewport, story]);
+  }, [view, story]);
 
   // Check if popover fits to the right of content
   useEffect(() => {
@@ -1899,7 +1900,7 @@ export default function CollaborativeStoryApp() {
         .passage-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 10px; height: 10px; border-radius: 50%; background: #e8ddd0; cursor: pointer; }
         .passage-slider::-moz-range-track { height: 2px; background: rgba(255,255,255,0.1); border-radius: 1px; border: none; }
         .passage-slider::-moz-range-thumb { width: 10px; height: 10px; border-radius: 50%; background: #e8ddd0; cursor: pointer; border: none; }
-        @media (max-width: 600px) { .about-ascii { font-size: 6px !important; } }
+        @media (max-width: 600px) { .about-ascii { font-size: 7px !important; } }
       `}</style>
 
       {/* Mobile: fixed top bar with back, chapter title, menu */}
@@ -2058,13 +2059,17 @@ export default function CollaborativeStoryApp() {
                     style={{
                       background: "none", border: "none",
                       fontFamily: MONO, fontSize: "12px",
-                      color: "rgba(255,255,255,0.3)", cursor: "pointer",
+                      color: visibleChapter === 0 ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.3)",
+                      cursor: "pointer",
                       padding: 0, textAlign: "left",
+                      display: "flex", alignItems: "center", gap: "8px",
+                      transition: "color 0.2s",
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}
-                    onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.3)"}
+                    onMouseLeave={(e) => e.currentTarget.style.color = visibleChapter === 0 ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.3)"}
                   >
-                    <GoArrowLeft size={14} style={{ marginRight: "6px", verticalAlign: "middle" }} />{activeStoryMeta?.title || "Home"}
+                    <GoArrowLeft size={14} style={{ flexShrink: 0, width: "16px" }} />
+                    <span>{activeStoryMeta?.title || "Home"}</span>
                   </button>
                   {(() => {
                     const chapters = [...new Set(story.map((e) => e.chapter || 1))].sort((a, b) => a - b);
@@ -2074,25 +2079,29 @@ export default function CollaborativeStoryApp() {
                         fontFamily: MONO, fontSize: "12px",
                         display: "flex", flexDirection: "column", gap: "8px",
                       }}>
-                        {chapters.map((ch) => (
-                          <button
-                            key={ch}
-                            onClick={() => document.getElementById(`chapter-${ch}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}
-                            style={{
-                              background: "none", border: "none", padding: 0,
-                              fontFamily: MONO, fontSize: "12px",
-                              color: "rgba(255,255,255,0.25)",
-                              cursor: "pointer", textAlign: "left",
-                              letterSpacing: "0.5px",
-                              display: "flex", alignItems: "baseline", gap: "8px",
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
-                            onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.25)"}
-                          >
-                            <span>{ch}</span>
-                            <span>{ch === currentChapter ? "In progress" : (chapterTitles[ch] || "")}</span>
-                          </button>
-                        ))}
+                        {chapters.map((ch) => {
+                          const isActive = ch === visibleChapter;
+                          return (
+                            <button
+                              key={ch}
+                              onClick={() => document.getElementById(`chapter-${ch}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                              style={{
+                                background: "none", border: "none", padding: 0,
+                                fontFamily: MONO, fontSize: "12px",
+                                color: isActive ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.25)",
+                                cursor: "pointer", textAlign: "left",
+                                letterSpacing: "0.5px",
+                                display: "flex", alignItems: "baseline", gap: "8px",
+                                transition: "color 0.2s",
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
+                              onMouseLeave={(e) => e.currentTarget.style.color = isActive ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.25)"}
+                            >
+                              <span style={{ width: "16px", textAlign: "center", flexShrink: 0 }}>{ch}</span>
+                              <span>{ch === currentChapter ? "In progress" : (chapterTitles[ch] || "")}</span>
+                            </button>
+                          );
+                        })}
                       </nav>
                     );
                   })()}
@@ -2187,22 +2196,34 @@ export default function CollaborativeStoryApp() {
               {/* ── Story Title ── */}
               {activeStoryMeta?.title && (
                 <div style={{
+                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
                   ...(narrowViewport ? {
                     height: "90vh",
-                    display: "flex", alignItems: "center", justifyContent: "center",
                     marginTop: "-48px",
-                  } : {}),
+                  } : {
+                    minHeight: "80vh",
+                  }),
                 }}>
                   <h1 style={{
                     fontFamily: SERIF, fontSize: "42px", fontWeight: 700,
                     color: "#e8ddd0", lineHeight: 1.2,
                     padding: "40px 0",
-                    marginBottom: narrowViewport ? 0 : "48px",
+                    marginBottom: 0,
                     textAlign: "center",
                     textWrap: "balance",
                   }}>
                     {activeStoryMeta.title}
                   </h1>
+                  <p style={{
+                    fontFamily: SERIF, fontSize: "15px", fontStyle: "italic",
+                    color: "rgba(255,255,255,0.25)",
+                    textAlign: "center", marginTop: "12px",
+                  }}>
+                    {story.length} contribution{story.length !== 1 ? "s" : ""}
+                    {activeStoryMeta.updatedAt && (
+                      <> · Last updated: {new Date(activeStoryMeta.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</>
+                    )}
+                  </p>
                 </div>
               )}
 
