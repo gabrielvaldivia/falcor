@@ -1480,7 +1480,7 @@ export default function CollaborativeStoryApp() {
     if (view !== "story" || !narrowViewport) return;
     const onScroll = () => {
       const chapters = [...new Set(story.map((e) => e.chapter || 1))].sort((a, b) => a - b);
-      let current = chapters[0] || 1;
+      let current = 0;
       for (const ch of chapters) {
         const el = document.getElementById(`chapter-${ch}`);
         if (el && el.getBoundingClientRect().top <= 80) current = ch;
@@ -1787,9 +1787,10 @@ export default function CollaborativeStoryApp() {
                   flex: 1,
                   padding: "0 12px",
                 }}>
-                  {chapterTitles[visibleChapter]
+                  {visibleChapter === 0 ? ""
+                    : chapterTitles[visibleChapter]
                     ? `Ch. ${visibleChapter} — ${chapterTitles[visibleChapter]}`
-                    : (visibleChapter > 1 ? `Chapter ${visibleChapter}` : (activeStoryMeta?.title || ""))}
+                    : `Chapter ${visibleChapter}`}
                 </div>
                 <div style={{ position: "relative" }}>
                   <button
@@ -2039,7 +2040,7 @@ export default function CollaborativeStoryApp() {
               {activeStoryMeta?.title && (
                 <div style={{
                   ...(narrowViewport ? {
-                    height: "100vh",
+                    height: "90vh",
                     display: "flex", alignItems: "center", justifyContent: "center",
                     marginTop: "-48px",
                   } : {}),
