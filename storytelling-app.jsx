@@ -1,12 +1,125 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
-async function generatePrompt(existingStory, chapter = 1, isNewChapter = false) {
+/* ────────────────────────────────────────────
+   Genre & Voice Constants + Preset Mappings
+   ──────────────────────────────────────────── */
+
+const GENRES = [
+  { id: "fantasy", label: "Fantasy", mood: 7, prompt: "mythical creatures, ancient magic, epic quests" },
+  { id: "romance", label: "Romance", mood: 6, dialogue: 6, prompt: "emotional tension, relationships, longing" },
+  { id: "mystery", label: "Mystery", mood: 3, prompt: "clues, suspicion, hidden truths, tension" },
+  { id: "scifi", label: "Science Fiction", mood: 5, prompt: "technology, alien worlds, future societies" },
+  { id: "litfic", label: "Literary Fiction", mood: 5, prompt: "inner life, relationships, quiet revelations" },
+  { id: "horror", label: "Horror", mood: 1, prompt: "dread, the uncanny, creeping fear" },
+];
+
+const VOICES = [
+  { id: "spare", label: "Spare & Direct", tone: 2, length: 3, description: "Short sentences, no embellishment" },
+  { id: "lyrical", label: "Lyrical & Labyrinthine", tone: 7, length: 6, description: "Winding, dreamlike, nested clauses" },
+  { id: "poetic", label: "Poetic & Dramatic", tone: 8, length: 5, description: "Elevated language, rhythm, metaphor" },
+  { id: "gothic", label: "Lush & Gothic", tone: 8, length: 7, description: "Dense atmosphere, ornate description" },
+  { id: "wry", label: "Wry & Observant", tone: 4, length: 4, dialogue: 5, description: "Dry wit, sharp observation" },
+  { id: "cinematic", label: "Cinematic & Vivid", tone: 6, length: 5, dialogue: 4, description: "Visual, fast-paced, sensory-driven" },
+];
+
+const THEMES = [
+  { id: "redemption", label: "Redemption", prompt: "seeking forgiveness and second chances" },
+  { id: "coming-of-age", label: "Coming of Age", prompt: "growth, self-discovery, and loss of innocence" },
+  { id: "power", label: "Power & Corruption", prompt: "the corrupting influence of power and ambition" },
+  { id: "love-loss", label: "Love & Loss", prompt: "deep emotional bonds and the pain of separation" },
+  { id: "survival", label: "Survival", prompt: "endurance against overwhelming odds" },
+  { id: "identity", label: "Identity", prompt: "questioning who we are and who we become" },
+  { id: "betrayal", label: "Betrayal", prompt: "broken trust and its consequences" },
+  { id: "freedom", label: "Freedom", prompt: "the struggle for liberation and autonomy" },
+  { id: "justice", label: "Justice", prompt: "the pursuit of what is right against what is easy" },
+];
+
+const PROTAGONISTS = [
+  { id: "reluctant-hero", label: "Reluctant Hero", prompt: "a protagonist thrust unwillingly into action" },
+  { id: "anti-hero", label: "Anti-Hero", prompt: "a morally ambiguous protagonist with questionable methods" },
+  { id: "child", label: "Child", prompt: "a young protagonist experiencing the world with fresh eyes" },
+  { id: "outsider", label: "Outsider", prompt: "a protagonist who doesn't belong and sees society from the margins" },
+  { id: "detective", label: "Detective", prompt: "an investigator driven to uncover the truth" },
+  { id: "scholar", label: "Scholar", prompt: "a seeker of knowledge drawn into events beyond the academic" },
+  { id: "wanderer", label: "Wanderer", prompt: "a rootless traveler searching for meaning or home" },
+  { id: "outcast", label: "Outcast", prompt: "a rejected figure forging their own path" },
+  { id: "ruler", label: "Ruler", prompt: "a leader burdened by the weight of command and consequence" },
+];
+
+const TENSIONS = [
+  { id: "vs-nature", label: "Person vs Nature", prompt: "conflict against the natural world and its forces" },
+  { id: "vs-self", label: "Person vs Self", prompt: "internal struggle, doubt, and inner demons" },
+  { id: "vs-society", label: "Person vs Society", prompt: "rebellion against social norms and institutions" },
+  { id: "vs-person", label: "Person vs Person", prompt: "direct conflict between characters with opposing goals" },
+  { id: "mystery", label: "Mystery / Secret", prompt: "a hidden truth that drives the narrative forward" },
+  { id: "fate", label: "Fate / Prophecy", prompt: "the tension between destiny and free will" },
+];
+
+function getStyleForStory(genre, voice) {
+  const g = GENRES.find((x) => x.id === genre) || GENRES[0];
+  const v = VOICES.find((x) => x.id === voice) || VOICES[0];
+  return {
+    tone: v.tone,
+    length: v.length,
+    mood: g.mood,
+    dialogue: g.dialogue || v.dialogue || 2,
+  };
+}
+
+function getStoryContext(meta) {
+  const g = GENRES.find((x) => x.id === meta.genre);
+  const v = VOICES.find((x) => x.id === meta.writingStyle);
+  if (!g || !v) return "";
+  let ctx = `This is a ${g.label} story written in a ${v.label.toLowerCase()} voice. Key themes: ${g.prompt}. Writing style: ${v.description.toLowerCase()}.`;
+  if (meta.themes && meta.themes.length > 0) {
+    const themeDescs = meta.themes.map((id) => THEMES.find((t) => t.id === id)).filter(Boolean);
+    if (themeDescs.length > 0) ctx += ` Thematic focus: ${themeDescs.map((t) => t.prompt).join("; ")}.`;
+  }
+  if (meta.protagonist) {
+    const p = PROTAGONISTS.find((x) => x.id === meta.protagonist);
+    if (p) ctx += ` Protagonist: ${p.prompt}.`;
+  }
+  if (meta.tension) {
+    const t = TENSIONS.find((x) => x.id === meta.tension);
+    if (t) ctx += ` Central tension: ${t.prompt}.`;
+  }
+  return ctx;
+}
+
+/* ────────────────────────────────────────────
+   Stories Index Helpers
+   ──────────────────────────────────────────── */
+
+const STORIES_INDEX_KEY = "stories-index-v1";
+
+async function loadStoriesIndex() {
+  try {
+    const result = await window.storage.get(STORIES_INDEX_KEY, true);
+    return result ? JSON.parse(result.value) : [];
+  } catch {
+    return [];
+  }
+}
+
+async function saveStoriesIndex(index) {
+  await window.storage.set(STORIES_INDEX_KEY, JSON.stringify(index), true);
+}
+
+function storyKey(id, suffix) {
+  return `story-${id}-${suffix}`;
+}
+
+/* ────────────────────────────────────────────
+   AI Prompt Generation
+   ──────────────────────────────────────────── */
+
+async function generatePrompt(existingStory, chapter = 1, isNewChapter = false, genreVoiceCtx = "") {
   const storyContext = existingStory.length > 0
     ? existingStory.slice(-3).map((e) => e.text).join("\n\n")
     : "";
 
   const systemPrompt = `Generate a single question that a person can answer in a few words. It must be a question ending with "?" that invites a short, imaginative response. NOT a story sentence. NOT a statement. It should feel like a question a friend asks you.
-
+${genreVoiceCtx ? `\nContext: ${genreVoiceCtx}\nThe question should fit naturally within this genre and voice.\n` : ""}
 Good examples:
 - "What did the stranger have in their pocket?"
 - "What was written on the note?"
@@ -22,7 +135,7 @@ Output ONLY the question. No quotes. Under 12 words.`;
 
   let userMessage;
   if (existingStory.length === 0) {
-    userMessage = "Generate an opening question to start a collaborative story.";
+    userMessage = "Generate an opening question that will seed the very first paragraph of a novel. The question should invite the user to establish a character, a place, or a mood — something that anchors the reader in a scene. Examples: \"Who was standing at the door?\" or \"What kind of town was it?\" or \"What was the first thing you noticed about the room?\"";
   } else if (isNewChapter) {
     userMessage = `STORY SO FAR (last passages):\n"""${storyContext}"""\n\nYou are starting Chapter ${chapter} of the story. Generate an opening question for this new chapter that shifts the setting, introduces a new thread, or jumps forward in time. It should feel like a fresh start while still connected to the world established so far.`;
   } else {
@@ -53,7 +166,6 @@ Output ONLY the question. No quotes. Under 12 words.`;
     console.warn("Prompt generation failed:", err.message);
   }
 
-  // Fallback
   const fallbacks = [
     "What happened next?",
     "Something unexpected appeared...",
@@ -164,7 +276,7 @@ async function generateChapterTitle(story, chapter) {
   }
 }
 
-async function callClaudeAPI(existingStory, prompt, userAnswer, styleSettings, chapter = 1) {
+async function callClaudeAPI(existingStory, prompt, userAnswer, styleSettings, chapter = 1, genreVoiceCtx = "") {
   const storyContext =
     existingStory.length > 0
       ? existingStory
@@ -176,7 +288,7 @@ async function callClaudeAPI(existingStory, prompt, userAnswer, styleSettings, c
   const styleInstructions = getStyleInstructions(styleSettings);
 
   const systemPrompt = `You are a collaborative storyteller writing Chapter ${chapter} of an evolving collaborative story. You take a user's brief answer to a creative writing prompt and transform it into prose that continues the story.
-
+${genreVoiceCtx ? `\n${genreVoiceCtx}\n` : ""}
 CRITICAL RULES:
 - Write ONLY the story text. No preamble, no explanation, no quotes around it.
 - Write in third person, past tense.
@@ -192,7 +304,7 @@ These style settings override any other instinct you have. If the style says "sp
   const userMessage =
     existingStory.length > 0
       ? `STORY SO FAR (last passages):\n"""${storyContext}"""\n\nPROMPT SHOWN TO USER: "${prompt}"\nUSER'S ANSWER: "${userAnswer}"\n\nTransform their answer into the next story passage following the style settings exactly. Continue naturally from what came before. Output ONLY the story text.`
-      : `This is the FIRST passage of a brand new collaborative story.\n\nPROMPT SHOWN TO USER: "${prompt}"\nUSER'S ANSWER: "${userAnswer}"\n\nTransform their answer into the opening passage following the style settings exactly. Output ONLY the story text.`;
+      : `This is the FIRST passage of a brand new story — the opening paragraph.\n\nPROMPT SHOWN TO USER: "${prompt}"\nUSER'S ANSWER: "${userAnswer}"\n\nWrite this as the opening paragraph of a novel. It should establish setting, character, or atmosphere and draw the reader in immediately. Ground the reader in a specific scene — a place, a moment, a sensory detail. Weave the user's answer naturally into the prose. This must read like the first paragraph you'd find on page one of a published book. Follow the style settings exactly. Output ONLY the story text.`;
 
   const requestBody = {
     model: "claude-sonnet-4-20250514",
@@ -227,12 +339,83 @@ These style settings override any other instinct you have. If the style says "sp
     throw new Error("API returned empty or too-short text");
   }
 
-  // Safety check: if AI just echoed the input back, reject it
   if (text.toLowerCase() === userAnswer.toLowerCase().trim()) {
     throw new Error("AI echoed input verbatim");
   }
 
   return text;
+}
+
+/* ────────────────────────────────────────────
+   AI Story Opener (title + first paragraph)
+   ──────────────────────────────────────────── */
+
+async function generateStoryOpener(meta) {
+  const genreObj = GENRES.find((g) => g.id === meta.genre);
+  const voiceObj = VOICES.find((v) => v.id === meta.writingStyle);
+  if (!genreObj || !voiceObj) return null;
+
+  const styleSettings = getStyleForStory(meta.genre, meta.writingStyle);
+  const styleInstructions = getStyleInstructions(styleSettings);
+
+  let extraContext = "";
+  if (meta.themes && meta.themes.length > 0) {
+    const themeDescs = meta.themes.map((id) => THEMES.find((t) => t.id === id)).filter(Boolean);
+    if (themeDescs.length > 0) extraContext += `\nThematic focus: ${themeDescs.map((t) => `${t.label} (${t.prompt})`).join(", ")}`;
+  }
+  if (meta.protagonist) {
+    const p = PROTAGONISTS.find((x) => x.id === meta.protagonist);
+    if (p) extraContext += `\nProtagonist type: ${p.label} — ${p.prompt}`;
+  }
+  if (meta.tension) {
+    const t = TENSIONS.find((x) => x.id === meta.tension);
+    if (t) extraContext += `\nCentral tension: ${t.label} — ${t.prompt}`;
+  }
+
+  try {
+    const resp = await fetch("/api/anthropic/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 600,
+        system: `You are a novelist. Given a genre and writing voice, generate the title and opening paragraph of an original story.
+
+Genre: ${genreObj.label} — themes: ${genreObj.prompt}
+Voice: ${voiceObj.label} — ${voiceObj.description.toLowerCase()}${extraContext}
+
+Style constraints:
+${styleInstructions}
+
+Respond in EXACTLY this format (no extra text):
+TITLE: <a short evocative title, 2-5 words>
+PARAGRAPH: <the opening paragraph>
+
+The opening paragraph must read like page one of a published novel — establish a character, setting, or atmosphere. Ground the reader in a specific scene. Follow the style constraints literally.`,
+        messages: [{ role: "user", content: "Write the title and opening paragraph." }],
+      }),
+    });
+
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    const text = data.content
+      .filter((b) => b.type === "text")
+      .map((b) => b.text)
+      .join("")
+      .trim();
+
+    const titleMatch = text.match(/TITLE:\s*(.+)/i);
+    const paraMatch = text.match(/PARAGRAPH:\s*([\s\S]+)/i);
+    if (!titleMatch || !paraMatch) return null;
+
+    return {
+      title: titleMatch[1].trim().replace(/^["']|["']$/g, ""),
+      paragraph: paraMatch[1].trim(),
+    };
+  } catch (err) {
+    console.warn("Story opener generation failed:", err.message);
+    return null;
+  }
 }
 
 /* ────────────────────────────────────────────
@@ -299,15 +482,45 @@ async function fetchLocation() {
   }
 }
 
-async function generateStoryPassage(existingStory, prompt, userAnswer, styleSettings, chapter = 1) {
+async function generateStoryPassage(existingStory, prompt, userAnswer, styleSettings, chapter = 1, genreVoiceCtx = "") {
   try {
-    const aiText = await callClaudeAPI(existingStory, prompt, userAnswer, styleSettings, chapter);
+    const aiText = await callClaudeAPI(existingStory, prompt, userAnswer, styleSettings, chapter, genreVoiceCtx);
     return { text: aiText, source: "ai" };
   } catch (err) {
     console.warn("AI generation failed, using local expansion:", err.message);
   }
   const localText = expandLocally(existingStory, userAnswer);
   return { text: localText, source: "local" };
+}
+
+/* ────────────────────────────────────────────
+   Paragraph Splitting
+   ──────────────────────────────────────────── */
+
+function splitIntoParagraphs(text) {
+  if (!text) return [text];
+  // If the text already has double newlines, split on those
+  if (text.includes("\n\n")) {
+    return text.split(/\n\n+/).map((s) => s.trim()).filter(Boolean);
+  }
+  // For long single-block text, split at sentence boundaries roughly every 3-4 sentences
+  const sentences = text.match(/[^.!?]+[.!?]+[\s"]*/g);
+  if (!sentences || sentences.length <= 3) return [text];
+  const paragraphs = [];
+  let current = "";
+  let count = 0;
+  const target = Math.ceil(sentences.length / Math.ceil(sentences.length / 3));
+  for (const s of sentences) {
+    current += s;
+    count++;
+    if (count >= target) {
+      paragraphs.push(current.trim());
+      current = "";
+      count = 0;
+    }
+  }
+  if (current.trim()) paragraphs.push(current.trim());
+  return paragraphs.length > 0 ? paragraphs : [text];
 }
 
 /* ────────────────────────────────────────────
@@ -357,32 +570,74 @@ function TypewriterReveal({ text }) {
    Story Entry (minimal)
    ──────────────────────────────────────────── */
 
-function StoryLine({ entry, onHover, onLeave }) {
+function StoryLine({ entry, onHover, onLeave, narrow, onShowDialog, onPinPopover, hideIcon }) {
   const ref = useRef(null);
+  const [hovered, setHovered] = useState(false);
+
   return (
     <div
       ref={ref}
       onMouseEnter={() => {
-        const rect = ref.current.getBoundingClientRect();
-        onHover(entry, rect.top);
+        setHovered(true);
+        if (!narrow) onHover(entry);
       }}
-      onMouseLeave={onLeave}
+      onMouseLeave={() => {
+        setHovered(false);
+        if (!narrow) onLeave();
+      }}
+      style={{
+        display: "grid",
+        gridTemplateColumns: "1fr 16px",
+        gap: "12px",
+        marginRight: "-36px",
+      }}
     >
-      <p style={{
+      <div style={{
         fontFamily: "'Faustina', serif", fontSize: "19px", fontWeight: 300, lineHeight: 1.8,
         color: "#e8ddd0", margin: 0,
         textRendering: "optimizeLegibility", fontOpticalSizing: "auto",
         fontFeatureSettings: '"kern", "liga", "calt"',
         hangingPunctuation: "first last", textWrap: "pretty",
         overflowWrap: "break-word", maxWidth: "65ch",
+        display: "flex", flexDirection: "column", gap: "12px",
       }}>
-        {entry.text}
-      </p>
+        {splitIntoParagraphs(entry.text).map((para, i) => (
+          <p key={i} style={{ margin: 0 }}>{para}</p>
+        ))}
+      </div>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: "6px" }}>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (narrow) {
+              onShowDialog(entry);
+            } else {
+              onPinPopover(entry);
+            }
+          }}
+          style={{
+            background: "none", border: "none", cursor: "pointer",
+            padding: "2px",
+            color: "rgba(255,255,255,0.2)",
+            transition: "opacity 0.15s, color 0.15s",
+            opacity: hideIcon ? 0 : (hovered ? 1 : 0),
+            pointerEvents: hideIcon ? "none" : (hovered ? "auto" : "none"),
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
+          onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.2)"}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="16" x2="12" y2="12" />
+            <line x1="12" y1="8" x2="12.01" y2="8" />
+          </svg>
+        </button>
+      </div>
     </div>
   );
 }
 
-function StoryPopover({ entry }) {
+function StoryPopover({ entry, onClose }) {
   if (!entry) return null;
   return (
     <div style={{
@@ -396,7 +651,23 @@ function StoryPopover({ entry }) {
       lineHeight: 1.6,
       width: "280px",
       display: "flex", flexDirection: "column", gap: "8px",
+      position: "relative",
     }}>
+      {onClose && (
+        <button
+          onClick={onClose}
+          style={{
+            position: "absolute", top: "8px", right: "8px",
+            background: "none", border: "none",
+            cursor: "pointer", color: "rgba(255,255,255,0.25)",
+            fontSize: "14px", lineHeight: 1, padding: "2px",
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
+          onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.25)"}
+        >
+          &times;
+        </button>
+      )}
       {entry.location && (
         <div>
           <div style={{ color: "rgba(255,255,255,0.25)", fontSize: "10px", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Location</div>
@@ -426,6 +697,565 @@ function StoryPopover({ entry }) {
 }
 
 /* ────────────────────────────────────────────
+   Home Screen — Grid of Books
+   ──────────────────────────────────────────── */
+
+function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
+  return (
+    <div style={{ maxWidth: "720px", margin: "0 auto", padding: "60px 24px 40px" }}>
+      <header style={{ marginBottom: "48px" }}>
+        <h1 style={{
+          fontFamily: MONO, fontSize: "14px", fontWeight: 400,
+          color: "#999", letterSpacing: "0.5px",
+        }}>
+          Falcor
+        </h1>
+      </header>
+
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
+        gap: "20px",
+      }}>
+        {stories.map((s) => {
+          const genre = GENRES.find((g) => g.id === s.genre);
+          return (
+            <div
+              key={s.id}
+              onClick={() => onSelectStory(s.id)}
+              style={{
+                background: "rgba(255,255,255,0.03)",
+                border: "1px solid rgba(255,255,255,0.06)",
+                borderRadius: "4px",
+                padding: "20px 16px",
+                cursor: "pointer",
+                position: "relative",
+                aspectRatio: "2 / 3",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
+                transition: "border-color 0.15s",
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"}
+              onMouseLeave={(e) => e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)"}
+            >
+              <div>
+                {genre && (
+                  <div style={{
+                    fontFamily: MONO, fontSize: "10px",
+                    color: "rgba(255,255,255,0.3)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                    marginBottom: "6px",
+                  }}>
+                    {genre.label}
+                  </div>
+                )}
+                <div style={{
+                  fontFamily: SERIF, fontSize: "16px", fontWeight: 600,
+                  color: "#e8ddd0",
+                  lineHeight: 1.3,
+                }}>
+                  {s.title || "Untitled"}
+                </div>
+              </div>
+              <div>
+                <span style={{
+                  fontFamily: SERIF, fontSize: "12px", fontStyle: "italic",
+                  color: "rgba(255,255,255,0.2)",
+                }}>
+                  {s.passageCount || 0} contribution{(s.passageCount || 0) !== 1 ? "s" : ""}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+
+        {/* New Story Card */}
+        <div
+          onClick={onNewStory}
+          style={{
+            background: "transparent",
+            border: "1px dashed rgba(255,255,255,0.1)",
+            borderRadius: "4px",
+            padding: "20px 16px",
+            cursor: "pointer",
+            aspectRatio: "2 / 3",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "border-color 0.15s",
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)"}
+          onMouseLeave={(e) => e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"}
+        >
+          <span style={{
+            fontFamily: MONO, fontSize: "13px",
+            color: "rgba(255,255,255,0.3)",
+          }}>
+            + New Story
+          </span>
+        </div>
+      </div>
+
+      <footer style={{
+        marginTop: "64px", paddingTop: "24px",
+        borderTop: "1px solid rgba(255,255,255,0.06)",
+        display: "flex", justifyContent: "center", gap: "16px",
+        flexWrap: "wrap",
+        fontFamily: MONO, fontSize: "11px",
+        color: "rgba(255,255,255,0.2)",
+      }}>
+        <span>
+          Built by{" "}
+          <a
+            href="https://gabrielvaldivia.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: "rgba(255,255,255,0.35)", textDecoration: "none" }}
+            onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}
+            onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.35)"}
+          >
+            Gabriel Valdivia
+          </a>
+        </span>
+        <span style={{ color: "rgba(255,255,255,0.1)" }}>|</span>
+        <a
+          href="#"
+          onClick={(e) => { e.preventDefault(); onAbout(); }}
+          style={{ color: "rgba(255,255,255,0.35)", textDecoration: "none" }}
+          onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}
+          onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.35)"}
+        >
+          About
+        </a>
+        <span style={{ color: "rgba(255,255,255,0.1)" }}>|</span>
+        <span>&copy; {new Date().getFullYear()}</span>
+      </footer>
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────
+   About Screen
+   ──────────────────────────────────────────── */
+
+function AboutScreen({ onBack }) {
+  return (
+    <>
+      <div style={{
+        position: "fixed", left: "24px", top: "24px",
+        zIndex: 5,
+      }}>
+        <button
+          onClick={onBack}
+          style={{
+            background: "none", border: "none",
+            fontFamily: MONO, fontSize: "12px",
+            color: "rgba(255,255,255,0.3)", cursor: "pointer",
+            padding: 0, textAlign: "left",
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}
+          onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.3)"}
+        >
+          &larr; Back
+        </button>
+      </div>
+      <div style={{ maxWidth: "600px", margin: "0 auto", padding: "60px 24px 40px" }}>
+        <h1 style={{
+          fontFamily: SERIF, fontSize: "28px", fontWeight: 600,
+          color: "#e8ddd0", marginBottom: "32px",
+        }}>
+          About Falcor
+        </h1>
+
+        <div style={{
+          fontFamily: "'Faustina', serif", fontSize: "17px", fontWeight: 300,
+          lineHeight: 1.8, color: "rgba(255,255,255,0.6)",
+          display: "flex", flexDirection: "column", gap: "20px",
+        }}>
+          <p>
+            Falcor is a collaborative storytelling experiment. You provide short
+            answers to creative prompts, and AI transforms them into literary
+            prose that weaves together into an evolving narrative.
+          </p>
+          <p>
+            Each story is shaped by your choices — genre, writing voice, themes,
+            and the answers you give along the way. The AI builds on your input
+            to create passages that feel like they belong in a published novel,
+            while the story's direction stays in your hands.
+          </p>
+          <h2 style={{
+            fontFamily: MONO, fontSize: "12px", fontWeight: 400,
+            color: "rgba(255,255,255,0.3)", letterSpacing: "0.5px",
+            textTransform: "uppercase", marginTop: "8px",
+          }}>
+            How it works
+          </h2>
+          <p>
+            When you start a new story, you pick a genre and a writing voice.
+            Falcor generates a title and opening paragraph, then begins asking
+            you questions. Your brief answers become the seeds for each new
+            passage. As the story grows, the AI considers what came before —
+            tracking narrative arcs, deciding when chapters should end, and
+            generating chapter titles.
+          </p>
+          <p>
+            Stories are saved locally in your browser. You can share a direct
+            link to any story using the menu on the story page.
+          </p>
+          <h2 style={{
+            fontFamily: MONO, fontSize: "12px", fontWeight: 400,
+            color: "rgba(255,255,255,0.3)", letterSpacing: "0.5px",
+            textTransform: "uppercase", marginTop: "8px",
+          }}>
+            Credits
+          </h2>
+          <p>
+            Built by{" "}
+            <a
+              href="https://gabrielvaldivia.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: "#e8ddd0", textDecoration: "none", borderBottom: "1px solid rgba(255,255,255,0.15)" }}
+              onMouseEnter={(e) => e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.4)"}
+              onMouseLeave={(e) => e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.15)"}
+            >
+              Gabriel Valdivia
+            </a>
+            . Powered by Claude from Anthropic.
+          </p>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ────────────────────────────────────────────
+   New Story Screen — Genre + Voice Selection
+   ──────────────────────────────────────────── */
+
+function NewStoryScreen({ onCancel, onCreate }) {
+  const [selectedGenre, setSelectedGenre] = useState(null);
+  const [selectedVoice, setSelectedVoice] = useState(null);
+  const [selectedThemes, setSelectedThemes] = useState([]);
+  const [selectedProtagonist, setSelectedProtagonist] = useState(null);
+  const [selectedTension, setSelectedTension] = useState(null);
+  const [activeStep, setActiveStep] = useState("genre");
+
+  const toggleTheme = (id) => {
+    setSelectedThemes((prev) => {
+      if (prev.includes(id)) return prev.filter((t) => t !== id);
+      if (prev.length >= 2) return prev;
+      const next = [...prev, id];
+      setTimeout(() => advanceFrom("themes"), 150);
+      return next;
+    });
+  };
+
+  const handleCreate = () => {
+    if (!selectedGenre || !selectedVoice) return;
+    const id = Date.now();
+    const meta = {
+      id,
+      title: "",
+      genre: selectedGenre,
+      writingStyle: selectedVoice,
+      themes: selectedThemes.length > 0 ? selectedThemes : [],
+      protagonist: selectedProtagonist || null,
+      tension: selectedTension || null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      passageCount: 0,
+    };
+    onCreate(meta);
+  };
+
+  const steps = [
+    { key: "genre", label: "Genre", optional: false },
+    { key: "voice", label: "Writing Voice", optional: false },
+    { key: "themes", label: "Themes", optional: true },
+    { key: "protagonist", label: "Protagonist", optional: true },
+    { key: "tension", label: "Narrative Tension", optional: true },
+  ];
+
+  const getStepAnswer = (key) => {
+    switch (key) {
+      case "genre": {
+        const g = GENRES.find((x) => x.id === selectedGenre);
+        return g ? g.label : null;
+      }
+      case "voice": {
+        const v = VOICES.find((x) => x.id === selectedVoice);
+        return v ? v.label : null;
+      }
+      case "themes": {
+        if (selectedThemes.length === 0) return null;
+        return selectedThemes.map((id) => THEMES.find((t) => t.id === id)?.label).filter(Boolean).join(", ");
+      }
+      case "protagonist": {
+        const p = PROTAGONISTS.find((x) => x.id === selectedProtagonist);
+        return p ? p.label : null;
+      }
+      case "tension": {
+        const t = TENSIONS.find((x) => x.id === selectedTension);
+        return t ? t.label : null;
+      }
+      default: return null;
+    }
+  };
+
+  const isStepVisible = (key) => {
+    const order = steps.map((s) => s.key);
+    const idx = order.indexOf(key);
+    if (idx === 0) return true;
+    // Show step if all previous required steps are answered
+    for (let i = 0; i < idx; i++) {
+      const prev = steps[i];
+      if (!prev.optional && !getStepAnswer(prev.key)) return false;
+    }
+    // Also show if previous step was answered or skipped (activeStep moved past it)
+    const activeIdx = order.indexOf(activeStep);
+    return activeIdx >= idx || getStepAnswer(order[idx - 1]) !== null || steps[idx - 1].optional;
+  };
+
+  const advanceFrom = (key) => {
+    const order = steps.map((s) => s.key);
+    const idx = order.indexOf(key);
+    if (idx < order.length - 1) {
+      setActiveStep(order[idx + 1]);
+    }
+  };
+
+  const handleSelectGenre = (id) => {
+    setSelectedGenre(id);
+    setTimeout(() => advanceFrom("genre"), 150);
+  };
+
+  const handleSelectVoice = (id) => {
+    setSelectedVoice(id);
+    setTimeout(() => advanceFrom("voice"), 150);
+  };
+
+  const canCreate = selectedGenre && selectedVoice;
+
+  const renderCollapsedRow = (step, disabled = false) => {
+    const answer = getStepAnswer(step.key);
+    return (
+      <button
+        onClick={disabled ? undefined : () => setActiveStep(step.key)}
+        style={{
+          display: "flex", justifyContent: "space-between", alignItems: "center",
+          width: "100%", background: "none", border: "none",
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
+          padding: "20px 0",
+          cursor: disabled ? "default" : "pointer",
+          transition: "all 0.15s",
+          opacity: disabled ? 0.3 : 1,
+        }}
+        onMouseEnter={disabled ? undefined : (e) => e.currentTarget.querySelector("[data-answer]").style.color = "#e8ddd0"}
+        onMouseLeave={disabled ? undefined : (e) => e.currentTarget.querySelector("[data-answer]").style.color = "rgba(255,255,255,0.5)"}
+      >
+        <span style={{
+          fontFamily: MONO, fontSize: "12px", fontWeight: 400,
+          color: "rgba(255,255,255,0.4)", letterSpacing: "0.5px",
+          textTransform: "uppercase",
+        }}>
+          {step.label}
+        </span>
+        <span data-answer="" style={{
+          fontFamily: SERIF, fontSize: "15px", fontWeight: 500,
+          color: "rgba(255,255,255,0.5)",
+          transition: "color 0.15s",
+        }}>
+          {answer || (step.optional ? "—" : "")}
+        </span>
+      </button>
+    );
+  };
+
+  const renderOptionGrid = (items, selectedId, onSelect, multi = false) => (
+    <div style={{
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
+      gap: "10px",
+    }}>
+      {items.map((item) => {
+        const isSelected = multi ? selectedId.includes(item.id) : selectedId === item.id;
+        return (
+          <button
+            key={item.id}
+            onClick={() => onSelect(item.id)}
+            style={{
+              background: isSelected ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.02)",
+              border: isSelected ? "1px solid rgba(255,255,255,0.2)" : "1px solid rgba(255,255,255,0.06)",
+              borderRadius: "6px",
+              padding: "14px 16px",
+              cursor: "pointer",
+              textAlign: "center",
+              transition: "all 0.15s",
+            }}
+          >
+            <div style={{
+              fontFamily: TYPEWRITER, fontSize: "15px", fontWeight: 400,
+              color: isSelected ? "#e8ddd0" : "rgba(255,255,255,0.5)",
+            }}>
+              {item.label}
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  const collapseStep = (stepKey) => {
+    const order = steps.map((s) => s.key);
+    const idx = order.indexOf(stepKey);
+    // Find the next step that doesn't have an answer yet
+    for (let i = idx + 1; i < order.length; i++) {
+      if (!getStepAnswer(order[i])) { setActiveStep(order[i]); return; }
+    }
+    setActiveStep(null);
+  };
+
+  const renderExpandedStep = (step) => {
+    const isOptional = step.optional;
+    return (
+      <div style={{ marginBottom: "8px", position: "relative" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+          <h2 style={{
+            fontFamily: MONO, fontSize: "12px", fontWeight: 400,
+            color: "rgba(255,255,255,0.4)", letterSpacing: "0.5px",
+            textTransform: "uppercase", margin: 0,
+          }}>
+            {step.label}{isOptional && <span style={{ textTransform: "none", color: "rgba(255,255,255,0.2)" }}> (optional{step.key === "themes" ? ", up to 2" : ""})</span>}
+          </h2>
+          <button
+            onClick={() => collapseStep(step.key)}
+            style={{
+              background: "none", border: "none",
+              cursor: "pointer", padding: "2px",
+              color: "rgba(255,255,255,0.25)",
+              transition: "color 0.15s",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
+            onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.25)"}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+          </button>
+        </div>
+        {step.key === "genre" && renderOptionGrid(GENRES, selectedGenre, handleSelectGenre)}
+        {step.key === "voice" && renderOptionGrid(VOICES, selectedVoice, handleSelectVoice)}
+        {step.key === "themes" && renderOptionGrid(THEMES, selectedThemes, toggleTheme, true)}
+        {step.key === "protagonist" && (
+          <>
+            {renderOptionGrid(PROTAGONISTS, selectedProtagonist, (id) => {
+              setSelectedProtagonist(selectedProtagonist === id ? null : id);
+              if (selectedProtagonist !== id) setTimeout(() => advanceFrom("protagonist"), 150);
+            })}
+            <div style={{ marginTop: "16px", display: "flex", justifyContent: "flex-end" }}>
+              <button
+                onClick={() => advanceFrom("protagonist")}
+                style={{
+                  background: "none", border: "none",
+                  fontFamily: MONO, fontSize: "12px",
+                  color: "rgba(255,255,255,0.4)", cursor: "pointer", padding: 0,
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.7)"}
+                onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.4)"}
+              >
+                {selectedProtagonist ? "Continue" : "Skip"}
+              </button>
+            </div>
+          </>
+        )}
+        {step.key === "tension" && renderOptionGrid(TENSIONS, selectedTension, (id) => {
+          setSelectedTension(selectedTension === id ? null : id);
+          if (selectedTension !== id) setTimeout(() => setActiveStep(null), 150);
+        })}
+      </div>
+    );
+  };
+
+  return (
+    <>
+      <div style={{
+        position: "fixed", left: "24px", top: "24px",
+        zIndex: 5,
+      }}>
+        <button
+          onClick={onCancel}
+          style={{
+            background: "none", border: "none",
+            fontFamily: MONO, fontSize: "12px",
+            color: "rgba(255,255,255,0.3)", cursor: "pointer",
+            padding: 0, textAlign: "left",
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}
+          onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.3)"}
+        >
+          &larr; Back
+        </button>
+      </div>
+    <div style={{ maxWidth: "600px", margin: "0 auto", padding: "60px 24px 40px" }}>
+
+      <h1 style={{
+        fontFamily: SERIF, fontSize: "28px", fontWeight: 600,
+        color: "#e8ddd0", textAlign: "center",
+        marginBottom: "48px",
+      }}>
+        New Story
+      </h1>
+
+      {steps.map((step) => {
+        const answer = getStepAnswer(step.key);
+        const isActive = activeStep === step.key;
+        const reachable = isStepVisible(step.key);
+        const isCollapsed = !isActive && (answer !== null || (step.optional && reachable));
+        const isFuture = !isActive && !reachable && answer === null;
+
+        if (isActive && reachable) {
+          return <div key={step.key} style={{ paddingTop: "24px", paddingBottom: "16px" }}>{renderExpandedStep(step)}</div>;
+        }
+        if (isCollapsed) {
+          return <div key={step.key}>{renderCollapsedRow(step)}</div>;
+        }
+        if (isFuture) {
+          return <div key={step.key}>{renderCollapsedRow(step, true)}</div>;
+        }
+        return null;
+      })}
+
+      {/* Start Story Button */}
+      <button
+        onClick={handleCreate}
+        disabled={!canCreate}
+        style={{
+          width: "100%",
+          background: canCreate ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.02)",
+          border: "none",
+          borderRadius: "6px",
+          padding: "14px 16px",
+          fontFamily: MONO, fontSize: "13px",
+          color: canCreate ? "#e8ddd0" : "rgba(255,255,255,0.15)",
+          cursor: canCreate ? "pointer" : "default",
+          textTransform: "uppercase",
+          letterSpacing: "0.5px",
+          transition: "all 0.15s",
+          marginTop: "24px",
+        }}
+      >
+        Start Story
+      </button>
+    </div>
+    </>
+  );
+}
+
+/* ────────────────────────────────────────────
    Main App
    ──────────────────────────────────────────── */
 
@@ -434,6 +1264,12 @@ const TYPEWRITER = "'Courier New', 'Courier', monospace";
 const SERIF = "'Faustina', serif";
 
 export default function CollaborativeStoryApp() {
+  // Navigation state
+  const [view, setView] = useState("home"); // "home" | "new" | "story" | "about"
+  const [activeStoryId, setActiveStoryId] = useState(null);
+  const [storiesIndex, setStoriesIndex] = useState([]);
+
+  // Story state
   const [story, setStory] = useState([]);
   const [currentPrompt, setCurrentPrompt] = useState("");
   const [answer, setAnswer] = useState("");
@@ -444,25 +1280,57 @@ export default function CollaborativeStoryApp() {
   const [contributorCount, setContributorCount] = useState(0);
   const [currentChapter, setCurrentChapter] = useState(1);
   const [chapterTitles, setChapterTitles] = useState({});
-  const [showStory, setShowStory] = useState(false);
   const [error, setError] = useState(null);
-  const [tone, setTone] = useState(5);
-  const [length, setLength] = useState(4);
-  const [mood, setMood] = useState(5);
-  const [dialogue, setDialogue] = useState(2);
-  const [showSliders, setShowSliders] = useState(false);
   const [hoveredEntry, setHoveredEntry] = useState(null);
-  const [popoverTop, setPopoverTop] = useState(0);
+
+  const [narrowViewport, setNarrowViewport] = useState(false);
+  const [dialogEntry, setDialogEntry] = useState(null);
+  const [pinnedEntry, setPinnedEntry] = useState(null);
+  const [showStoryMenu, setShowStoryMenu] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [confirmDeleteMenu, setConfirmDeleteMenu] = useState(false);
   const storyEndRef = useRef(null);
   const contentRef = useRef(null);
   const pollRef = useRef(null);
 
-  const loadState = useCallback(async (isInitial) => {
+  // Active story metadata
+  const activeStoryMeta = storiesIndex.find((s) => s.id === activeStoryId);
+
+  const getGenreVoiceCtx = useCallback(() => {
+    if (!activeStoryMeta) return "";
+    return getStoryContext(activeStoryMeta);
+  }, [activeStoryMeta]);
+
+  const getActiveStyleSettings = useCallback(() => {
+    if (!activeStoryMeta) return { tone: 5, length: 4, mood: 5, dialogue: 2 };
+    return getStyleForStory(activeStoryMeta.genre, activeStoryMeta.writingStyle);
+  }, [activeStoryMeta]);
+
+  // Load stories index on mount + check hash for deep link
+  useEffect(() => {
+    (async () => {
+      const idx = await loadStoriesIndex();
+      setStoriesIndex(idx);
+      setLoading(false);
+
+      const hash = window.location.hash;
+      const match = hash.match(/^#story\/(\d+)$/);
+      if (match) {
+        const id = parseInt(match[1], 10);
+        if (idx.some((s) => s.id === id)) {
+          openStory(id);
+        }
+      }
+    })();
+  }, []);
+
+  // Load a specific story's data
+  const loadStoryData = useCallback(async (id, isInitial) => {
     try {
-      const storyResult = await window.storage.get("story-v3", true);
-      const countResult = await window.storage.get("count-v3", true);
-      const chapterResult = await window.storage.get("chapter-v1", true);
-      const titlesResult = await window.storage.get("chapter-titles-v1", true);
+      const storyResult = await window.storage.get(storyKey(id, "data-v1"), true);
+      const countResult = await window.storage.get(storyKey(id, "count-v1"), true);
+      const chapterResult = await window.storage.get(storyKey(id, "chapter-v1"), true);
+      const titlesResult = await window.storage.get(storyKey(id, "titles-v1"), true);
       const loadedStory = storyResult ? JSON.parse(storyResult.value) : [];
       const loadedChapter = chapterResult ? parseInt(chapterResult.value, 10) : 1;
       const loadedTitles = titlesResult ? JSON.parse(titlesResult.value) : {};
@@ -470,7 +1338,13 @@ export default function CollaborativeStoryApp() {
       if (countResult) setContributorCount(parseInt(countResult.value, 10));
       setCurrentChapter(loadedChapter);
       setChapterTitles(loadedTitles);
+
       if (isInitial) {
+        // Load the active story meta for genre/voice context
+        const idx = await loadStoriesIndex();
+        const meta = idx.find((s) => s.id === id);
+        const ctx = meta ? getStoryContext(meta) : "";
+
         // Backfill titles for completed chapters that don't have one
         const allChapters = [...new Set(loadedStory.map((e) => e.chapter || 1))];
         const completedWithoutTitle = allChapters.filter(
@@ -483,27 +1357,94 @@ export default function CollaborativeStoryApp() {
             if (title) backfilled[ch] = title;
           }));
           setChapterTitles(backfilled);
-          await window.storage.set("chapter-titles-v1", JSON.stringify(backfilled), true);
+          await window.storage.set(storyKey(id, "titles-v1"), JSON.stringify(backfilled), true);
         }
-        const prompt = await generatePrompt(loadedStory, loadedChapter);
+        const prompt = await generatePrompt(loadedStory, loadedChapter, false, ctx);
         setCurrentPrompt(prompt);
-        await window.storage.set("prompt-v4", prompt, true);
+        await window.storage.set(storyKey(id, "prompt-v1"), prompt, true);
       }
     } catch (e) { /* first run */ }
-    setLoading(false);
   }, []);
 
+  // Navigate to a story
+  const openStory = useCallback(async (id) => {
+    setActiveStoryId(id);
+    setStory([]);
+    setCurrentPrompt("");
+    setAnswer("");
+    setPhase("input");
+    setGeneratedText("");
+    setGenerationSource("");
+    setContributorCount(0);
+    setCurrentChapter(1);
+    setChapterTitles({});
+    setError(null);
+    setShowStoryMenu(false);
+    setLinkCopied(false);
+    setConfirmDeleteMenu(false);
+    setView("story");
+    window.location.hash = "story/" + id;
+
+    await loadStoryData(id, true);
+
+    // Start polling
+    if (pollRef.current) clearInterval(pollRef.current);
+    pollRef.current = setInterval(() => loadStoryData(id, false), 5000);
+  }, [loadStoryData]);
+
+  // Handle browser back/forward
   useEffect(() => {
-    loadState(true);
-    pollRef.current = setInterval(() => loadState(false), 5000);
-    return () => clearInterval(pollRef.current);
-  }, [loadState]);
+    const onPopState = () => {
+      const hash = window.location.hash;
+      const match = hash.match(/^#story\/(\d+)$/);
+      if (match) {
+        const id = parseInt(match[1], 10);
+        openStory(id);
+      } else {
+        if (pollRef.current) clearInterval(pollRef.current);
+        setView("home");
+        setActiveStoryId(null);
+        setShowStoryMenu(false);
+      }
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [openStory]);
+
+  // Clean up polling when leaving story view
+  useEffect(() => {
+    if (view !== "story" && pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+  }, [view]);
 
   useEffect(() => {
-    if (showStory && storyEndRef.current) {
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  }, []);
+
+  // Check if popover fits to the right of content
+  useEffect(() => {
+    const check = () => {
+      if (contentRef.current) {
+        const right = contentRef.current.getBoundingClientRect().right;
+        setNarrowViewport(right + 304 > window.innerWidth);
+      } else {
+        setNarrowViewport(window.innerWidth < 960);
+      }
+    };
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, [view]);
+
+  const prevStoryLenRef = useRef(0);
+  useEffect(() => {
+    if (view === "story" && story.length > prevStoryLenRef.current && prevStoryLenRef.current > 0 && storyEndRef.current) {
       storyEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [story, showStory]);
+    prevStoryLenRef.current = story.length;
+  }, [story, view]);
 
   const handleSubmit = async () => {
     if (!answer.trim() || phase !== "input") return;
@@ -513,7 +1454,10 @@ export default function CollaborativeStoryApp() {
     const userAnswer = answer.trim();
 
     try {
-      const result = await generateStoryPassage(story, currentPrompt, userAnswer, { tone, length, mood, dialogue }, currentChapter);
+      const result = await generateStoryPassage(
+        story, currentPrompt, userAnswer,
+        getActiveStyleSettings(), currentChapter, getGenreVoiceCtx()
+      );
       setGeneratedText(result.text);
       setGenerationSource(result.source);
       setPhase("reveal");
@@ -546,7 +1490,6 @@ export default function CollaborativeStoryApp() {
     const updatedStory = [...story, newEntry];
 
     try {
-      // Check if the current chapter should end
       let nextChapter = currentChapter;
       let isNewChapter = false;
       let updatedTitles = chapterTitles;
@@ -557,15 +1500,25 @@ export default function CollaborativeStoryApp() {
         const title = await generateChapterTitle(updatedStory, currentChapter);
         if (title) {
           updatedTitles = { ...chapterTitles, [currentChapter]: title };
-          await window.storage.set("chapter-titles-v1", JSON.stringify(updatedTitles), true);
+          await window.storage.set(storyKey(activeStoryId, "titles-v1"), JSON.stringify(updatedTitles), true);
         }
       }
 
-      const nextPrompt = await generatePrompt(updatedStory, nextChapter, isNewChapter);
-      await window.storage.set("story-v3", JSON.stringify(updatedStory), true);
-      await window.storage.set("prompt-v4", nextPrompt, true);
-      await window.storage.set("count-v3", String(newCount), true);
-      await window.storage.set("chapter-v1", String(nextChapter), true);
+      const nextPrompt = await generatePrompt(updatedStory, nextChapter, isNewChapter, getGenreVoiceCtx());
+      await window.storage.set(storyKey(activeStoryId, "data-v1"), JSON.stringify(updatedStory), true);
+      await window.storage.set(storyKey(activeStoryId, "prompt-v1"), nextPrompt, true);
+      await window.storage.set(storyKey(activeStoryId, "count-v1"), String(newCount), true);
+      await window.storage.set(storyKey(activeStoryId, "chapter-v1"), String(nextChapter), true);
+
+      // Update stories index metadata
+      const derivedTitle = updatedTitles[1] || (updatedStory[0] ? updatedStory[0].text.split(/[.!?]/)[0].slice(0, 50) : "");
+      const updatedIndex = storiesIndex.map((s) =>
+        s.id === activeStoryId
+          ? { ...s, title: derivedTitle, passageCount: updatedStory.length, updatedAt: new Date().toISOString() }
+          : s
+      );
+      await saveStoriesIndex(updatedIndex);
+      setStoriesIndex(updatedIndex);
 
       setStory(updatedStory);
       setCurrentPrompt(nextPrompt);
@@ -586,7 +1539,10 @@ export default function CollaborativeStoryApp() {
     setPhase("generating");
     setError(null);
     try {
-      const result = await generateStoryPassage(story, currentPrompt, answer.trim(), { tone, length, mood, dialogue }, currentChapter);
+      const result = await generateStoryPassage(
+        story, currentPrompt, answer.trim(),
+        getActiveStyleSettings(), currentChapter, getGenreVoiceCtx()
+      );
       setGeneratedText(result.text);
       setGenerationSource(result.source);
       setPhase("reveal");
@@ -597,24 +1553,118 @@ export default function CollaborativeStoryApp() {
   };
 
   const handleReset = async () => {
+    if (!activeStoryId) return;
     try {
-      await window.storage.delete("story-v3", true);
-      await window.storage.delete("prompt-v4", true);
-      await window.storage.delete("count-v3", true);
-      await window.storage.delete("chapter-v1", true);
-      await window.storage.delete("chapter-titles-v1", true);
+      await window.storage.delete(storyKey(activeStoryId, "data-v1"), true);
+      await window.storage.delete(storyKey(activeStoryId, "prompt-v1"), true);
+      await window.storage.delete(storyKey(activeStoryId, "count-v1"), true);
+      await window.storage.delete(storyKey(activeStoryId, "chapter-v1"), true);
+      await window.storage.delete(storyKey(activeStoryId, "titles-v1"), true);
     } catch (e) {}
-    const freshPrompt = await generatePrompt([]);
+
+    // Remove from index
+    const updatedIndex = storiesIndex.filter((s) => s.id !== activeStoryId);
+    await saveStoriesIndex(updatedIndex);
+    setStoriesIndex(updatedIndex);
+
+    // Go home
+    if (pollRef.current) clearInterval(pollRef.current);
+    setView("home");
+    setActiveStoryId(null);
+  };
+
+  const handleDeleteStory = async (id) => {
+    try {
+      await window.storage.delete(storyKey(id, "data-v1"), true);
+      await window.storage.delete(storyKey(id, "prompt-v1"), true);
+      await window.storage.delete(storyKey(id, "count-v1"), true);
+      await window.storage.delete(storyKey(id, "chapter-v1"), true);
+      await window.storage.delete(storyKey(id, "titles-v1"), true);
+    } catch (e) {}
+
+    const updatedIndex = storiesIndex.filter((s) => s.id !== id);
+    await saveStoriesIndex(updatedIndex);
+    setStoriesIndex(updatedIndex);
+  };
+
+  const handleCreateStory = async (meta) => {
+    // Save to index and navigate immediately with a loading state
+    const updatedIndex = [...storiesIndex, meta];
+    await saveStoriesIndex(updatedIndex);
+    setStoriesIndex(updatedIndex);
+    setActiveStoryId(meta.id);
     setStory([]);
-    setCurrentPrompt(freshPrompt);
+    setCurrentPrompt("");
+    setAnswer("");
+    setPhase("generating");
+    setGeneratedText("");
+    setGenerationSource("");
     setContributorCount(0);
     setCurrentChapter(1);
     setChapterTitles({});
-    setPhase("input");
-    setAnswer("");
-    setGeneratedText("");
     setError(null);
-    try { await window.storage.set("prompt-v4", freshPrompt, true); } catch (e) {}
+    setView("story");
+
+    // Generate title + opening paragraph
+    const opener = await generateStoryOpener(meta);
+    if (opener) {
+      const now = new Date();
+      const timeStr = now.toLocaleString("en-US", {
+        month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
+      });
+      const location = await fetchLocation();
+      const firstEntry = {
+        text: opener.paragraph,
+        originalAnswer: "",
+        prompt: "",
+        author: 1,
+        location,
+        time: timeStr,
+        ts: Date.now(),
+        chapter: 1,
+      };
+      const newStory = [firstEntry];
+
+      // Save story data
+      await window.storage.set(storyKey(meta.id, "data-v1"), JSON.stringify(newStory), true);
+      await window.storage.set(storyKey(meta.id, "count-v1"), "1", true);
+      await window.storage.set(storyKey(meta.id, "chapter-v1"), "1", true);
+
+      // Update index with title
+      const idxWithTitle = updatedIndex.map((s) =>
+        s.id === meta.id ? { ...s, title: opener.title, passageCount: 1, updatedAt: new Date().toISOString() } : s
+      );
+      await saveStoriesIndex(idxWithTitle);
+      setStoriesIndex(idxWithTitle);
+      setStory(newStory);
+      setContributorCount(1);
+
+      // Generate the first prompt for user input
+      const ctx = getStoryContext(meta);
+      const prompt = await generatePrompt(newStory, 1, false, ctx);
+      setCurrentPrompt(prompt);
+      await window.storage.set(storyKey(meta.id, "prompt-v1"), prompt, true);
+    } else {
+      // Fallback: just generate a prompt with no opener
+      const ctx = getStoryContext(meta);
+      const prompt = await generatePrompt([], 1, false, ctx);
+      setCurrentPrompt(prompt);
+      await window.storage.set(storyKey(meta.id, "prompt-v1"), prompt, true);
+    }
+
+    setPhase("input");
+
+    // Start polling
+    if (pollRef.current) clearInterval(pollRef.current);
+    pollRef.current = setInterval(() => loadStoryData(meta.id, false), 5000);
+  };
+
+  const goHome = () => {
+    if (pollRef.current) clearInterval(pollRef.current);
+    setView("home");
+    setActiveStoryId(null);
+    setShowStoryMenu(false);
+    window.location.hash = "";
   };
 
   if (loading) {
@@ -638,9 +1688,6 @@ export default function CollaborativeStoryApp() {
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
         textarea:focus { outline: none; }
         textarea::placeholder { color: rgba(255,255,255,0.25); }
-        input[type="range"] { -webkit-appearance: none; appearance: none; background: rgba(255,255,255,0.08); height: 2px; border-radius: 1px; outline: none; width: 100%; }
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.4); cursor: pointer; }
-        input[type="range"]::-moz-range-thumb { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.4); cursor: pointer; border: none; }
         .story-scroll::-webkit-scrollbar { width: 4px; }
         .story-scroll::-webkit-scrollbar-track { background: transparent; }
         .story-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
@@ -651,307 +1698,448 @@ export default function CollaborativeStoryApp() {
         background: "#0f0e0c",
         position: "relative",
       }}>
-        {(() => {
-          const chapters = [...new Set(story.map((e) => e.chapter || 1))].sort((a, b) => a - b);
-          if (chapters.length <= 1) return null;
-          return (
-            <nav style={{
-              position: "fixed", left: "24px", top: "60px",
-              fontFamily: MONO, fontSize: "12px",
-              display: "flex", flexDirection: "column", gap: "8px",
+        {/* ── Home View ── */}
+        {view === "home" && (
+          <HomeScreen
+            stories={storiesIndex}
+            onSelectStory={openStory}
+            onNewStory={() => setView("new")}
+            onAbout={() => setView("about")}
+          />
+        )}
+
+        {/* ── New Story View ── */}
+        {view === "new" && (
+          <NewStoryScreen
+            onCancel={() => setView("home")}
+            onCreate={handleCreateStory}
+          />
+        )}
+
+        {/* ── About View ── */}
+        {view === "about" && (
+          <AboutScreen onBack={() => setView("home")} />
+        )}
+
+        {/* ── Story View ── */}
+        {view === "story" && (
+          <>
+            {/* Fixed left sidebar: back button + chapter nav (wide only) */}
+            <div style={{
+              position: "fixed", left: "24px", top: "24px",
               zIndex: 5,
+              display: "flex", flexDirection: "column", gap: "20px",
             }}>
-              {chapters.map((ch) => (
-                <button
-                  key={ch}
-                  onClick={() => document.getElementById(`chapter-${ch}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}
-                  style={{
-                    background: "none", border: "none", padding: 0,
-                    fontFamily: MONO, fontSize: "12px",
-                    color: "rgba(255,255,255,0.25)",
-                    cursor: "pointer", textAlign: "left",
-                    letterSpacing: "0.5px",
-                    display: "flex", alignItems: "baseline", gap: "8px",
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
-                  onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.25)"}
-                >
-                  <span>{ch}</span>
-                  <span>{ch === currentChapter ? "In progress" : (chapterTitles[ch] || "")}</span>
-                </button>
-              ))}
-            </nav>
-          );
-        })()}
-        <div ref={contentRef} style={{ maxWidth: "600px", margin: "0 auto", padding: "60px 24px 40px" }}>
-
-          {/* ── Header ── */}
-          <header style={{ marginBottom: "48px" }}>
-            <h1 style={{
-              fontFamily: MONO, fontSize: "14px", fontWeight: 400,
-              color: "#999", letterSpacing: "0.5px",
-            }}>
-              Falcor
-            </h1>
-          </header>
-
-          {/* ── Story ── */}
-          {story.length > 0 && (
-            <div style={{ marginBottom: "48px", position: "relative" }}>
-              <div
-                className="story-scroll"
-                style={{
-                  display: "flex", flexDirection: "column", gap: "24px",
-                }}
-              >
-                {story.map((entry, i) => {
-                  const showChapterHeading = i === 0 || entry.chapter !== story[i - 1].chapter;
-                  return (
-                    <div key={entry.ts || i}>
-                      {showChapterHeading && (
-                        <div id={`chapter-${entry.chapter || 1}`} style={{
-                          textAlign: "center",
-                          marginTop: i === 0 ? 0 : "72px",
-                          marginBottom: chapterTitles[entry.chapter || 1] ? "72px" : "16px",
-                        }}>
-                          <div style={{
-                            fontFamily: MONO, fontSize: "12px",
-                            color: "rgba(255,255,255,0.25)",
-                            letterSpacing: "0.5px",
-                            textTransform: "uppercase",
-                          }}>
-                            Chapter {entry.chapter || 1}
-                          </div>
-                          {chapterTitles[entry.chapter || 1] && (
-                            <div style={{
-                              fontFamily: SERIF, fontSize: "28px",
-                              color: "#e8ddd0",
-                              fontWeight: 700,
-                              marginTop: "8px",
-                            }}>
-                              {chapterTitles[entry.chapter || 1]}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      <StoryLine entry={entry} onHover={(e, top) => { setHoveredEntry(e); setPopoverTop(top); }} onLeave={() => setHoveredEntry(null)} />
-                    </div>
-                  );
-                })}
-                <div ref={storyEndRef} />
-              </div>
-              {hoveredEntry && (
-                <div style={{
-                  position: "fixed",
-                  left: contentRef.current ? contentRef.current.getBoundingClientRect().right + 24 : 0,
-                  top: Math.max(40, popoverTop),
-                  pointerEvents: "none",
-                }}>
-                  <StoryPopover entry={hoveredEntry} />
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ── Prompt + Interaction Container ── */}
-          <div style={{
-            background: "rgba(255,255,255,0.03)",
-            borderRadius: "8px",
-            padding: "24px",
-          }}>
-            {/* ── Input ── */}
-            {phase === "input" && (
-              <div>
-                <p style={{
-                  fontFamily: TYPEWRITER, fontSize: "16px",
-                  color: "rgba(255,255,255,0.4)", lineHeight: 1.7,
-                  marginBottom: "16px",
-                }}>
-                  {currentPrompt}
-                </p>
-                <textarea
-                  value={answer}
-                  onChange={(e) => { setAnswer(e.target.value); setError(null); }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit();
-                  }}
-                  placeholder="Write your answer..."
-                  rows={3}
-                  style={{
-                    width: "100%", background: "transparent",
-                    border: "none",
-                    padding: "0 0 12px", fontFamily: TYPEWRITER,
-                    fontSize: "16px", lineHeight: 1.7, color: "#e8ddd0",
-                    resize: "none", minHeight: "80px",
-                  }}
-                />
-                {error && (
-                  <p style={{
-                    marginTop: "8px", fontFamily: MONO,
-                    fontSize: "12px", color: "#c97a7a",
-                  }}>{error}</p>
-                )}
-                {showSliders && (
-                  <div style={{
-                    display: "grid", gridTemplateColumns: "1fr 1fr",
-                    gap: "12px 24px", padding: "16px 0 8px",
-                  }}>
-                    {[
-                      { label: "Tone", low: "Spare", high: "Ornate", value: tone, set: setTone },
-                      { label: "Length", low: "Brief", high: "Long", value: length, set: setLength },
-                      { label: "Mood", low: "Dark", high: "Whimsical", value: mood, set: setMood },
-                      { label: "Dialogue", low: "None", high: "Heavy", value: dialogue, set: setDialogue },
-                    ].map(({ label, low, high, value, set }) => (
-                      <div key={label}>
-                        <div style={{ marginBottom: "6px" }}>
-                          <span style={{ fontFamily: MONO, fontSize: "11px", color: "rgba(255,255,255,0.3)" }}>{label}</span>
-                        </div>
-                        <input
-                          type="range" min={0} max={9} step={1}
-                          value={value}
-                          onChange={(e) => set(Number(e.target.value))}
-                        />
-                        <div style={{
-                          display: "flex", justifyContent: "space-between",
-                          marginTop: "4px",
-                        }}>
-                          <span style={{ fontFamily: MONO, fontSize: "10px", color: "rgba(255,255,255,0.2)" }}>{low}</span>
-                          <span style={{ fontFamily: MONO, fontSize: "10px", color: "rgba(255,255,255,0.2)" }}>{high}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <div style={{
-                  display: "flex", justifyContent: "space-between", alignItems: "center",
-                  padding: "12px 0 0",
-                }}>
-                  <button
-                    onClick={() => setShowSliders(!showSliders)}
-                    style={{
-                      background: "none", border: "none",
-                      cursor: "pointer", padding: 0,
-                      color: showSliders ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.2)",
-                      display: "flex", alignItems: "center",
-                    }}
-                    title="Writing style"
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M4.75 5.75H11.25" />
-                      <path d="M4.75 18.25H11.25" />
-                      <path d="M4.75 12H7.25" />
-                      <path d="M15 5.75H19.25" />
-                      <path d="M15 18.25H19.25" />
-                      <path d="M11 12H19.25" />
-                      <path d="M14.75 4.75V7.25" />
-                      <path d="M14.75 16.75V19.25" />
-                      <path d="M10.75 10.75V13.25" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={handleSubmit}
-                    disabled={!answer.trim()}
-                    style={{
-                      background: "none", border: "none",
-                      fontFamily: MONO, fontSize: "13px",
-                      color: answer.trim() ? "#e8ddd0" : "rgba(255,255,255,0.2)",
-                      cursor: answer.trim() ? "pointer" : "default",
-                      padding: 0,
-                    }}
-                  >
-                    Submit
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {phase === "generating" && (
-              <p style={{
-                fontFamily: MONO, fontSize: "13px",
-                color: "#999",
-              }}>
-                Writing...
-              </p>
-            )}
-
-            {phase === "reveal" && (
-              <div>
-                <div style={{ marginBottom: "24px" }}>
-                  <TypewriterReveal text={generatedText} />
-                </div>
-                {generationSource === "local" && (
-                  <p style={{
-                    fontFamily: MONO, fontSize: "11px",
-                    color: "rgba(255,255,255,0.25)", marginBottom: "16px",
-                  }}>
-                    AI unavailable — used local fallback
-                  </p>
-                )}
-
-                <div style={{ display: "flex", gap: "20px" }}>
-                  <button
-                    onClick={handleConfirm}
-                    style={{
-                      background: "none", border: "none",
-                      fontFamily: MONO, fontSize: "13px",
-                      color: "#e8ddd0", cursor: "pointer", padding: 0,
-                    }}
-                  >
-                    Add
-                  </button>
-                  <button
-                    onClick={handleRewrite}
-                    style={{
-                      background: "none", border: "none",
-                      fontFamily: MONO, fontSize: "13px",
-                      color: "#999", cursor: "pointer", padding: 0,
-                    }}
-                  >
-                    Rewrite
-                  </button>
-                  <button
-                    onClick={() => { setPhase("input"); setGeneratedText(""); }}
-                    style={{
-                      background: "none", border: "none",
-                      fontFamily: MONO, fontSize: "13px",
-                      color: "#999", cursor: "pointer", padding: 0,
-                    }}
-                  >
-                    Back
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {phase === "done" && (
-              <p style={{
-                fontFamily: MONO, fontSize: "13px",
-                color: "#999",
-              }}>
-                Added.
-              </p>
-            )}
-          </div>
-
-          {/* ── Footer ── */}
-          {story.length > 0 && (
-            <footer style={{ marginTop: "48px" }}>
               <button
-                onClick={handleReset}
+                onClick={goHome}
                 style={{
                   background: "none", border: "none",
                   fontFamily: MONO, fontSize: "12px",
-                  color: "rgba(255,255,255,0.2)", cursor: "pointer",
-                  padding: 0,
+                  color: "rgba(255,255,255,0.3)", cursor: "pointer",
+                  padding: 0, textAlign: "left",
                 }}
-                onMouseEnter={(e) => e.target.style.color = "rgba(255,255,255,0.5)"}
-                onMouseLeave={(e) => e.target.style.color = "rgba(255,255,255,0.2)"}
+                onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}
+                onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.3)"}
               >
-                Reset
+                &larr; {narrowViewport ? "Home" : (activeStoryMeta?.title || "Home")}
               </button>
-            </footer>
-          )}
-        </div>
+              {!narrowViewport && (() => {
+                const chapters = [...new Set(story.map((e) => e.chapter || 1))].sort((a, b) => a - b);
+                if (chapters.length <= 1) return null;
+                return (
+                  <nav style={{
+                    fontFamily: MONO, fontSize: "12px",
+                    display: "flex", flexDirection: "column", gap: "8px",
+                  }}>
+                    {chapters.map((ch) => (
+                      <button
+                        key={ch}
+                        onClick={() => document.getElementById(`chapter-${ch}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                        style={{
+                          background: "none", border: "none", padding: 0,
+                          fontFamily: MONO, fontSize: "12px",
+                          color: "rgba(255,255,255,0.25)",
+                          cursor: "pointer", textAlign: "left",
+                          letterSpacing: "0.5px",
+                          display: "flex", alignItems: "baseline", gap: "8px",
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
+                        onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.25)"}
+                      >
+                        <span>{ch}</span>
+                        <span>{ch === currentChapter ? "In progress" : (chapterTitles[ch] || "")}</span>
+                      </button>
+                    ))}
+                  </nav>
+                );
+              })()}
+            </div>
+
+            {/* Fixed top-right: three-dot menu */}
+            <div style={{ position: "fixed", top: "24px", right: "24px", zIndex: 5 }}>
+              <button
+                onClick={() => { setShowStoryMenu(!showStoryMenu); setConfirmDeleteMenu(false); setLinkCopied(false); }}
+                style={{
+                  background: "none", border: "none",
+                  fontSize: "20px", lineHeight: 1,
+                  color: "rgba(255,255,255,0.3)", cursor: "pointer",
+                  padding: "4px 8px",
+                  fontFamily: MONO,
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}
+                onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.3)"}
+              >
+                &#8942;
+              </button>
+              {showStoryMenu && (
+                <>
+                  {/* Click-outside overlay */}
+                  <div
+                    onClick={() => { setShowStoryMenu(false); setConfirmDeleteMenu(false); setLinkCopied(false); }}
+                    style={{ position: "fixed", inset: 0, zIndex: -1 }}
+                  />
+                  <div style={{
+                    position: "absolute", top: "100%", right: 0,
+                    marginTop: "4px",
+                    background: "#1a1917",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: "6px",
+                    padding: "4px 0",
+                    minWidth: "160px",
+                  }}>
+                    <button
+                      onClick={() => {
+                        const url = window.location.origin + window.location.pathname + "#story/" + activeStoryId;
+                        navigator.clipboard.writeText(url);
+                        setLinkCopied(true);
+                        setTimeout(() => { setLinkCopied(false); setShowStoryMenu(false); }, 2000);
+                      }}
+                      style={{
+                        display: "block", width: "100%",
+                        background: "none", border: "none",
+                        fontFamily: MONO, fontSize: "12px",
+                        color: linkCopied ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.5)",
+                        cursor: "pointer", padding: "8px 14px",
+                        textAlign: "left",
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                      onMouseLeave={(e) => e.currentTarget.style.background = "none"}
+                    >
+                      {linkCopied ? "Copied!" : "Copy Link"}
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (confirmDeleteMenu) {
+                          setShowStoryMenu(false);
+                          setConfirmDeleteMenu(false);
+                          handleReset();
+                        } else {
+                          setConfirmDeleteMenu(true);
+                        }
+                      }}
+                      style={{
+                        display: "block", width: "100%",
+                        background: "none", border: "none",
+                        fontFamily: MONO, fontSize: "12px",
+                        color: confirmDeleteMenu ? "#c97a7a" : "rgba(255,255,255,0.5)",
+                        cursor: "pointer", padding: "8px 14px",
+                        textAlign: "left",
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                      onMouseLeave={(e) => e.currentTarget.style.background = "none"}
+                    >
+                      {confirmDeleteMenu ? "Confirm delete?" : "Delete"}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div ref={contentRef} style={{ maxWidth: "600px", margin: "0 auto", padding: "60px 24px 40px", overflow: "visible" }}>
+
+              {/* ── Spacer ── */}
+              <div style={{ marginBottom: "48px" }} />
+
+              {/* ── Story Title ── */}
+              {activeStoryMeta?.title && (
+                <h1 style={{
+                  fontFamily: SERIF, fontSize: "42px", fontWeight: 700,
+                  color: "#e8ddd0", lineHeight: 1.2,
+                  padding: "40px 0",
+                  marginBottom: "48px",
+                  textAlign: "center",
+                  textWrap: "balance",
+                }}>
+                  {activeStoryMeta.title}
+                </h1>
+              )}
+
+              {/* ── Inline Chapter Nav (narrow only) ── */}
+              {narrowViewport && (() => {
+                const chapters = [...new Set(story.map((e) => e.chapter || 1))].sort((a, b) => a - b);
+                if (chapters.length <= 1) return null;
+                return (
+                  <nav style={{
+                    fontFamily: MONO, fontSize: "12px",
+                    marginBottom: "48px",
+                    padding: "40px 0",
+                    display: "flex", flexDirection: "column", gap: "10px",
+                  }}>
+                    <div style={{
+                      fontSize: "10px",
+                      color: "rgba(255,255,255,0.25)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                      marginBottom: "4px",
+                    }}>
+                      Contents
+                    </div>
+                    {chapters.map((ch) => (
+                      <button
+                        key={ch}
+                        onClick={() => document.getElementById(`chapter-${ch}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                        style={{
+                          background: "none", border: "none", padding: 0,
+                          fontFamily: MONO, fontSize: "12px",
+                          color: ch === currentChapter ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.25)",
+                          cursor: "pointer", textAlign: "left",
+                          letterSpacing: "0.5px",
+                          display: "flex", alignItems: "baseline", gap: "8px",
+                        }}
+                      >
+                        <span style={{ color: "rgba(255,255,255,0.15)", minWidth: "16px" }}>{ch}</span>
+                        <span>{chapterTitles[ch] || (ch === currentChapter ? "In progress" : "")}</span>
+                      </button>
+                    ))}
+                  </nav>
+                );
+              })()}
+
+              {/* ── Story ── */}
+              {story.length > 0 && (
+                <div style={{ marginBottom: "48px", position: "relative" }}>
+                  <div
+                    className="story-scroll"
+                    style={{
+                      display: "flex", flexDirection: "column", gap: "24px",
+                    }}
+                  >
+                    {story.map((entry, i) => {
+                      const showChapterHeading = i === 0 || entry.chapter !== story[i - 1].chapter;
+                      const showPopover = pinnedEntry && (pinnedEntry.ts === entry.ts) && !narrowViewport;
+                      return (
+                        <div key={entry.ts || i}>
+                          {showChapterHeading && (
+                            <div id={`chapter-${entry.chapter || 1}`} style={{
+                              textAlign: "center",
+                              marginTop: i === 0 ? 0 : "72px",
+                              marginBottom: chapterTitles[entry.chapter || 1] ? "72px" : "16px",
+                            }}>
+                              <div style={{
+                                fontFamily: MONO, fontSize: "12px",
+                                color: "rgba(255,255,255,0.25)",
+                                letterSpacing: "0.5px",
+                                textTransform: "uppercase",
+                              }}>
+                                Chapter {entry.chapter || 1}
+                              </div>
+                              {chapterTitles[entry.chapter || 1] && (
+                                <div style={{
+                                  fontFamily: SERIF, fontSize: "28px",
+                                  color: "#e8ddd0",
+                                  fontWeight: 700,
+                                  marginTop: "8px",
+                                }}>
+                                  {chapterTitles[entry.chapter || 1]}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          <div style={{ position: "relative" }}>
+                            <StoryLine
+                              entry={entry}
+                              narrow={narrowViewport}
+                              onHover={(e) => {
+                                if (pinnedEntry) setPinnedEntry(e);
+                                setHoveredEntry(e);
+                              }}
+                              onLeave={() => {
+                                if (!pinnedEntry) setHoveredEntry(null);
+                              }}
+                              onShowDialog={setDialogEntry}
+                              onPinPopover={(e) => setPinnedEntry(e)}
+                              hideIcon={!!pinnedEntry && !narrowViewport}
+                            />
+                            {showPopover && (
+                              <div style={{
+                                position: "absolute",
+                                left: "100%",
+                                top: 0,
+                                paddingLeft: "24px",
+                                width: "304px",
+                              }}>
+                                <div style={{
+                                  position: "sticky",
+                                  top: "24px",
+                                }}>
+                                  <StoryPopover entry={pinnedEntry} onClose={() => setPinnedEntry(null)} />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <div ref={storyEndRef} />
+                  </div>
+                </div>
+              )}
+
+              {/* ── Prompt + Interaction Container ── */}
+              <div style={{
+                background: "rgba(255,255,255,0.03)",
+                borderRadius: "8px",
+                padding: "24px",
+              }}>
+                {phase === "input" && (
+                  <div>
+                    <p style={{
+                      fontFamily: TYPEWRITER, fontSize: "16px",
+                      color: "rgba(255,255,255,0.4)", lineHeight: 1.7,
+                      marginBottom: "16px",
+                    }}>
+                      {currentPrompt}
+                    </p>
+                    <textarea
+                      value={answer}
+                      onChange={(e) => { setAnswer(e.target.value); setError(null); }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit();
+                      }}
+                      placeholder="Write your answer..."
+                      rows={3}
+                      style={{
+                        width: "100%", background: "transparent",
+                        border: "none",
+                        padding: "0 0 12px", fontFamily: TYPEWRITER,
+                        fontSize: "16px", lineHeight: 1.7, color: "#e8ddd0",
+                        resize: "none", minHeight: "80px",
+                      }}
+                    />
+                    {error && (
+                      <p style={{
+                        marginTop: "8px", fontFamily: MONO,
+                        fontSize: "12px", color: "#c97a7a",
+                      }}>{error}</p>
+                    )}
+                    <div style={{
+                      display: "flex", justifyContent: "flex-end", alignItems: "center",
+                      padding: "12px 0 0",
+                    }}>
+                      <button
+                        onClick={handleSubmit}
+                        disabled={!answer.trim()}
+                        style={{
+                          background: "none", border: "none",
+                          fontFamily: MONO, fontSize: "13px",
+                          color: answer.trim() ? "#e8ddd0" : "rgba(255,255,255,0.2)",
+                          cursor: answer.trim() ? "pointer" : "default",
+                          padding: 0,
+                        }}
+                      >
+                        Submit
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {phase === "generating" && (
+                  <p style={{
+                    fontFamily: MONO, fontSize: "13px",
+                    color: "#999",
+                  }}>
+                    Writing...
+                  </p>
+                )}
+
+                {phase === "reveal" && (
+                  <div>
+                    <div style={{ marginBottom: "24px" }}>
+                      <TypewriterReveal text={generatedText} />
+                    </div>
+                    {generationSource === "local" && (
+                      <p style={{
+                        fontFamily: MONO, fontSize: "11px",
+                        color: "rgba(255,255,255,0.25)", marginBottom: "16px",
+                      }}>
+                        AI unavailable — used local fallback
+                      </p>
+                    )}
+
+                    <div style={{ display: "flex", gap: "20px" }}>
+                      <button
+                        onClick={handleConfirm}
+                        style={{
+                          background: "none", border: "none",
+                          fontFamily: MONO, fontSize: "13px",
+                          color: "#e8ddd0", cursor: "pointer", padding: 0,
+                        }}
+                      >
+                        Add
+                      </button>
+                      <button
+                        onClick={handleRewrite}
+                        style={{
+                          background: "none", border: "none",
+                          fontFamily: MONO, fontSize: "13px",
+                          color: "#999", cursor: "pointer", padding: 0,
+                        }}
+                      >
+                        Rewrite
+                      </button>
+                      <button
+                        onClick={() => { setPhase("input"); setGeneratedText(""); }}
+                        style={{
+                          background: "none", border: "none",
+                          fontFamily: MONO, fontSize: "13px",
+                          color: "#999", cursor: "pointer", padding: 0,
+                        }}
+                      >
+                        Back
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {phase === "done" && (
+                  <p style={{
+                    fontFamily: MONO, fontSize: "13px",
+                    color: "#999",
+                  }}>
+                    Added.
+                  </p>
+                )}
+              </div>
+
+            </div>
+            {/* ── Popover Dialog (narrow viewport) ── */}
+            {dialogEntry && (
+              <div
+                onClick={() => setDialogEntry(null)}
+                style={{
+                  position: "fixed", inset: 0,
+                  background: "rgba(0,0,0,0.6)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  zIndex: 100,
+                }}
+              >
+                <div onClick={(e) => e.stopPropagation()}>
+                  <StoryPopover entry={dialogEntry} onClose={() => setDialogEntry(null)} />
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </>
   );
