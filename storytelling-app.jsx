@@ -677,7 +677,7 @@ function StoryPopover({ entry, onClose }) {
       border: "1px solid rgba(255,255,255,0.1)",
       borderRadius: "6px",
       padding: "14px 16px",
-      fontFamily: "'SF Mono', 'Menlo', 'Courier New', monospace",
+      fontFamily: MONO,
       fontSize: "12px", color: "rgba(255,255,255,0.4)",
       lineHeight: 1.6,
       width: "280px",
@@ -1301,7 +1301,7 @@ function NewStoryScreen({ onCancel, onCreate }) {
    Main App
    ──────────────────────────────────────────── */
 
-const MONO = "'SF Mono', 'Menlo', 'Courier New', monospace";
+const MONO = "'SF Pro Mono', 'SF Mono', 'Menlo', 'Courier New', monospace";
 const TYPEWRITER = "'Courier New', 'Courier', monospace";
 const SERIF = "'Faustina', serif";
 
