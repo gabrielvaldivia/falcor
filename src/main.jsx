@@ -1,18 +1,33 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore'
+import { db } from './firebase.js'
 import CollaborativeStoryApp from '../storytelling-app.jsx'
 
-// Storage shim using localStorage (replaces window.storage API)
+// Storage shim using Firestore (replaces localStorage version)
 window.storage = {
   async get(key) {
-    const value = localStorage.getItem(key)
-    return value !== null ? { value } : null
+    try {
+      const snap = await getDoc(doc(db, "storage", key))
+      return snap.exists() ? { value: snap.data().value } : null
+    } catch (e) {
+      console.error("[storage.get] failed for key:", key, e)
+      return null
+    }
   },
   async set(key, value) {
-    localStorage.setItem(key, value)
+    try {
+      await setDoc(doc(db, "storage", key), { value })
+    } catch (e) {
+      console.error("[storage.set] failed for key:", key, e)
+    }
   },
   async delete(key) {
-    localStorage.removeItem(key)
+    try {
+      await deleteDoc(doc(db, "storage", key))
+    } catch (e) {
+      console.error("[storage.delete] failed for key:", key, e)
+    }
   },
 }
 

@@ -109,6 +109,18 @@ function storyKey(id, suffix) {
   return `story-${id}-${suffix}`;
 }
 
+function slugify(text) {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}
+
+function findStoryBySlug(index, slug) {
+  return index.find((s) => s.slug === slug);
+}
+
 /* ────────────────────────────────────────────
    AI Prompt Generation
    ──────────────────────────────────────────── */
@@ -528,16 +540,19 @@ function splitIntoParagraphs(text) {
    ──────────────────────────────────────────── */
 
 function TypewriterReveal({ text }) {
-  const [displayed, setDisplayed] = useState("");
+  const [charCount, setCharCount] = useState(0);
   const idx = useRef(0);
+  const paragraphs = useRef([]);
 
+  // Compute paragraph breaks once from the full text
   useEffect(() => {
+    paragraphs.current = splitIntoParagraphs(text);
     idx.current = 0;
-    setDisplayed("");
+    setCharCount(0);
     const interval = setInterval(() => {
       idx.current++;
       if (idx.current <= text.length) {
-        setDisplayed(text.slice(0, idx.current));
+        setCharCount(idx.current);
       } else {
         clearInterval(interval);
       }
@@ -545,24 +560,41 @@ function TypewriterReveal({ text }) {
     return () => clearInterval(interval);
   }, [text]);
 
+  // Map charCount to pre-computed paragraphs
+  const fullParagraphs = paragraphs.current;
+  const visibleParagraphs = [];
+  let remaining = charCount;
+  for (const para of fullParagraphs) {
+    if (remaining <= 0) break;
+    const shown = para.slice(0, remaining);
+    visibleParagraphs.push(shown);
+    remaining -= para.length;
+  }
+  const isTyping = charCount < text.length;
+
   return (
-    <p style={{
+    <div style={{
       fontFamily: "'Faustina', serif", fontSize: "19px", fontWeight: 300,
       lineHeight: 1.8, color: "#e8ddd0", fontStyle: "italic", margin: 0,
       textRendering: "optimizeLegibility", fontOpticalSizing: "auto",
       fontFeatureSettings: '"kern", "liga", "calt"',
       hangingPunctuation: "first last", textWrap: "pretty",
       overflowWrap: "break-word", maxWidth: "65ch",
+      display: "flex", flexDirection: "column", gap: "12px",
     }}>
-      {displayed}
-      {displayed.length < text.length && (
-        <span style={{
-          display: "inline-block", width: "2px", height: "18px",
-          background: "#999", marginLeft: "2px",
-          verticalAlign: "text-bottom", animation: "pulse 1s infinite",
-        }} />
-      )}
-    </p>
+      {visibleParagraphs.map((para, i) => (
+        <p key={i} style={{ margin: 0 }}>
+          {para}
+          {isTyping && i === visibleParagraphs.length - 1 && (
+            <span style={{
+              display: "inline-block", width: "2px", height: "18px",
+              background: "#999", marginLeft: "2px",
+              verticalAlign: "text-bottom", animation: "pulse 1s infinite",
+            }} />
+          )}
+        </p>
+      ))}
+    </div>
   );
 }
 
@@ -703,13 +735,20 @@ function StoryPopover({ entry, onClose }) {
 function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
   return (
     <div style={{ maxWidth: "720px", margin: "0 auto", padding: "60px 24px 40px" }}>
-      <header style={{ marginBottom: "48px" }}>
+      <header style={{ marginBottom: "48px", textAlign: "center" }}>
         <h1 style={{
           fontFamily: MONO, fontSize: "14px", fontWeight: 400,
           color: "#999", letterSpacing: "0.5px",
+          marginBottom: "8px",
         }}>
           Falcor
         </h1>
+        <p style={{
+          fontFamily: SERIF, fontSize: "15px", fontStyle: "italic",
+          color: "rgba(255,255,255,0.3)", margin: 0,
+        }}>
+          Collaborative storytelling with AI
+        </p>
       </header>
 
       <div style={{
@@ -761,10 +800,10 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
               </div>
               <div>
                 <span style={{
-                  fontFamily: SERIF, fontSize: "12px", fontStyle: "italic",
+                  fontFamily: MONO, fontSize: "10px",
                   color: "rgba(255,255,255,0.2)",
                 }}>
-                  {s.passageCount || 0} contribution{(s.passageCount || 0) !== 1 ? "s" : ""}
+                  {s.updatedAt ? new Date(s.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : ""}
                 </span>
               </div>
             </div>
@@ -1314,11 +1353,16 @@ export default function CollaborativeStoryApp() {
       setLoading(false);
 
       const hash = window.location.hash;
-      const match = hash.match(/^#story\/(\d+)$/);
-      if (match) {
-        const id = parseInt(match[1], 10);
-        if (idx.some((s) => s.id === id)) {
-          openStory(id);
+      const slugMatch = hash.match(/^#story\/(.+)$/);
+      if (slugMatch) {
+        const slug = slugMatch[1];
+        // Support legacy numeric IDs
+        const numId = parseInt(slug, 10);
+        const found = !isNaN(numId) && idx.some((s) => s.id === numId)
+          ? idx.find((s) => s.id === numId)
+          : findStoryBySlug(idx, slug);
+        if (found) {
+          openStory(found.id);
         }
       }
     })();
@@ -1383,33 +1427,37 @@ export default function CollaborativeStoryApp() {
     setLinkCopied(false);
     setConfirmDeleteMenu(false);
     setView("story");
-    window.location.hash = "story/" + id;
+    const meta = storiesIndex.find((s) => s.id === id);
+    window.location.hash = "story/" + (meta?.slug || id);
 
     await loadStoryData(id, true);
 
     // Start polling
     if (pollRef.current) clearInterval(pollRef.current);
     pollRef.current = setInterval(() => loadStoryData(id, false), 5000);
-  }, [loadStoryData]);
+  }, [loadStoryData, storiesIndex]);
 
   // Handle browser back/forward
   useEffect(() => {
     const onPopState = () => {
       const hash = window.location.hash;
-      const match = hash.match(/^#story\/(\d+)$/);
-      if (match) {
-        const id = parseInt(match[1], 10);
-        openStory(id);
-      } else {
-        if (pollRef.current) clearInterval(pollRef.current);
-        setView("home");
-        setActiveStoryId(null);
-        setShowStoryMenu(false);
+      const slugMatch = hash.match(/^#story\/(.+)$/);
+      if (slugMatch) {
+        const slug = slugMatch[1];
+        const numId = parseInt(slug, 10);
+        const found = !isNaN(numId) && storiesIndex.some((s) => s.id === numId)
+          ? storiesIndex.find((s) => s.id === numId)
+          : findStoryBySlug(storiesIndex, slug);
+        if (found) { openStory(found.id); return; }
       }
+      if (pollRef.current) clearInterval(pollRef.current);
+      setView("home");
+      setActiveStoryId(null);
+      setShowStoryMenu(false);
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
-  }, [openStory]);
+  }, [openStory, storiesIndex]);
 
   // Clean up polling when leaving story view
   useEffect(() => {
@@ -1511,7 +1559,8 @@ export default function CollaborativeStoryApp() {
       await window.storage.set(storyKey(activeStoryId, "chapter-v1"), String(nextChapter), true);
 
       // Update stories index metadata
-      const derivedTitle = updatedTitles[1] || (updatedStory[0] ? updatedStory[0].text.split(/[.!?]/)[0].slice(0, 50) : "");
+      const existingMeta = storiesIndex.find((s) => s.id === activeStoryId);
+      const derivedTitle = existingMeta?.title || updatedTitles[1] || (updatedStory[0] ? updatedStory[0].text.split(/[.!?]/)[0].slice(0, 50) : "");
       const updatedIndex = storiesIndex.map((s) =>
         s.id === activeStoryId
           ? { ...s, title: derivedTitle, passageCount: updatedStory.length, updatedAt: new Date().toISOString() }
@@ -1630,12 +1679,14 @@ export default function CollaborativeStoryApp() {
       await window.storage.set(storyKey(meta.id, "count-v1"), "1", true);
       await window.storage.set(storyKey(meta.id, "chapter-v1"), "1", true);
 
-      // Update index with title
+      // Update index with title and slug
+      const slug = slugify(opener.title) || String(meta.id);
       const idxWithTitle = updatedIndex.map((s) =>
-        s.id === meta.id ? { ...s, title: opener.title, passageCount: 1, updatedAt: new Date().toISOString() } : s
+        s.id === meta.id ? { ...s, title: opener.title, slug, passageCount: 1, updatedAt: new Date().toISOString() } : s
       );
       await saveStoriesIndex(idxWithTitle);
       setStoriesIndex(idxWithTitle);
+      window.location.hash = "story/" + slug;
       setStory(newStory);
       setContributorCount(1);
 
@@ -1809,7 +1860,8 @@ export default function CollaborativeStoryApp() {
                   }}>
                     <button
                       onClick={() => {
-                        const url = window.location.origin + window.location.pathname + "#story/" + activeStoryId;
+                        const activeMeta = storiesIndex.find((s) => s.id === activeStoryId);
+                        const url = window.location.origin + window.location.pathname + "#story/" + (activeMeta?.slug || activeStoryId);
                         navigator.clipboard.writeText(url);
                         setLinkCopied(true);
                         setTimeout(() => { setLinkCopied(false); setShowStoryMenu(false); }, 2000);
@@ -2001,8 +2053,8 @@ export default function CollaborativeStoryApp() {
                 borderRadius: "8px",
                 padding: "24px",
               }}>
-                {phase === "input" && (
-                  <div>
+                {(phase === "input" || phase === "generating") && (
+                  <div style={{ minHeight: "180px" }}>
                     <p style={{
                       fontFamily: TYPEWRITER, fontSize: "16px",
                       color: "rgba(255,255,255,0.4)", lineHeight: 1.7,
@@ -2018,11 +2070,13 @@ export default function CollaborativeStoryApp() {
                       }}
                       placeholder="Write your answer..."
                       rows={3}
+                      disabled={phase === "generating"}
                       style={{
                         width: "100%", background: "transparent",
                         border: "none",
                         padding: "0 0 12px", fontFamily: TYPEWRITER,
-                        fontSize: "16px", lineHeight: 1.7, color: "#e8ddd0",
+                        fontSize: "16px", lineHeight: 1.7,
+                        color: phase === "generating" ? "rgba(255,255,255,0.3)" : "#e8ddd0",
                         resize: "none", minHeight: "80px",
                       }}
                     />
@@ -2036,35 +2090,47 @@ export default function CollaborativeStoryApp() {
                       display: "flex", justifyContent: "flex-end", alignItems: "center",
                       padding: "12px 0 0",
                     }}>
-                      <button
-                        onClick={handleSubmit}
-                        disabled={!answer.trim()}
-                        style={{
-                          background: "none", border: "none",
+                      {phase === "generating" ? (
+                        <span style={{
                           fontFamily: MONO, fontSize: "13px",
-                          color: answer.trim() ? "#e8ddd0" : "rgba(255,255,255,0.2)",
-                          cursor: answer.trim() ? "pointer" : "default",
-                          padding: 0,
-                        }}
-                      >
-                        Submit
-                      </button>
+                          color: "#999",
+                        }}>
+                          Writing...
+                        </span>
+                      ) : (
+                        <button
+                          onClick={handleSubmit}
+                          disabled={!answer.trim()}
+                          style={{
+                            background: "none", border: "none",
+                            fontFamily: MONO, fontSize: "13px",
+                            color: answer.trim() ? "#e8ddd0" : "rgba(255,255,255,0.2)",
+                            cursor: answer.trim() ? "pointer" : "default",
+                            padding: 0,
+                          }}
+                        >
+                          Submit
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}
 
-                {phase === "generating" && (
-                  <p style={{
-                    fontFamily: MONO, fontSize: "13px",
-                    color: "#999",
-                  }}>
-                    Writing...
-                  </p>
-                )}
-
                 {phase === "reveal" && (
-                  <div>
-                    <div style={{ marginBottom: "24px" }}>
+                  <div style={{ minHeight: "180px", display: "flex", flexDirection: "column" }}>
+                    <div style={{ marginBottom: "8px" }}>
+                      <button
+                        onClick={() => { setPhase("input"); setGeneratedText(""); }}
+                        style={{
+                          background: "none", border: "none",
+                          fontFamily: MONO, fontSize: "13px",
+                          color: "#999", cursor: "pointer", padding: 0,
+                        }}
+                      >
+                        ← Back
+                      </button>
+                    </div>
+                    <div style={{ marginBottom: "24px", flex: 1 }}>
                       <TypewriterReveal text={generatedText} />
                     </div>
                     {generationSource === "local" && (
@@ -2076,17 +2142,7 @@ export default function CollaborativeStoryApp() {
                       </p>
                     )}
 
-                    <div style={{ display: "flex", gap: "20px" }}>
-                      <button
-                        onClick={handleConfirm}
-                        style={{
-                          background: "none", border: "none",
-                          fontFamily: MONO, fontSize: "13px",
-                          color: "#e8ddd0", cursor: "pointer", padding: 0,
-                        }}
-                      >
-                        Add
-                      </button>
+                    <div style={{ display: "flex", gap: "20px", justifyContent: "flex-end" }}>
                       <button
                         onClick={handleRewrite}
                         style={{
@@ -2098,14 +2154,14 @@ export default function CollaborativeStoryApp() {
                         Rewrite
                       </button>
                       <button
-                        onClick={() => { setPhase("input"); setGeneratedText(""); }}
+                        onClick={handleConfirm}
                         style={{
                           background: "none", border: "none",
                           fontFamily: MONO, fontSize: "13px",
-                          color: "#999", cursor: "pointer", padding: 0,
+                          color: "#e8ddd0", cursor: "pointer", padding: 0,
                         }}
                       >
-                        Back
+                        Add
                       </button>
                     </div>
                   </div>
