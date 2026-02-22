@@ -735,8 +735,8 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
     <div style={{ maxWidth: "720px", margin: "0 auto", padding: "60px 24px 40px" }}>
       <header style={{ marginBottom: "48px", textAlign: "center" }}>
         <h1 style={{
-          fontFamily: MONO, fontSize: "14px", fontWeight: 400,
-          color: "#999", letterSpacing: "0.5px",
+          fontFamily: TYPEWRITER, fontSize: "28px", fontWeight: 400,
+          color: "#e8ddd0",
           marginBottom: "8px",
         }}>
           Falcor
@@ -827,10 +827,11 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
           onMouseLeave={(e) => e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"}
         >
           <span style={{
-            fontFamily: MONO, fontSize: "13px",
+            fontSize: "24px",
             color: "rgba(255,255,255,0.3)",
+            lineHeight: 1,
           }}>
-            + New Story
+            +
           </span>
         </div>
       </div>
