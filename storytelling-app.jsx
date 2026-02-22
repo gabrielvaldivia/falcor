@@ -1305,7 +1305,9 @@ const SERIF = "'Faustina', serif";
 
 export default function CollaborativeStoryApp() {
   // Navigation state
-  const [view, setView] = useState("home"); // "home" | "new" | "story" | "about"
+  const [view, setView] = useState(() => {
+    return window.location.hash.match(/^#story\//) ? "story" : "home";
+  }); // "home" | "new" | "story" | "about"
   const [activeStoryId, setActiveStoryId] = useState(null);
   const [storiesIndex, setStoriesIndex] = useState([]);
 
@@ -1441,15 +1443,17 @@ export default function CollaborativeStoryApp() {
 
   // Handle browser back/forward
   useEffect(() => {
-    const onPopState = () => {
+    const onPopState = async () => {
       const hash = window.location.hash;
       const slugMatch = hash.match(/^#story\/(.+)$/);
       if (slugMatch) {
         const slug = slugMatch[1];
         const numId = parseInt(slug, 10);
-        const found = !isNaN(numId) && storiesIndex.some((s) => s.id === numId)
-          ? storiesIndex.find((s) => s.id === numId)
-          : findStoryBySlug(storiesIndex, slug);
+        // Use storiesIndex if available, otherwise load fresh
+        const idx = storiesIndex.length > 0 ? storiesIndex : await loadStoriesIndex();
+        const found = !isNaN(numId) && idx.some((s) => s.id === numId)
+          ? idx.find((s) => s.id === numId)
+          : findStoryBySlug(idx, slug);
         if (found) { openStory(found.id); return; }
       }
       if (pollRef.current) clearInterval(pollRef.current);
