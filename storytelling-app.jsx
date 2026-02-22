@@ -517,33 +517,22 @@ async function fetchLocation() {
 
 function requestBrowserLocation() {
   return new Promise((resolve) => {
-    if (!navigator.geolocation) { console.log("[geo] navigator.geolocation not available"); resolve(null); return; }
-    if (navigator.permissions) {
-      navigator.permissions.query({ name: "geolocation" }).then((p) => {
-        console.log("[geo] permission state:", p.state);
-      });
-    }
-    console.log("[geo] requesting position...");
-    console.log("[geo] protocol:", window.location.protocol, "host:", window.location.host);
+    if (!navigator.geolocation) { resolve(null); return; }
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         try {
           const { latitude, longitude } = pos.coords;
-          console.log("[geo] got coords:", latitude, longitude);
           const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&zoom=14`);
-          console.log("[geo] nominatim status:", resp.status);
-          if (!resp.ok) { console.log("[geo] nominatim not ok"); resolve(null); return; }
+          if (!resp.ok) { resolve(null); return; }
           const data = await resp.json();
-          console.log("[geo] nominatim address:", JSON.stringify(data.address));
           const addr = data.address || {};
           const place = addr.borough || addr.suburb || addr.neighbourhood || addr.city || addr.town || addr.village || addr.municipality || "";
           const country = addr.country || "";
           const location = place && country ? `${place}, ${country}` : country || null;
-          console.log("[geo] resolved location:", location);
           resolve(location);
-        } catch (err) { console.log("[geo] error:", err); resolve(null); }
+        } catch { resolve(null); }
       },
-      (err) => { console.log("[geo] denied/failed:", err.code, err.message); resolve(null); },
+      () => resolve(null),
       { enableHighAccuracy: false, timeout: 30000, maximumAge: 300000 }
     );
   });
@@ -2339,7 +2328,6 @@ export default function CollaborativeStoryApp() {
                                 localStorage.setItem("falcor_geo_enabled", "true");
                                 setGeoEnabled(true);
                                 const loc = await requestBrowserLocation();
-                                console.log("[geo] button result:", loc);
                                 if (loc) {
                                   setGeoLabel(loc);
                                 } else {
@@ -2403,7 +2391,7 @@ export default function CollaborativeStoryApp() {
                           color: "#999", cursor: "pointer", padding: 0,
                         }}
                       >
-                        <GoArrowLeft size={14} style={{ marginRight: "6px", verticalAlign: "middle" }} />Back
+                        <GoArrowLeft size={14} style={{ marginRight: "6px", verticalAlign: "middle" }} />BACK
                       </button>
                     </div>
                     <div style={{ marginBottom: "24px", flex: 1 }}>
@@ -2436,7 +2424,7 @@ export default function CollaborativeStoryApp() {
                               color: "#999", cursor: "pointer", padding: 0,
                             }}
                           >
-                            Rewrite
+                            REWRITE
                           </button>
                           <button
                             onClick={handleConfirm}
@@ -2446,7 +2434,7 @@ export default function CollaborativeStoryApp() {
                               color: "#e8ddd0", cursor: "pointer", padding: 0,
                             }}
                           >
-                            Add
+                            ADD
                           </button>
                         </>
                       )}
