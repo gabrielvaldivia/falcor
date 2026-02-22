@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { GoArrowLeft, GoInfo, GoPlus, GoDash, GoKebabHorizontal } from "react-icons/go";
 
 /* ────────────────────────────────────────────
    Genre & Voice Constants + Preset Mappings
@@ -537,7 +538,7 @@ function splitIntoParagraphs(text) {
    Typewriter Reveal
    ──────────────────────────────────────────── */
 
-function TypewriterReveal({ text }) {
+function TypewriterReveal({ text, narrow }) {
   const [charCount, setCharCount] = useState(0);
   const idx = useRef(0);
   const paragraphs = useRef([]);
@@ -576,7 +577,9 @@ function TypewriterReveal({ text }) {
       lineHeight: 1.8, color: "#e8ddd0", fontStyle: "italic", margin: 0,
       textRendering: "optimizeLegibility", fontOpticalSizing: "auto",
       fontFeatureSettings: '"kern", "liga", "calt"',
-      hangingPunctuation: "first last", textWrap: "pretty",
+      hangingPunctuation: "first last",
+      textWrap: narrow ? "auto" : "pretty",
+      hyphens: narrow ? "auto" : "manual",
       overflowWrap: "break-word", maxWidth: "65ch",
       display: "flex", flexDirection: "column", gap: "12px",
     }}>
@@ -627,7 +630,9 @@ function StoryLine({ entry, onHover, onLeave, narrow, onShowDialog, onPinPopover
         color: "#e8ddd0", margin: 0,
         textRendering: "optimizeLegibility", fontOpticalSizing: "auto",
         fontFeatureSettings: '"kern", "liga", "calt"',
-        hangingPunctuation: "first last", textWrap: "pretty",
+        hangingPunctuation: "first last",
+        textWrap: narrow ? "auto" : "pretty",
+        hyphens: narrow ? "auto" : "manual",
         overflowWrap: "break-word", maxWidth: "65ch",
         display: "flex", flexDirection: "column", gap: "12px",
       }}>
@@ -656,11 +661,7 @@ function StoryLine({ entry, onHover, onLeave, narrow, onShowDialog, onPinPopover
           onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
           onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.2)"}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="16" x2="12" y2="12" />
-            <line x1="12" y1="8" x2="12.01" y2="8" />
-          </svg>
+          <GoInfo size={16} />
         </button>
       </div>
     </div>
@@ -896,7 +897,7 @@ function AboutScreen({ onBack }) {
           onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}
           onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.3)"}
         >
-          &larr; Back
+          <GoArrowLeft size={14} style={{ marginRight: "6px", verticalAlign: "middle" }} />Back
         </button>
       </div>
       <div style={{ maxWidth: "600px", margin: "0 auto", padding: "60px 24px 40px" }}>
@@ -1111,10 +1112,7 @@ function NewStoryScreen({ onCancel, onCreate }) {
           }}>
             {answer || ""}
           </span>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ color: "rgba(255,255,255,0.25)", flexShrink: 0 }}>
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
+          <GoPlus size={16} style={{ color: "rgba(255,255,255,0.25)", flexShrink: 0 }} />
         </span>
       </button>
     );
@@ -1188,9 +1186,7 @@ function NewStoryScreen({ onCancel, onCreate }) {
             onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
             onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.25)"}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
+            <GoDash size={16} />
           </button>
         </div>
         {step.key === "genre" && renderOptionGrid(GENRES, selectedGenre, handleSelectGenre)}
@@ -1243,7 +1239,7 @@ function NewStoryScreen({ onCancel, onCreate }) {
           onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}
           onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.3)"}
         >
-          &larr; Back
+          <GoArrowLeft size={14} style={{ marginRight: "6px", verticalAlign: "middle" }} />Back
         </button>
       </div>
     <div style={{ maxWidth: "600px", margin: "0 auto", padding: "60px 24px 40px" }}>
@@ -1778,7 +1774,7 @@ export default function CollaborativeStoryApp() {
                     padding: "8px 0",
                   }}
                 >
-                  &larr;
+                  <GoArrowLeft size={16} />
                 </button>
                 <div style={{
                   fontFamily: MONO, fontSize: "11px",
@@ -1800,13 +1796,12 @@ export default function CollaborativeStoryApp() {
                     onClick={() => { setShowStoryMenu(!showStoryMenu); setConfirmDeleteMenu(false); setLinkCopied(false); }}
                     style={{
                       background: "none", border: "none",
-                      fontSize: "20px", lineHeight: 1,
                       color: "rgba(255,255,255,0.4)", cursor: "pointer",
                       padding: "8px 0",
-                      fontFamily: MONO,
+                      display: "flex", alignItems: "center",
                     }}
                   >
-                    &#8942;
+                    <GoKebabHorizontal size={16} />
                   </button>
                   {showStoryMenu && (
                     <>
@@ -1920,7 +1915,7 @@ export default function CollaborativeStoryApp() {
                     onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}
                     onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.3)"}
                   >
-                    &larr; {activeStoryMeta?.title || "Home"}
+                    <GoArrowLeft size={14} style={{ marginRight: "6px", verticalAlign: "middle" }} />{activeStoryMeta?.title || "Home"}
                   </button>
                   {(() => {
                     const chapters = [...new Set(story.map((e) => e.chapter || 1))].sort((a, b) => a - b);
@@ -1960,15 +1955,14 @@ export default function CollaborativeStoryApp() {
                     onClick={() => { setShowStoryMenu(!showStoryMenu); setConfirmDeleteMenu(false); setLinkCopied(false); }}
                     style={{
                       background: "none", border: "none",
-                      fontSize: "20px", lineHeight: 1,
                       color: "rgba(255,255,255,0.3)", cursor: "pointer",
                       padding: "4px 8px",
-                      fontFamily: MONO,
+                      display: "flex", alignItems: "center",
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}
                     onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.3)"}
                   >
-                    &#8942;
+                    <GoKebabHorizontal size={16} />
                   </button>
                   {showStoryMenu && (
                     <>
@@ -2216,11 +2210,11 @@ export default function CollaborativeStoryApp() {
                           color: "#999", cursor: "pointer", padding: 0,
                         }}
                       >
-                        ← Back
+                        <GoArrowLeft size={14} style={{ marginRight: "6px", verticalAlign: "middle" }} />Back
                       </button>
                     </div>
                     <div style={{ marginBottom: "24px", flex: 1 }}>
-                      <TypewriterReveal text={generatedText} />
+                      <TypewriterReveal text={generatedText} narrow={narrowViewport} />
                     </div>
                     {generationSource === "local" && (
                       <p style={{
