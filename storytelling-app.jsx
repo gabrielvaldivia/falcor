@@ -916,12 +916,6 @@ function AboutScreen({ onBack }) {
             answers to creative prompts, and AI transforms them into literary
             prose that weaves together into an evolving narrative.
           </p>
-          <p>
-            Each story is shaped by your choices — genre, writing voice, themes,
-            and the answers you give along the way. The AI builds on your input
-            to create passages that feel like they belong in a published novel,
-            while the story's direction stays in your hands.
-          </p>
           <h2 style={{
             fontFamily: MONO, fontSize: "12px", fontWeight: 400,
             color: "rgba(255,255,255,0.3)", letterSpacing: "0.5px",
@@ -930,16 +924,21 @@ function AboutScreen({ onBack }) {
             How it works
           </h2>
           <p>
-            When you start a new story, you pick a genre and a writing voice.
-            Falcor generates a title and opening paragraph, then begins asking
-            you questions. Your brief answers become the seeds for each new
-            passage. As the story grows, the AI considers what came before —
-            tracking narrative arcs, deciding when chapters should end, and
-            generating chapter titles.
+            Start by choosing a genre and writing voice — these shape the tone
+            and style of the prose. You can optionally pick themes, a protagonist
+            type, and a central tension to give the story more direction.
           </p>
           <p>
-            Stories are saved locally in your browser. You can share a direct
-            link to any story using the menu on the story page.
+            Falcor generates a title and opening passage, then asks you
+            questions about what happens next. Your brief answers become the
+            seeds for each new passage. The AI considers everything that came
+            before — building on earlier choices, tracking narrative arcs,
+            deciding when chapters should end, and generating chapter titles.
+          </p>
+          <p>
+            Stories are stored in the cloud and can be shared with a direct
+            link using the menu on any story page. Anyone with the link can
+            read along and contribute to the story.
           </p>
           <h2 style={{
             fontFamily: MONO, fontSize: "12px", fontWeight: 400,
