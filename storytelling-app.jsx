@@ -651,6 +651,7 @@ function TypewriterReveal({ text, narrow }) {
 function StoryLine({ entry, onHover, onLeave, narrow, onShowDialog, onPinPopover, hideIcon, isChapterStart }) {
   const ref = useRef(null);
   const [hovered, setHovered] = useState(false);
+  const isTouch = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
 
   return (
     <div
@@ -665,7 +666,7 @@ function StoryLine({ entry, onHover, onLeave, narrow, onShowDialog, onPinPopover
       }}
       style={{
         display: "grid",
-        gridTemplateColumns: narrow ? "1fr" : "1fr 16px",
+        gridTemplateColumns: "1fr 16px",
         gap: "12px",
         marginRight: narrow ? 0 : "-36px",
       }}
@@ -685,29 +686,28 @@ function StoryLine({ entry, onHover, onLeave, narrow, onShowDialog, onPinPopover
           <p key={i} className={isChapterStart && i === 0 ? "drop-cap" : undefined} style={{ margin: 0 }}>{para.charAt(0).toUpperCase() + para.slice(1)}</p>
         ))}
       </div>
-      {!narrow && (
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "center" }}>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onPinPopover(entry);
-            }}
-            style={{
-              background: "none", border: "none", cursor: "pointer",
-              padding: "2px",
-              color: "rgba(255,255,255,0.2)",
-              transition: "opacity 0.15s, color 0.15s",
-              opacity: hideIcon ? 0 : (hovered ? 1 : 0),
-              pointerEvents: hideIcon ? "none" : (hovered ? "auto" : "none"),
-              position: "sticky", top: "24px",
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
-            onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.2)"}
-          >
-            <GoInfo size={16} />
-          </button>
-        </div>
-      )}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: "8px" }}>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (narrow) { onShowDialog(entry); } else { onPinPopover(entry); }
+          }}
+          style={{
+            background: "none", border: "none", cursor: "pointer",
+            padding: "2px",
+            color: "rgba(255,255,255,0.2)",
+            transition: "opacity 0.15s, color 0.15s",
+            ...(isTouch
+              ? { opacity: 1, pointerEvents: "auto" }
+              : { opacity: hideIcon ? 0 : (hovered ? 1 : 0), pointerEvents: hideIcon ? "none" : (hovered ? "auto" : "none") }),
+            position: "sticky", top: "24px",
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
+          onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.2)"}
+        >
+          <GoInfo size={16} />
+        </button>
+      </div>
     </div>
   );
 }
@@ -2269,7 +2269,11 @@ export default function CollaborativeStoryApp() {
                               )}
                             </div>
                           )}
-                          <div style={{ position: "relative" }}>
+                          <div style={{
+                            position: "relative",
+                            opacity: pinnedEntry && pinnedEntry.ts !== entry.ts ? 0.5 : 1,
+                            transition: "opacity 0.2s",
+                          }}>
                             <StoryLine
                               entry={entry}
                               narrow={narrowViewport}
