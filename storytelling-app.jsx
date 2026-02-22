@@ -1899,7 +1899,7 @@ export default function CollaborativeStoryApp() {
         .passage-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 10px; height: 10px; border-radius: 50%; background: #e8ddd0; cursor: pointer; }
         .passage-slider::-moz-range-track { height: 2px; background: rgba(255,255,255,0.1); border-radius: 1px; border: none; }
         .passage-slider::-moz-range-thumb { width: 10px; height: 10px; border-radius: 50%; background: #e8ddd0; cursor: pointer; border: none; }
-        @media (max-width: 600px) { .about-ascii { font-size: 7px !important; } }
+        @media (max-width: 600px) { .about-ascii { font-size: 6px !important; } }
       `}</style>
 
       {/* Mobile: fixed top bar with back, chapter title, menu */}
