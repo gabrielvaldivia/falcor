@@ -648,7 +648,7 @@ function TypewriterReveal({ text, narrow }) {
    Story Entry (minimal)
    ──────────────────────────────────────────── */
 
-function StoryLine({ entry, onHover, onLeave, narrow, onShowDialog, onPinPopover, hideIcon }) {
+function StoryLine({ entry, onHover, onLeave, narrow, onShowDialog, onPinPopover, hideIcon, isChapterStart }) {
   const ref = useRef(null);
   const [hovered, setHovered] = useState(false);
 
@@ -682,7 +682,7 @@ function StoryLine({ entry, onHover, onLeave, narrow, onShowDialog, onPinPopover
         display: "flex", flexDirection: "column", gap: "12px",
       }}>
         {splitIntoParagraphs(entry.text).map((para, i) => (
-          <p key={i} style={{ margin: 0 }}>{para.charAt(0).toUpperCase() + para.slice(1)}</p>
+          <p key={i} className={isChapterStart && i === 0 ? "drop-cap" : undefined} style={{ margin: 0 }}>{para.charAt(0).toUpperCase() + para.slice(1)}</p>
         ))}
       </div>
       {!narrow && (
@@ -1900,6 +1900,7 @@ export default function CollaborativeStoryApp() {
         .passage-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 10px; height: 10px; border-radius: 50%; background: #e8ddd0; cursor: pointer; }
         .passage-slider::-moz-range-track { height: 2px; background: rgba(255,255,255,0.1); border-radius: 1px; border: none; }
         .passage-slider::-moz-range-thumb { width: 10px; height: 10px; border-radius: 50%; background: #e8ddd0; cursor: pointer; border: none; }
+        .drop-cap::first-letter { float: left; font-size: 3.7em; line-height: 0.75; padding-right: 6px; padding-top: 4px; font-weight: 400; }
         @media (max-width: 600px) { .about-ascii { font-size: 7px !important; } }
       `}</style>
 
@@ -2272,6 +2273,7 @@ export default function CollaborativeStoryApp() {
                             <StoryLine
                               entry={entry}
                               narrow={narrowViewport}
+                              isChapterStart={showChapterHeading}
                               onHover={(e) => {
                                 if (pinnedEntry) setPinnedEntry(e);
                                 setHoveredEntry(e);
