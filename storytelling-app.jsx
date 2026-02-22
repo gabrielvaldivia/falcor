@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { GoArrowLeft, GoInfo, GoPlus, GoDash, GoKebabHorizontal } from "react-icons/go";
+import { GoArrowLeft, GoInfo, GoPlus, GoDash, GoKebabHorizontal, GoLocation } from "react-icons/go";
 import { BsSliders2Vertical } from "react-icons/bs";
 
 /* ────────────────────────────────────────────
@@ -496,6 +496,13 @@ function expandLocally(existingStory, userAnswer) {
    ──────────────────────────────────────────── */
 
 async function fetchLocation() {
+  // Use browser geolocation if enabled
+  if (localStorage.getItem("falcor_geo_enabled") === "true") {
+    const loc = await requestBrowserLocation();
+    if (loc) return loc;
+  }
+
+  // Fall back to IP-based geolocation
   try {
     const resp = await fetch("https://ipapi.co/json/");
     if (!resp.ok) return null;
@@ -506,6 +513,40 @@ async function fetchLocation() {
   } catch {
     return null;
   }
+}
+
+function requestBrowserLocation() {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) { console.log("[geo] navigator.geolocation not available"); resolve(null); return; }
+    if (navigator.permissions) {
+      navigator.permissions.query({ name: "geolocation" }).then((p) => {
+        console.log("[geo] permission state:", p.state);
+      });
+    }
+    console.log("[geo] requesting position...");
+    console.log("[geo] protocol:", window.location.protocol, "host:", window.location.host);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const { latitude, longitude } = pos.coords;
+          console.log("[geo] got coords:", latitude, longitude);
+          const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&zoom=14`);
+          console.log("[geo] nominatim status:", resp.status);
+          if (!resp.ok) { console.log("[geo] nominatim not ok"); resolve(null); return; }
+          const data = await resp.json();
+          console.log("[geo] nominatim address:", JSON.stringify(data.address));
+          const addr = data.address || {};
+          const place = addr.borough || addr.suburb || addr.neighbourhood || addr.city || addr.town || addr.village || addr.municipality || "";
+          const country = addr.country || "";
+          const location = place && country ? `${place}, ${country}` : country || null;
+          console.log("[geo] resolved location:", location);
+          resolve(location);
+        } catch (err) { console.log("[geo] error:", err); resolve(null); }
+      },
+      (err) => { console.log("[geo] denied/failed:", err.code, err.message); resolve(null); },
+      { enableHighAccuracy: false, timeout: 30000, maximumAge: 300000 }
+    );
+  });
 }
 
 async function generateStoryPassage(existingStory, prompt, userAnswer, styleSettings, chapter = 1, genreVoiceCtx = "") {
@@ -588,8 +629,8 @@ function TypewriterReveal({ text, narrow }) {
 
   return (
     <div style={{
-      fontFamily: "'Faustina', serif", fontSize: "19px", fontWeight: 300,
-      lineHeight: 1.8, color: "#e8ddd0", fontStyle: "italic", margin: 0,
+      fontFamily: "'Courier New', 'Courier', monospace", fontSize: "16px", fontWeight: 400,
+      lineHeight: 1.7, color: "#e8ddd0", fontStyle: "normal", margin: 0,
       textRendering: "optimizeLegibility", fontOpticalSizing: "auto",
       fontFeatureSettings: '"kern", "liga", "calt"',
       hangingPunctuation: "first last",
@@ -993,6 +1034,7 @@ function NewStoryScreen({ onCancel, onCreate }) {
   const [selectedProtagonist, setSelectedProtagonist] = useState(null);
   const [selectedTension, setSelectedTension] = useState(null);
   const [activeStep, setActiveStep] = useState("genre");
+  const [creating, setCreating] = useState(false);
 
   const toggleTheme = (id) => {
     setSelectedThemes((prev) => {
@@ -1004,8 +1046,9 @@ function NewStoryScreen({ onCancel, onCreate }) {
     });
   };
 
-  const handleCreate = () => {
-    if (!selectedGenre || !selectedVoice) return;
+  const handleCreate = async () => {
+    if (!selectedGenre || !selectedVoice || creating) return;
+    setCreating(true);
     const id = Date.now();
     const meta = {
       id,
@@ -1019,7 +1062,7 @@ function NewStoryScreen({ onCancel, onCreate }) {
       updatedAt: new Date().toISOString(),
       passageCount: 0,
     };
-    onCreate(meta);
+    await onCreate(meta);
   };
 
   const steps = [
@@ -1286,23 +1329,24 @@ function NewStoryScreen({ onCancel, onCreate }) {
       {/* Start Story Button */}
       <button
         onClick={handleCreate}
-        disabled={!canCreate}
+        disabled={!canCreate || creating}
         style={{
           width: "100%",
-          background: canCreate ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.02)",
+          background: creating ? "rgba(255,255,255,0.04)" : canCreate ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.02)",
           border: "none",
           borderRadius: "6px",
           padding: "14px 16px",
           fontFamily: MONO, fontSize: "13px",
-          color: canCreate ? "#e8ddd0" : "rgba(255,255,255,0.15)",
-          cursor: canCreate ? "pointer" : "default",
+          color: creating ? "#999" : canCreate ? "#e8ddd0" : "rgba(255,255,255,0.15)",
+          cursor: canCreate && !creating ? "pointer" : "default",
           textTransform: "uppercase",
           letterSpacing: "0.5px",
           transition: "all 0.15s",
           marginTop: "24px",
+          animation: creating ? "pulse 1.5s ease-in-out infinite" : "none",
         }}
       >
-        Start Story
+        {creating ? "Creating..." : "Start Story"}
       </button>
     </div>
     </>
@@ -1351,6 +1395,7 @@ export default function CollaborativeStoryApp() {
   const [sliderDialogue, setSliderDialogue] = useState(2);
   const [sliderSurprise, setSliderSurprise] = useState(3);
   const [sliderEmotion, setSliderEmotion] = useState(4);
+  const [geoEnabled, setGeoEnabled] = useState(() => localStorage.getItem("falcor_geo_enabled") === "true");
   const storyEndRef = useRef(null);
   const contentRef = useRef(null);
   const pollRef = useRef(null);
@@ -1639,8 +1684,7 @@ export default function CollaborativeStoryApp() {
       setSliderSurprise(defaults.surprise ?? 3);
       setSliderEmotion(defaults.emotion ?? 4);
       setShowSliders(false);
-      setPhase("done");
-      setTimeout(() => setPhase("input"), 2000);
+      setPhase("input");
     } catch (e) {
       console.error("Storage error:", e);
     }
@@ -1699,7 +1743,7 @@ export default function CollaborativeStoryApp() {
   };
 
   const handleCreateStory = async (meta) => {
-    // Save to index and navigate immediately with a loading state
+    // Save to index, stay on new-story screen while generating
     const updatedIndex = [...storiesIndex, meta];
     await saveStoriesIndex(updatedIndex);
     setStoriesIndex(updatedIndex);
@@ -1707,14 +1751,12 @@ export default function CollaborativeStoryApp() {
     setStory([]);
     setCurrentPrompt("");
     setAnswer("");
-    setPhase("generating");
     setGeneratedText("");
     setGenerationSource("");
     setContributorCount(0);
     setCurrentChapter(1);
     setChapterTitles({});
     setError(null);
-    setView("story");
 
     // Generate title + opening paragraph
     const opener = await generateStoryOpener(meta);
@@ -1748,7 +1790,6 @@ export default function CollaborativeStoryApp() {
       );
       await saveStoriesIndex(idxWithTitle);
       setStoriesIndex(idxWithTitle);
-      window.location.hash = "story/" + slug;
       setStory(newStory);
       setContributorCount(1);
 
@@ -1757,15 +1798,21 @@ export default function CollaborativeStoryApp() {
       const prompt = await generatePrompt(newStory, 1, false, ctx);
       setCurrentPrompt(prompt);
       await window.storage.set(storyKey(meta.id, "prompt-v1"), prompt, true);
+
+      // Navigate to story — use replaceState to avoid triggering popstate
+      history.replaceState(null, "", "#story/" + slug);
     } else {
       // Fallback: just generate a prompt with no opener
       const ctx = getStoryContext(meta);
       const prompt = await generatePrompt([], 1, false, ctx);
       setCurrentPrompt(prompt);
       await window.storage.set(storyKey(meta.id, "prompt-v1"), prompt, true);
+      history.replaceState(null, "", "#story/" + meta.id);
     }
 
+    // Everything is ready — navigate directly to the story
     setPhase("input");
+    setView("story");
 
     // Start polling
     if (pollRef.current) clearInterval(pollRef.current);
@@ -2258,7 +2305,7 @@ export default function CollaborativeStoryApp() {
                       display: "flex", justifyContent: "space-between", alignItems: "center",
                       padding: "20px 0 0",
                     }}>
-                      <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                         {phase !== "generating" && (
                           <button
                             onClick={() => setShowSliders((v) => !v)}
@@ -2271,6 +2318,36 @@ export default function CollaborativeStoryApp() {
                             title="Passage style sliders"
                           >
                             <BsSliders2Vertical size={14} />
+                          </button>
+                        )}
+                        {phase !== "generating" && (
+                          <button
+                            onClick={async () => {
+                              if (geoEnabled) {
+                                localStorage.removeItem("falcor_geo_enabled");
+                                setGeoEnabled(false);
+                              } else {
+                                // Enable immediately for visual feedback
+                                localStorage.setItem("falcor_geo_enabled", "true");
+                                setGeoEnabled(true);
+                                const loc = await requestBrowserLocation();
+                                console.log("[geo] button result:", loc);
+                                if (!loc) {
+                                  // Revert if geolocation failed or was denied
+                                  localStorage.removeItem("falcor_geo_enabled");
+                                  setGeoEnabled(false);
+                                }
+                              }
+                            }}
+                            style={{
+                              background: "none", border: "none",
+                              color: geoEnabled ? "#ffffff" : "rgba(255,255,255,0.25)",
+                              cursor: "pointer", padding: 0,
+                              display: "flex", alignItems: "center",
+                            }}
+                            title={geoEnabled ? "Using precise location" : "Enable precise location"}
+                          >
+                            <GoLocation size={14} />
                           </button>
                         )}
                       </div>
@@ -2362,14 +2439,6 @@ export default function CollaborativeStoryApp() {
                   </div>
                 )}
 
-                {phase === "done" && (
-                  <p style={{
-                    fontFamily: MONO, fontSize: "13px",
-                    color: "#999",
-                  }}>
-                    Added.
-                  </p>
-                )}
               </div>
 
             </div>
