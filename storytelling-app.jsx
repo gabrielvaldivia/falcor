@@ -1315,7 +1315,7 @@ export default function CollaborativeStoryApp() {
   const [phase, setPhase] = useState("input");
   const [generatedText, setGeneratedText] = useState("");
   const [generationSource, setGenerationSource] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [contributorCount, setContributorCount] = useState(0);
   const [currentChapter, setCurrentChapter] = useState(1);
   const [chapterTitles, setChapterTitles] = useState({});
@@ -1717,18 +1717,6 @@ export default function CollaborativeStoryApp() {
     setShowStoryMenu(false);
     window.location.hash = "";
   };
-
-  if (loading) {
-    return (
-      <div style={{
-        minHeight: "100vh", background: "#0f0e0c",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        fontFamily: MONO, color: "#999",
-      }}>
-        <p style={{ fontSize: "13px" }}>Loading...</p>
-      </div>
-    );
-  }
 
   return (
     <>
