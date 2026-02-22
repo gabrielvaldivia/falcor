@@ -620,9 +620,9 @@ function StoryLine({ entry, onHover, onLeave, narrow, onShowDialog, onPinPopover
       }}
       style={{
         display: "grid",
-        gridTemplateColumns: "1fr 16px",
+        gridTemplateColumns: narrow ? "1fr" : "1fr 16px",
         gap: "12px",
-        marginRight: "-36px",
+        marginRight: narrow ? 0 : "-36px",
       }}
     >
       <div style={{
@@ -640,30 +640,28 @@ function StoryLine({ entry, onHover, onLeave, narrow, onShowDialog, onPinPopover
           <p key={i} style={{ margin: 0 }}>{para}</p>
         ))}
       </div>
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: "6px" }}>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            if (narrow) {
-              onShowDialog(entry);
-            } else {
+      {!narrow && (
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: "6px" }}>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
               onPinPopover(entry);
-            }
-          }}
-          style={{
-            background: "none", border: "none", cursor: "pointer",
-            padding: "2px",
-            color: "rgba(255,255,255,0.2)",
-            transition: "opacity 0.15s, color 0.15s",
-            opacity: hideIcon ? 0 : (hovered ? 1 : 0),
-            pointerEvents: hideIcon ? "none" : (hovered ? "auto" : "none"),
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
-          onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.2)"}
-        >
-          <GoInfo size={16} />
-        </button>
-      </div>
+            }}
+            style={{
+              background: "none", border: "none", cursor: "pointer",
+              padding: "2px",
+              color: "rgba(255,255,255,0.2)",
+              transition: "opacity 0.15s, color 0.15s",
+              opacity: hideIcon ? 0 : (hovered ? 1 : 0),
+              pointerEvents: hideIcon ? "none" : (hovered ? "auto" : "none"),
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
+            onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.2)"}
+          >
+            <GoInfo size={16} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
