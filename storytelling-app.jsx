@@ -813,7 +813,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
           onClick={onNewStory}
           style={{
             background: "transparent",
-            border: "1px dashed rgba(255,255,255,0.1)",
+            border: "1px solid rgba(255,255,255,0.06)",
             borderRadius: "4px",
             padding: "20px 16px",
             cursor: "pointer",
@@ -1087,6 +1087,8 @@ function NewStoryScreen({ onCancel, onCreate }) {
           width: "100%", background: "none", border: "none",
           borderBottom: "1px solid rgba(255,255,255,0.06)",
           padding: "20px 0",
+          lineHeight: "normal",
+          font: "inherit",
           cursor: disabled ? "default" : "pointer",
           transition: "all 0.15s",
           opacity: disabled ? 0.3 : 1,
@@ -1101,12 +1103,18 @@ function NewStoryScreen({ onCancel, onCreate }) {
         }}>
           {step.label}
         </span>
-        <span data-answer="" style={{
-          fontFamily: SERIF, fontSize: "15px", fontWeight: 500,
-          color: "rgba(255,255,255,0.5)",
-          transition: "color 0.15s",
-        }}>
-          {answer || (step.optional ? "—" : "")}
+        <span style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <span data-answer="" style={{
+            fontFamily: SERIF, fontSize: "15px", fontWeight: 500,
+            color: "rgba(255,255,255,0.5)",
+            transition: "color 0.15s",
+          }}>
+            {answer || ""}
+          </span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ color: "rgba(255,255,255,0.25)", flexShrink: 0 }}>
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
         </span>
       </button>
     );
@@ -1159,8 +1167,8 @@ function NewStoryScreen({ onCancel, onCreate }) {
   const renderExpandedStep = (step) => {
     const isOptional = step.optional;
     return (
-      <div style={{ marginBottom: "8px", position: "relative" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+      <div style={{ position: "relative" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 0", marginBottom: "0" }}>
           <h2 style={{
             fontFamily: MONO, fontSize: "12px", fontWeight: 400,
             color: "rgba(255,255,255,0.4)", letterSpacing: "0.5px",
@@ -1252,11 +1260,11 @@ function NewStoryScreen({ onCancel, onCreate }) {
         const answer = getStepAnswer(step.key);
         const isActive = activeStep === step.key;
         const reachable = isStepVisible(step.key);
-        const isCollapsed = !isActive && (answer !== null || (step.optional && reachable));
+        const isCollapsed = !isActive && reachable;
         const isFuture = !isActive && !reachable && answer === null;
 
         if (isActive && reachable) {
-          return <div key={step.key} style={{ paddingTop: "24px", paddingBottom: "16px" }}>{renderExpandedStep(step)}</div>;
+          return <div key={step.key}>{renderExpandedStep(step)}</div>;
         }
         if (isCollapsed) {
           return <div key={step.key}>{renderCollapsedRow(step)}</div>;
@@ -1322,6 +1330,7 @@ export default function CollaborativeStoryApp() {
   const [hoveredEntry, setHoveredEntry] = useState(null);
 
   const [narrowViewport, setNarrowViewport] = useState(false);
+  const [visibleChapter, setVisibleChapter] = useState(1);
   const [dialogEntry, setDialogEntry] = useState(null);
   const [pinnedEntry, setPinnedEntry] = useState(null);
   const [showStoryMenu, setShowStoryMenu] = useState(false);
@@ -1469,6 +1478,23 @@ export default function CollaborativeStoryApp() {
   useEffect(() => {
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, []);
+
+  // Track which chapter is currently visible on scroll
+  useEffect(() => {
+    if (view !== "story" || !narrowViewport) return;
+    const onScroll = () => {
+      const chapters = [...new Set(story.map((e) => e.chapter || 1))].sort((a, b) => a - b);
+      let current = chapters[0] || 1;
+      for (const ch of chapters) {
+        const el = document.getElementById(`chapter-${ch}`);
+        if (el && el.getBoundingClientRect().top <= 80) current = ch;
+      }
+      setVisibleChapter(current);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [view, narrowViewport, story]);
 
   // Check if popover fits to the right of content
   useEffect(() => {
@@ -1732,6 +1758,118 @@ export default function CollaborativeStoryApp() {
         .story-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
       `}</style>
 
+      {/* Mobile: fixed top bar with back, chapter title, menu */}
+      {view === "story" && narrowViewport && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0,
+          zIndex: 10,
+          background: "#0e0d0b",
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "0 16px",
+          height: "48px",
+        }}>
+                <button
+                  onClick={goHome}
+                  style={{
+                    background: "none", border: "none",
+                    fontFamily: MONO, fontSize: "12px",
+                    color: "rgba(255,255,255,0.4)", cursor: "pointer",
+                    padding: "8px 0",
+                  }}
+                >
+                  &larr;
+                </button>
+                <div style={{
+                  fontFamily: MONO, fontSize: "11px",
+                  color: "rgba(255,255,255,0.4)",
+                  letterSpacing: "0.3px",
+                  textAlign: "center",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  flex: 1,
+                  padding: "0 12px",
+                }}>
+                  {chapterTitles[visibleChapter]
+                    ? `Ch. ${visibleChapter} — ${chapterTitles[visibleChapter]}`
+                    : (visibleChapter > 1 ? `Chapter ${visibleChapter}` : (activeStoryMeta?.title || ""))}
+                </div>
+                <div style={{ position: "relative" }}>
+                  <button
+                    onClick={() => { setShowStoryMenu(!showStoryMenu); setConfirmDeleteMenu(false); setLinkCopied(false); }}
+                    style={{
+                      background: "none", border: "none",
+                      fontSize: "20px", lineHeight: 1,
+                      color: "rgba(255,255,255,0.4)", cursor: "pointer",
+                      padding: "8px 0",
+                      fontFamily: MONO,
+                    }}
+                  >
+                    &#8942;
+                  </button>
+                  {showStoryMenu && (
+                    <>
+                      <div
+                        onClick={() => { setShowStoryMenu(false); setConfirmDeleteMenu(false); setLinkCopied(false); }}
+                        style={{ position: "fixed", inset: 0, zIndex: -1 }}
+                      />
+                      <div style={{
+                        position: "absolute", top: "100%", right: 0,
+                        marginTop: "4px",
+                        background: "#1a1917",
+                        border: "1px solid rgba(255,255,255,0.1)",
+                        borderRadius: "6px",
+                        padding: "4px 0",
+                        minWidth: "160px",
+                      }}>
+                        <button
+                          onClick={() => {
+                            const activeMeta = storiesIndex.find((s) => s.id === activeStoryId);
+                            const url = window.location.origin + window.location.pathname + "#story/" + (activeMeta?.slug || activeStoryId);
+                            navigator.clipboard.writeText(url);
+                            setLinkCopied(true);
+                            setTimeout(() => { setLinkCopied(false); setShowStoryMenu(false); }, 2000);
+                          }}
+                          style={{
+                            display: "block", width: "100%",
+                            background: "none", border: "none",
+                            fontFamily: MONO, fontSize: "12px",
+                            color: linkCopied ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.5)",
+                            cursor: "pointer", padding: "8px 14px",
+                            textAlign: "left",
+                          }}
+                        >
+                          {linkCopied ? "Copied!" : "Copy Link"}
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirmDeleteMenu) {
+                              setShowStoryMenu(false);
+                              setConfirmDeleteMenu(false);
+                              handleReset();
+                            } else {
+                              setConfirmDeleteMenu(true);
+                            }
+                          }}
+                          style={{
+                            display: "block", width: "100%",
+                            background: "none", border: "none",
+                            fontFamily: MONO, fontSize: "12px",
+                            color: confirmDeleteMenu ? "#c97a7a" : "rgba(255,255,255,0.5)",
+                            cursor: "pointer", padding: "8px 14px",
+                            textAlign: "left",
+                          }}
+                        >
+                          {confirmDeleteMenu ? "Confirm delete?" : "Delete"}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
       <div style={{
         minHeight: "100vh",
         background: "#0f0e0c",
@@ -1763,142 +1901,145 @@ export default function CollaborativeStoryApp() {
         {/* ── Story View ── */}
         {view === "story" && (
           <>
-            {/* Fixed left sidebar: back button + chapter nav (wide only) */}
-            <div style={{
-              position: "fixed", left: "24px", top: "24px",
-              zIndex: 5,
-              display: "flex", flexDirection: "column", gap: "20px",
-            }}>
-              <button
-                onClick={goHome}
-                style={{
-                  background: "none", border: "none",
-                  fontFamily: MONO, fontSize: "12px",
-                  color: "rgba(255,255,255,0.3)", cursor: "pointer",
-                  padding: 0, textAlign: "left",
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}
-                onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.3)"}
-              >
-                &larr; {narrowViewport ? "Home" : (activeStoryMeta?.title || "Home")}
-              </button>
-              {!narrowViewport && (() => {
-                const chapters = [...new Set(story.map((e) => e.chapter || 1))].sort((a, b) => a - b);
-                if (chapters.length <= 1) return null;
-                return (
-                  <nav style={{
-                    fontFamily: MONO, fontSize: "12px",
-                    display: "flex", flexDirection: "column", gap: "8px",
-                  }}>
-                    {chapters.map((ch) => (
-                      <button
-                        key={ch}
-                        onClick={() => document.getElementById(`chapter-${ch}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}
-                        style={{
-                          background: "none", border: "none", padding: 0,
-                          fontFamily: MONO, fontSize: "12px",
-                          color: "rgba(255,255,255,0.25)",
-                          cursor: "pointer", textAlign: "left",
-                          letterSpacing: "0.5px",
-                          display: "flex", alignItems: "baseline", gap: "8px",
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
-                        onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.25)"}
-                      >
-                        <span>{ch}</span>
-                        <span>{ch === currentChapter ? "In progress" : (chapterTitles[ch] || "")}</span>
-                      </button>
-                    ))}
-                  </nav>
-                );
-              })()}
-            </div>
-
-            {/* Fixed top-right: three-dot menu */}
-            <div style={{ position: "fixed", top: "24px", right: "24px", zIndex: 5 }}>
-              <button
-                onClick={() => { setShowStoryMenu(!showStoryMenu); setConfirmDeleteMenu(false); setLinkCopied(false); }}
-                style={{
-                  background: "none", border: "none",
-                  fontSize: "20px", lineHeight: 1,
-                  color: "rgba(255,255,255,0.3)", cursor: "pointer",
-                  padding: "4px 8px",
-                  fontFamily: MONO,
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}
-                onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.3)"}
-              >
-                &#8942;
-              </button>
-              {showStoryMenu && (
-                <>
-                  {/* Click-outside overlay */}
-                  <div
-                    onClick={() => { setShowStoryMenu(false); setConfirmDeleteMenu(false); setLinkCopied(false); }}
-                    style={{ position: "fixed", inset: 0, zIndex: -1 }}
-                  />
-                  <div style={{
-                    position: "absolute", top: "100%", right: 0,
-                    marginTop: "4px",
-                    background: "#1a1917",
-                    border: "1px solid rgba(255,255,255,0.1)",
-                    borderRadius: "6px",
-                    padding: "4px 0",
-                    minWidth: "160px",
-                  }}>
-                    <button
-                      onClick={() => {
-                        const activeMeta = storiesIndex.find((s) => s.id === activeStoryId);
-                        const url = window.location.origin + window.location.pathname + "#story/" + (activeMeta?.slug || activeStoryId);
-                        navigator.clipboard.writeText(url);
-                        setLinkCopied(true);
-                        setTimeout(() => { setLinkCopied(false); setShowStoryMenu(false); }, 2000);
-                      }}
-                      style={{
-                        display: "block", width: "100%",
-                        background: "none", border: "none",
+            {/* Desktop: fixed left sidebar with back button + chapter nav */}
+            {!narrowViewport && (
+              <>
+                <div style={{
+                  position: "fixed", left: "24px", top: "24px",
+                  zIndex: 5,
+                  display: "flex", flexDirection: "column", gap: "20px",
+                }}>
+                  <button
+                    onClick={goHome}
+                    style={{
+                      background: "none", border: "none",
+                      fontFamily: MONO, fontSize: "12px",
+                      color: "rgba(255,255,255,0.3)", cursor: "pointer",
+                      padding: 0, textAlign: "left",
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}
+                    onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.3)"}
+                  >
+                    &larr; {activeStoryMeta?.title || "Home"}
+                  </button>
+                  {(() => {
+                    const chapters = [...new Set(story.map((e) => e.chapter || 1))].sort((a, b) => a - b);
+                    if (chapters.length <= 1) return null;
+                    return (
+                      <nav style={{
                         fontFamily: MONO, fontSize: "12px",
-                        color: linkCopied ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.5)",
-                        cursor: "pointer", padding: "8px 14px",
-                        textAlign: "left",
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
-                      onMouseLeave={(e) => e.currentTarget.style.background = "none"}
-                    >
-                      {linkCopied ? "Copied!" : "Copy Link"}
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (confirmDeleteMenu) {
-                          setShowStoryMenu(false);
-                          setConfirmDeleteMenu(false);
-                          handleReset();
-                        } else {
-                          setConfirmDeleteMenu(true);
-                        }
-                      }}
-                      style={{
-                        display: "block", width: "100%",
-                        background: "none", border: "none",
-                        fontFamily: MONO, fontSize: "12px",
-                        color: confirmDeleteMenu ? "#c97a7a" : "rgba(255,255,255,0.5)",
-                        cursor: "pointer", padding: "8px 14px",
-                        textAlign: "left",
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
-                      onMouseLeave={(e) => e.currentTarget.style.background = "none"}
-                    >
-                      {confirmDeleteMenu ? "Confirm delete?" : "Delete"}
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
+                        display: "flex", flexDirection: "column", gap: "8px",
+                      }}>
+                        {chapters.map((ch) => (
+                          <button
+                            key={ch}
+                            onClick={() => document.getElementById(`chapter-${ch}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                            style={{
+                              background: "none", border: "none", padding: 0,
+                              fontFamily: MONO, fontSize: "12px",
+                              color: "rgba(255,255,255,0.25)",
+                              cursor: "pointer", textAlign: "left",
+                              letterSpacing: "0.5px",
+                              display: "flex", alignItems: "baseline", gap: "8px",
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
+                            onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.25)"}
+                          >
+                            <span>{ch}</span>
+                            <span>{ch === currentChapter ? "In progress" : (chapterTitles[ch] || "")}</span>
+                          </button>
+                        ))}
+                      </nav>
+                    );
+                  })()}
+                </div>
 
-            <div ref={contentRef} style={{ maxWidth: "600px", margin: "0 auto", padding: "60px 24px 40px", overflow: "visible" }}>
+                {/* Desktop: fixed top-right three-dot menu */}
+                <div style={{ position: "fixed", top: "24px", right: "24px", zIndex: 5 }}>
+                  <button
+                    onClick={() => { setShowStoryMenu(!showStoryMenu); setConfirmDeleteMenu(false); setLinkCopied(false); }}
+                    style={{
+                      background: "none", border: "none",
+                      fontSize: "20px", lineHeight: 1,
+                      color: "rgba(255,255,255,0.3)", cursor: "pointer",
+                      padding: "4px 8px",
+                      fontFamily: MONO,
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}
+                    onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.3)"}
+                  >
+                    &#8942;
+                  </button>
+                  {showStoryMenu && (
+                    <>
+                      <div
+                        onClick={() => { setShowStoryMenu(false); setConfirmDeleteMenu(false); setLinkCopied(false); }}
+                        style={{ position: "fixed", inset: 0, zIndex: -1 }}
+                      />
+                      <div style={{
+                        position: "absolute", top: "100%", right: 0,
+                        marginTop: "4px",
+                        background: "#1a1917",
+                        border: "1px solid rgba(255,255,255,0.1)",
+                        borderRadius: "6px",
+                        padding: "4px 0",
+                        minWidth: "160px",
+                      }}>
+                        <button
+                          onClick={() => {
+                            const activeMeta = storiesIndex.find((s) => s.id === activeStoryId);
+                            const url = window.location.origin + window.location.pathname + "#story/" + (activeMeta?.slug || activeStoryId);
+                            navigator.clipboard.writeText(url);
+                            setLinkCopied(true);
+                            setTimeout(() => { setLinkCopied(false); setShowStoryMenu(false); }, 2000);
+                          }}
+                          style={{
+                            display: "block", width: "100%",
+                            background: "none", border: "none",
+                            fontFamily: MONO, fontSize: "12px",
+                            color: linkCopied ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.5)",
+                            cursor: "pointer", padding: "8px 14px",
+                            textAlign: "left",
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                          onMouseLeave={(e) => e.currentTarget.style.background = "none"}
+                        >
+                          {linkCopied ? "Copied!" : "Copy Link"}
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirmDeleteMenu) {
+                              setShowStoryMenu(false);
+                              setConfirmDeleteMenu(false);
+                              handleReset();
+                            } else {
+                              setConfirmDeleteMenu(true);
+                            }
+                          }}
+                          style={{
+                            display: "block", width: "100%",
+                            background: "none", border: "none",
+                            fontFamily: MONO, fontSize: "12px",
+                            color: confirmDeleteMenu ? "#c97a7a" : "rgba(255,255,255,0.5)",
+                            cursor: "pointer", padding: "8px 14px",
+                            textAlign: "left",
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                          onMouseLeave={(e) => e.currentTarget.style.background = "none"}
+                        >
+                          {confirmDeleteMenu ? "Confirm delete?" : "Delete"}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </>
+            )}
+
+            <div ref={contentRef} style={{ maxWidth: "600px", margin: "0 auto", padding: narrowViewport ? "48px 24px 40px" : "60px 24px 40px", overflow: "visible" }}>
 
               {/* ── Spacer ── */}
-              <div style={{ marginBottom: "48px" }} />
+              <div style={{ marginBottom: narrowViewport ? "24px" : "48px" }} />
 
               {/* ── Story Title ── */}
               {activeStoryMeta?.title && (
@@ -1914,46 +2055,6 @@ export default function CollaborativeStoryApp() {
                 </h1>
               )}
 
-              {/* ── Inline Chapter Nav (narrow only) ── */}
-              {narrowViewport && (() => {
-                const chapters = [...new Set(story.map((e) => e.chapter || 1))].sort((a, b) => a - b);
-                if (chapters.length <= 1) return null;
-                return (
-                  <nav style={{
-                    fontFamily: MONO, fontSize: "12px",
-                    marginBottom: "48px",
-                    padding: "40px 0",
-                    display: "flex", flexDirection: "column", gap: "10px",
-                  }}>
-                    <div style={{
-                      fontSize: "10px",
-                      color: "rgba(255,255,255,0.25)",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px",
-                      marginBottom: "4px",
-                    }}>
-                      Contents
-                    </div>
-                    {chapters.map((ch) => (
-                      <button
-                        key={ch}
-                        onClick={() => document.getElementById(`chapter-${ch}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}
-                        style={{
-                          background: "none", border: "none", padding: 0,
-                          fontFamily: MONO, fontSize: "12px",
-                          color: ch === currentChapter ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.25)",
-                          cursor: "pointer", textAlign: "left",
-                          letterSpacing: "0.5px",
-                          display: "flex", alignItems: "baseline", gap: "8px",
-                        }}
-                      >
-                        <span style={{ color: "rgba(255,255,255,0.15)", minWidth: "16px" }}>{ch}</span>
-                        <span>{chapterTitles[ch] || (ch === currentChapter ? "In progress" : "")}</span>
-                      </button>
-                    ))}
-                  </nav>
-                );
-              })()}
 
               {/* ── Story ── */}
               {story.length > 0 && (
