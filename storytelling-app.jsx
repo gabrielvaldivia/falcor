@@ -2037,16 +2037,24 @@ export default function CollaborativeStoryApp() {
 
               {/* ── Story Title ── */}
               {activeStoryMeta?.title && (
-                <h1 style={{
-                  fontFamily: SERIF, fontSize: "42px", fontWeight: 700,
-                  color: "#e8ddd0", lineHeight: 1.2,
-                  padding: "40px 0",
-                  marginBottom: "48px",
-                  textAlign: "center",
-                  textWrap: "balance",
+                <div style={{
+                  ...(narrowViewport ? {
+                    height: "100vh",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    marginTop: "-48px",
+                  } : {}),
                 }}>
-                  {activeStoryMeta.title}
-                </h1>
+                  <h1 style={{
+                    fontFamily: SERIF, fontSize: "42px", fontWeight: 700,
+                    color: "#e8ddd0", lineHeight: 1.2,
+                    padding: "40px 0",
+                    marginBottom: narrowViewport ? 0 : "48px",
+                    textAlign: "center",
+                    textWrap: "balance",
+                  }}>
+                    {activeStoryMeta.title}
+                  </h1>
+                </div>
               )}
 
 
