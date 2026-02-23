@@ -2236,6 +2236,7 @@ export default function CollaborativeStoryApp() {
   const [pinnedEntry, setPinnedEntry] = useState(null);
   const [showStoryMenu, setShowStoryMenu] = useState(false);
   const [showChapterDropdown, setShowChapterDropdown] = useState(false);
+  const [topBarScrolled, setTopBarScrolled] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [confirmDeleteMenu, setConfirmDeleteMenu] = useState(false);
   const [showSliders, setShowSliders] = useState(false);
@@ -2454,6 +2455,14 @@ export default function CollaborativeStoryApp() {
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
+  }, [view]);
+
+  useEffect(() => {
+    if (view !== "story") { setTopBarScrolled(false); return; }
+    const onScroll = () => setTopBarScrolled(window.scrollY > 80);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
   }, [view]);
 
   const prevStoryLenRef = useRef(0);
@@ -2755,8 +2764,11 @@ export default function CollaborativeStoryApp() {
         <div style={{
           position: "fixed", top: 0, left: 0, right: 0,
           zIndex: 10,
-          background: "#0e0d0b",
-          borderBottom: "1px solid rgba(255,255,255,0.06)",
+          background: topBarScrolled ? "rgba(14,13,11,0.85)" : "transparent",
+          backdropFilter: topBarScrolled ? "blur(12px)" : "none",
+          WebkitBackdropFilter: topBarScrolled ? "blur(12px)" : "none",
+          borderBottom: topBarScrolled ? "1px solid rgba(255,255,255,0.1)" : "1px solid transparent",
+          transition: "background 0.3s, border-color 0.3s, backdrop-filter 0.3s",
           display: "flex", alignItems: "center", justifyContent: "space-between",
           padding: "0 16px",
           height: "48px",
