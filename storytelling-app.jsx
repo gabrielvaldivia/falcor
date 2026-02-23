@@ -1450,6 +1450,62 @@ function StoryRow({ title, stories, onSelectStory, isTouch, genreId, fontIndexMa
   );
 }
 
+function AppFooter({ t, lang, setLang, onAbout }) {
+  const isTouch = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
+  return (
+    <footer style={{
+      padding: isTouch ? "12px 24px 24px" : "24px 24px 0",
+      display: "flex", flexDirection: isTouch ? "column" : "row", alignItems: "center", justifyContent: "center", gap: isTouch ? "8px" : "16px",
+      fontFamily: MONO, fontSize: "11px",
+      color: "rgba(255,255,255,0.45)",
+    }}>
+      <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+        <span>
+          {t("built_by")}{" "}
+          <a
+            href="https://gabrielvaldivia.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: "rgba(255,255,255,0.5)", textDecoration: "none" }}
+            onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}
+            onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
+          >
+            Gabriel Valdivia
+          </a>
+        </span>
+        <span style={{ color: "rgba(255,255,255,0.1)" }}>|</span>
+        {onAbout && (
+          <>
+            <a
+              href="#"
+              onClick={(e) => { e.preventDefault(); onAbout(); }}
+              style={{ color: "rgba(255,255,255,0.5)", textDecoration: "none" }}
+              onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}
+              onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
+            >
+              {t("about")}
+            </a>
+            <span style={{ color: "rgba(255,255,255,0.1)" }}>|</span>
+          </>
+        )}
+        <span style={{ display: "flex", gap: "4px" }}>
+          <span
+            onClick={() => setLang("en")}
+            style={{ cursor: "pointer", color: lang === "en" ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.3)", fontWeight: lang === "en" ? 600 : 400 }}
+          >EN</span>
+          <span style={{ color: "rgba(255,255,255,0.2)" }}>/</span>
+          <span
+            onClick={() => setLang("es")}
+            style={{ cursor: "pointer", color: lang === "es" ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.3)", fontWeight: lang === "es" ? 600 : 400 }}
+          >ES</span>
+        </span>
+      </div>
+      {!isTouch && <span style={{ color: "rgba(255,255,255,0.1)" }}>|</span>}
+      <span>&copy; {t("copyright")} {new Date().getFullYear()}</span>
+    </footer>
+  );
+}
+
 function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, setHomeLayout, fontIndexMap, lang, setLang, t }) {
   const isTouch = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
   const carouselRef = useRef(null);
@@ -1947,52 +2003,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, s
         )}
       </div>
 
-      <footer style={{
-        padding: isTouch ? "12px 24px 24px" : "24px 24px 0",
-        display: "flex", flexDirection: isTouch ? "column" : "row", alignItems: "center", justifyContent: "center", gap: isTouch ? "8px" : "16px",
-        fontFamily: MONO, fontSize: "11px",
-        color: "rgba(255,255,255,0.45)",
-      }}>
-        <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
-          <span>
-            {t("built_by")}{" "}
-            <a
-              href="https://gabrielvaldivia.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: "rgba(255,255,255,0.5)", textDecoration: "none" }}
-              onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}
-              onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
-            >
-              Gabriel Valdivia
-            </a>
-          </span>
-          <span style={{ color: "rgba(255,255,255,0.1)" }}>|</span>
-          <a
-            href="#"
-            onClick={(e) => { e.preventDefault(); onAbout(); }}
-            style={{ color: "rgba(255,255,255,0.5)", textDecoration: "none" }}
-            onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}
-            onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
-          >
-            {t("about")}
-          </a>
-          <span style={{ color: "rgba(255,255,255,0.1)" }}>|</span>
-          <span style={{ display: "flex", gap: "4px" }}>
-            <span
-              onClick={() => setLang("en")}
-              style={{ cursor: "pointer", color: lang === "en" ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.3)", fontWeight: lang === "en" ? 600 : 400 }}
-            >EN</span>
-            <span style={{ color: "rgba(255,255,255,0.2)" }}>/</span>
-            <span
-              onClick={() => setLang("es")}
-              style={{ cursor: "pointer", color: lang === "es" ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.3)", fontWeight: lang === "es" ? 600 : 400 }}
-            >ES</span>
-          </span>
-        </div>
-        {!isTouch && <span style={{ color: "rgba(255,255,255,0.1)" }}>|</span>}
-        <span>&copy; {t("copyright")} {new Date().getFullYear()}</span>
-      </footer>
+      <AppFooter t={t} lang={lang} setLang={setLang} onAbout={onAbout} />
 
     </div>
   );
@@ -2002,7 +2013,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, s
    About Screen
    ──────────────────────────────────────────── */
 
-function AboutScreen({ onBack, narrow, t }) {
+function AboutScreen({ onBack, narrow, t, lang, setLang }) {
   return (
     <>
       {narrow ? (
@@ -2181,6 +2192,7 @@ function AboutScreen({ onBack, narrow, t }) {
           </p>
         </div>
       </div>
+      <AppFooter t={t} lang={lang} setLang={setLang} />
     </>
   );
 }
@@ -2189,7 +2201,7 @@ function AboutScreen({ onBack, narrow, t }) {
    New Story Screen — Genre + Voice Selection
    ──────────────────────────────────────────── */
 
-function NewStoryScreen({ onCancel, onCreate, narrow, t, lang }) {
+function NewStoryScreen({ onCancel, onCreate, narrow, t, lang, setLang }) {
   const [selectedGenre, setSelectedGenre] = useState(null);
   const [selectedVoice, setSelectedVoice] = useState(null);
   const [selectedThemes, setSelectedThemes] = useState([]);
@@ -2582,6 +2594,7 @@ function NewStoryScreen({ onCancel, onCreate, narrow, t, lang }) {
         {creating ? t("creating") : t("start_story")}
       </button>
     </div>
+    <AppFooter t={t} lang={lang} setLang={setLang} />
     </>
   );
 }
@@ -3515,12 +3528,13 @@ export default function CollaborativeStoryApp() {
             narrow={narrowViewport}
             t={t}
             lang={lang}
+            setLang={setLang}
           />
         )}
 
         {/* ── About View ── */}
         {view === "about" && (
-          <AboutScreen onBack={() => { history.pushState(null, "", "/" + (LAYOUT_TO_HASH[homeLayout] || "#rows")); setView("home"); }} narrow={narrowViewport} t={t} />
+          <AboutScreen onBack={() => { history.pushState(null, "", "/" + (LAYOUT_TO_HASH[homeLayout] || "#rows")); setView("home"); }} narrow={narrowViewport} t={t} lang={lang} setLang={setLang} />
         )}
 
         {/* ── Story View ── */}
@@ -4071,6 +4085,7 @@ export default function CollaborativeStoryApp() {
           </>
         )}
       </div>
+      <AppFooter t={t} lang={lang} setLang={setLang} />
     </>
   );
 }
