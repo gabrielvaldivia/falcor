@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { GoArrowLeft, GoInfo, GoPlus, GoDash, GoKebabHorizontal, GoLocation } from "react-icons/go";
+import { GoArrowLeft, GoInfo, GoPlus, GoDash, GoKebabHorizontal, GoLocation, GoChevronDown } from "react-icons/go";
 import { BsSliders2Vertical } from "react-icons/bs";
 
 /* ────────────────────────────────────────────
@@ -912,8 +912,12 @@ function StoryPopover({ entry, onClose }) {
    ──────────────────────────────────────────── */
 
 function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
+  const [genreFilter, setGenreFilter] = useState("all");
+  const filtered = genreFilter === "all"
+    ? stories
+    : stories.filter((s) => s.genre === genreFilter);
   return (
-    <div style={{ maxWidth: "720px", margin: "0 auto", padding: "60px 24px 40px" }}>
+    <div style={{ maxWidth: "720px", margin: "0 auto", padding: "60px 24px 100px" }}>
       <header style={{ marginBottom: "48px", textAlign: "center" }}>
         <h1 style={{
           fontFamily: TYPEWRITER, fontSize: "28px", fontWeight: 400,
@@ -930,12 +934,39 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
         </p>
       </header>
 
+      <div style={{ position: "relative" }}>
+      <div className="filter-pills-mask" />
+      <div className="filter-pills">
+        {[{ id: "all", label: "All" }, ...GENRES].map((g) => {
+          const active = genreFilter === g.id;
+          return (
+            <button
+              key={g.id}
+              onClick={() => setGenreFilter(g.id)}
+              style={{
+                fontFamily: MONO, fontSize: "11px", textTransform: "uppercase",
+                letterSpacing: "0.5px",
+                padding: "6px 14px", borderRadius: "20px",
+                border: active ? "1px solid rgba(255,255,255,0.4)" : "1px solid rgba(255,255,255,0.1)",
+                background: active ? "rgba(255,255,255,0.08)" : "transparent",
+                color: active ? "#e8ddd0" : "rgba(255,255,255,0.3)",
+                cursor: "pointer",
+                transition: "all 0.15s",
+              }}
+            >
+              {g.label}
+            </button>
+          );
+        })}
+      </div>
+      </div>
+
       <div style={{
         display: "grid",
         gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
         gap: "20px",
       }}>
-        {[...stories].sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || "")).map((s) => {
+        {[...filtered].sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || "")).map((s) => {
           const genre = GENRES.find((g) => g.id === s.genre);
           return (
             <div
@@ -989,32 +1020,30 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
           );
         })}
 
-        {/* New Story Card */}
-        <div
+      </div>
+
+      <div style={{
+        position: "sticky", bottom: "32px",
+        display: "flex", justifyContent: "center",
+        marginTop: "32px", pointerEvents: "none", zIndex: 5,
+      }}>
+        <button
           onClick={onNewStory}
           style={{
-            background: "transparent",
-            border: "1px solid rgba(255,255,255,0.06)",
-            borderRadius: "4px",
-            padding: "20px 16px",
-            cursor: "pointer",
-            aspectRatio: "2 / 3",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            transition: "border-color 0.15s",
+            padding: "12px 24px", borderRadius: "28px",
+            background: "#e8ddd0", border: "none",
+            color: "#0e0d0b",
+            cursor: "pointer", pointerEvents: "auto",
+            boxShadow: "0 2px 12px rgba(0,0,0,0.4)",
+            display: "flex", alignItems: "center", gap: "8px",
+            transition: "transform 0.15s, box-shadow 0.15s",
           }}
-          onMouseEnter={(e) => e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)"}
-          onMouseLeave={(e) => e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"}
+          onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.05)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.5)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = "0 2px 12px rgba(0,0,0,0.4)"; }}
         >
-          <span style={{
-            fontSize: "24px",
-            color: "rgba(255,255,255,0.3)",
-            lineHeight: 1,
-          }}>
-            +
-          </span>
-        </div>
+          <span style={{ fontSize: "20px", lineHeight: 1 }}>+</span>
+          <span style={{ fontFamily: MONO, fontSize: "11px", fontWeight: 600, letterSpacing: "0.5px" }}>NEW STORY</span>
+        </button>
       </div>
 
       <footer style={{
@@ -1051,6 +1080,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
         <span style={{ color: "rgba(255,255,255,0.1)" }}>|</span>
         <span>&copy; Copyright {new Date().getFullYear()}</span>
       </footer>
+
     </div>
   );
 }
@@ -1663,6 +1693,7 @@ export default function CollaborativeStoryApp() {
   const [dialogEntry, setDialogEntry] = useState(null);
   const [pinnedEntry, setPinnedEntry] = useState(null);
   const [showStoryMenu, setShowStoryMenu] = useState(false);
+  const [showChapterDropdown, setShowChapterDropdown] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [confirmDeleteMenu, setConfirmDeleteMenu] = useState(false);
   const [showSliders, setShowSliders] = useState(false);
@@ -2123,7 +2154,15 @@ export default function CollaborativeStoryApp() {
         .passage-slider::-moz-range-track { height: 2px; background: rgba(255,255,255,0.1); border-radius: 1px; border: none; }
         .passage-slider::-moz-range-thumb { width: 10px; height: 10px; border-radius: 50%; background: #e8ddd0; cursor: pointer; border: none; }
         .drop-cap::first-letter { float: left; font-size: 3.7em; line-height: 0.75; padding-right: 6px; padding-top: 4px; font-weight: 400; }
-        @media (max-width: 600px) { .about-ascii { font-size: 7px !important; } }
+        .filter-pills { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 32px; }
+        .filter-pills::-webkit-scrollbar { display: none; }
+        .filter-pills-mask { display: none; }
+        @media (max-width: 600px) {
+          .filter-pills { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; justify-content: flex-start; margin-left: -24px; margin-right: -24px; padding: 0 24px; -ms-overflow-style: none; scrollbar-width: none; }
+          .filter-pills > button { flex-shrink: 0; }
+          .filter-pills-mask { display: block; position: absolute; top: 0; bottom: 0; left: -24px; right: -24px; pointer-events: none; z-index: 1; background: linear-gradient(to right, #0e0d0b 0%, transparent 24px, transparent calc(100% - 24px), #0e0d0b 100%); }
+          .about-ascii { font-size: 7px !important; }
+        }
       `}</style>
 
       {/* Mobile: fixed top bar with back, chapter title, menu */}
@@ -2148,21 +2187,86 @@ export default function CollaborativeStoryApp() {
                 >
                   <GoArrowLeft size={16} />
                 </button>
-                <div style={{
-                  fontFamily: MONO, fontSize: "11px",
-                  color: "rgba(255,255,255,0.4)",
-                  letterSpacing: "0.3px",
-                  textAlign: "center",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                  flex: 1,
-                  padding: "0 12px",
-                }}>
-                  {visibleChapter === 0 ? ""
-                    : chapterTitles[visibleChapter]
-                    ? `Ch. ${visibleChapter} — ${chapterTitles[visibleChapter]}`
-                    : `Chapter ${visibleChapter}`}
+                <div style={{ flex: 1, padding: "0 12px", position: "relative" }}>
+                  {(() => {
+                    const chapters = [...new Set(story.map((e) => e.chapter || 1))].sort((a, b) => a - b);
+                    const hasMultiple = chapters.length > 1;
+                    return (
+                      <>
+                        <button
+                          onClick={() => hasMultiple && setShowChapterDropdown(!showChapterDropdown)}
+                          style={{
+                            background: "none", border: "none",
+                            fontFamily: MONO, fontSize: "11px",
+                            color: "rgba(255,255,255,0.4)",
+                            letterSpacing: "0.3px",
+                            textAlign: "center",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                            width: "100%",
+                            cursor: hasMultiple ? "pointer" : "default",
+                            padding: 0,
+                            display: "flex", alignItems: "center", justifyContent: "center", gap: "4px",
+                          }}
+                        >
+                          <span>
+                            {visibleChapter === 0
+                              ? (hasMultiple ? "Select a chapter" : "")
+                              : chapterTitles[visibleChapter]
+                              ? `Ch. ${visibleChapter} — ${chapterTitles[visibleChapter]}`
+                              : `Chapter ${visibleChapter}`}
+                          </span>
+                          {hasMultiple && <GoChevronDown size={12} />}
+                        </button>
+                        {showChapterDropdown && (
+                          <>
+                            <div
+                              onClick={() => setShowChapterDropdown(false)}
+                              style={{ position: "fixed", inset: 0, zIndex: -1 }}
+                            />
+                            <div style={{
+                              position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)",
+                              marginTop: "8px",
+                              background: "#1a1917",
+                              border: "1px solid rgba(255,255,255,0.1)",
+                              borderRadius: "6px",
+                              padding: "4px 0",
+                              minWidth: "200px",
+                              maxHeight: "60vh",
+                              overflowY: "auto",
+                              zIndex: 20,
+                            }}>
+                              {chapters.map((ch) => {
+                                const isActive = ch === visibleChapter;
+                                return (
+                                  <button
+                                    key={ch}
+                                    onClick={() => {
+                                      setShowChapterDropdown(false);
+                                      document.getElementById(`chapter-${ch}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                                    }}
+                                    style={{
+                                      display: "block", width: "100%",
+                                      background: isActive ? "rgba(255,255,255,0.06)" : "none",
+                                      border: "none", padding: "10px 16px",
+                                      fontFamily: MONO, fontSize: "12px",
+                                      color: isActive ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.4)",
+                                      cursor: "pointer", textAlign: "left",
+                                      letterSpacing: "0.3px",
+                                    }}
+                                  >
+                                    <span style={{ marginRight: "8px" }}>{ch}.</span>
+                                    {ch === currentChapter ? "In progress" : (chapterTitles[ch] || `Chapter ${ch}`)}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
                 <div style={{ position: "relative" }}>
                   <button
@@ -2475,6 +2579,7 @@ export default function CollaborativeStoryApp() {
                               textAlign: "center",
                               marginTop: i === 0 ? 0 : "72px",
                               marginBottom: chapterTitles[entry.chapter || 1] ? "72px" : "16px",
+                              scrollMarginTop: "64px",
                             }}>
                               <div style={{
                                 fontFamily: MONO, fontSize: "12px",
