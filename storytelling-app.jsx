@@ -1052,8 +1052,8 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
             <div
               key={`${s.id}-${i}`}
               onClick={(e) => {
-                e.currentTarget.style.transform = "scale(1.05)";
-                e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.3)";
+                e.currentTarget.style.transform = "scale(1.08)";
+                e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.35)";
                 setTimeout(() => onSelectStory(s.id), 150);
               }}
               style={{
@@ -1079,8 +1079,8 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
                   const rect = e.currentTarget.getBoundingClientRect();
                   const x = (e.clientX - rect.left) / rect.width - 0.5;
                   const y = (e.clientY - rect.top) / rect.height - 0.5;
-                  e.currentTarget.style.transform = `scale(1.05) rotateY(${x * 8}deg) rotateX(${-y * 8}deg)`;
-                  e.currentTarget.style.boxShadow = `${-x * 8}px ${y * 8}px 20px rgba(0,0,0,0.3)`;
+                  e.currentTarget.style.transform = `scale(1.08) rotateY(${x * 14}deg) rotateX(${-y * 14}deg)`;
+                  e.currentTarget.style.boxShadow = `${-x * 14}px ${y * 14}px 25px rgba(0,0,0,0.35)`;
                   e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)";
                 },
                 onMouseDown: (e) => {
@@ -1164,8 +1164,8 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
 
       <footer style={{
         marginTop: isTouch ? "16px" : "64px", padding: isTouch ? "12px 24px 24px" : "24px 24px 0",
-        borderTop: "1px solid rgba(255,255,255,0.06)",
-        display: "flex", flexDirection: "column", alignItems: "center", gap: "8px",
+        borderTop: "none",
+        display: "flex", flexDirection: isTouch ? "column" : "row", alignItems: "center", justifyContent: "center", gap: isTouch ? "8px" : "16px",
         fontFamily: MONO, fontSize: "11px",
         color: "rgba(255,255,255,0.2)",
       }}>
@@ -1194,6 +1194,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
             About
           </a>
         </div>
+        {!isTouch && <span style={{ color: "rgba(255,255,255,0.1)" }}>|</span>}
         <span>&copy; Copyright {new Date().getFullYear()}</span>
       </footer>
 
