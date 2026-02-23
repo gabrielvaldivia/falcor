@@ -396,7 +396,7 @@ Output ONLY the question. No quotes. Under 12 words.`;
    ──────────────────────────────────────────── */
 
 function getStyleInstructions(settings) {
-  const { tone, length, mood, dialogue, surprise = 3, emotion = 4 } = settings;
+  const { tone, length, mood, dialogue, surprise = 3, emotion = 4, plot = 5 } = settings;
 
   const toneDesc = tone <= 3
     ? `minimalist and spare (${tone}/9) — short declarative sentences, very few adjectives`
@@ -404,8 +404,14 @@ function getStyleInstructions(settings) {
     ? `balanced literary prose (${tone}/9) — moderate detail and description`
     : `lush and ornate (${tone}/9) — richly descriptive with layered sensory detail and elaborate phrasing`;
 
-  const sentenceCount = Math.round(1 + (length / 9) * 5);
+  const sentenceCount = Math.round(1 + ((length ?? 4) / 9) * 5);
   const lengthDesc = `approximately ${sentenceCount} sentence${sentenceCount !== 1 ? "s" : ""}`;
+
+  const paceDesc = plot <= 2
+    ? "DO NOT advance the plot. Focus entirely on atmosphere, sensory detail, and describing what the user mentions. Linger in the moment. No new events, no plot movement."
+    : plot <= 5
+    ? "Gently advance the plot. Blend the user's answer with atmosphere and description. Small narrative steps."
+    : `Push the plot forward significantly (${plot}/9). Use the user's answer to drive major story beats, introduce new events, and move the narrative forward decisively.`;
 
   const moodDesc = mood <= 3
     ? `dark and unsettling (${mood}/9) — undercurrents of dread and unease`
@@ -436,7 +442,8 @@ function getStyleInstructions(settings) {
 - Mood: ${moodDesc}
 - Dialogue: ${dialogueDesc}
 - Surprise: ${surpriseDesc}
-- Emotion: ${emotionDesc}`;
+- Emotion: ${emotionDesc}
+- Plot pace: ${paceDesc}`;
 }
 
 async function shouldEndChapter(story, currentChapter) {
@@ -2278,7 +2285,7 @@ export default function CollaborativeStoryApp() {
   }); // "rows" | "carousel" | "activity"
   const updateHomeLayout = useCallback((layout) => {
     setHomeLayout(layout);
-    window.location.hash = LAYOUT_TO_HASH[layout] || "rows";
+    history.replaceState(null, "", "/" + (LAYOUT_TO_HASH[layout] || "#rows"));
   }, []);
   const [activeStoryId, setActiveStoryId] = useState(null);
   const [storiesIndex, setStoriesIndex] = useState([]);
@@ -2307,7 +2314,7 @@ export default function CollaborativeStoryApp() {
   const [linkCopied, setLinkCopied] = useState(false);
   const [confirmDeleteMenu, setConfirmDeleteMenu] = useState(false);
   const [showSliders, setShowSliders] = useState(false);
-  const [sliderLength, setSliderLength] = useState(4);
+  const [sliderPlot, setSliderPlot] = useState(5);
   const [sliderDialogue, setSliderDialogue] = useState(2);
   const [sliderSurprise, setSliderSurprise] = useState(3);
   const [sliderEmotion, setSliderEmotion] = useState(4);
@@ -2332,8 +2339,8 @@ export default function CollaborativeStoryApp() {
     const base = activeStoryMeta
       ? getStyleForStory(activeStoryMeta.genre, activeStoryMeta.writingStyle)
       : { tone: 5, length: 4, mood: 5, dialogue: 2 };
-    return { ...base, length: sliderLength, dialogue: sliderDialogue, surprise: sliderSurprise, emotion: sliderEmotion };
-  }, [activeStoryMeta, sliderLength, sliderDialogue, sliderSurprise, sliderEmotion]);
+    return { ...base, plot: sliderPlot, dialogue: sliderDialogue, surprise: sliderSurprise, emotion: sliderEmotion };
+  }, [activeStoryMeta, sliderPlot, sliderDialogue, sliderSurprise, sliderEmotion]);
 
   // Resolve geo label on mount if enabled
   useEffect(() => {
@@ -2362,7 +2369,7 @@ export default function CollaborativeStoryApp() {
           openStory(found.id);
         }
       } else if (!hash || hash === "#") {
-        window.location.hash = "rows";
+        history.replaceState(null, "", "/#rows");
       }
     })();
   }, []);
@@ -2431,7 +2438,7 @@ export default function CollaborativeStoryApp() {
     const defaults = meta
       ? getStyleForStory(meta.genre, meta.writingStyle)
       : { length: 4, dialogue: 2, surprise: 3, emotion: 4 };
-    setSliderLength(defaults.length);
+    setSliderPlot(5);
     setSliderDialogue(defaults.dialogue);
     setSliderSurprise(defaults.surprise ?? 3);
     setSliderEmotion(defaults.emotion ?? 4);
@@ -2662,7 +2669,7 @@ export default function CollaborativeStoryApp() {
       const defaults = activeStoryMeta
         ? getStyleForStory(activeStoryMeta.genre, activeStoryMeta.writingStyle)
         : { length: 4, dialogue: 2, surprise: 3, emotion: 4 };
-      setSliderLength(defaults.length);
+      setSliderPlot(5);
       setSliderDialogue(defaults.dialogue);
       setSliderSurprise(defaults.surprise ?? 3);
       setSliderEmotion(defaults.emotion ?? 4);
@@ -2797,7 +2804,7 @@ export default function CollaborativeStoryApp() {
     setView("home");
     setActiveStoryId(null);
     setShowStoryMenu(false);
-    window.location.hash = LAYOUT_TO_HASH[homeLayout] || "rows";
+    history.pushState(null, "", "/" + (LAYOUT_TO_HASH[homeLayout] || "#rows"));
   };
 
   return (
@@ -3014,7 +3021,7 @@ export default function CollaborativeStoryApp() {
             stories={storiesIndex}
             onSelectStory={openStory}
             onNewStory={() => { window.scrollTo(0, 0); setView("new"); }}
-            onAbout={() => { window.scrollTo(0, 0); window.location.hash = "about"; setView("about"); }}
+            onAbout={() => { window.scrollTo(0, 0); history.pushState(null, "", "/#about"); setView("about"); }}
             homeLayout={homeLayout}
             setHomeLayout={updateHomeLayout}
             fontIndexMap={fontIndexMap}
@@ -3024,7 +3031,7 @@ export default function CollaborativeStoryApp() {
         {/* ── New Story View ── */}
         {view === "new" && (
           <NewStoryScreen
-            onCancel={() => { window.location.hash = LAYOUT_TO_HASH[homeLayout] || "rows"; setView("home"); }}
+            onCancel={() => { history.pushState(null, "", "/" + (LAYOUT_TO_HASH[homeLayout] || "#rows")); setView("home"); }}
             onCreate={handleCreateStory}
             narrow={narrowViewport}
           />
@@ -3032,7 +3039,7 @@ export default function CollaborativeStoryApp() {
 
         {/* ── About View ── */}
         {view === "about" && (
-          <AboutScreen onBack={() => { window.location.hash = LAYOUT_TO_HASH[homeLayout] || "rows"; setView("home"); }} narrow={narrowViewport} />
+          <AboutScreen onBack={() => { history.pushState(null, "", "/" + (LAYOUT_TO_HASH[homeLayout] || "#rows")); setView("home"); }} narrow={narrowViewport} />
         )}
 
         {/* ── Story View ── */}
@@ -3371,7 +3378,7 @@ export default function CollaborativeStoryApp() {
                         padding: "12px 0 0",
                       }}>
                         {[
-                          { label: "Length", value: sliderLength, set: setSliderLength, labels: ["Brief", "Short", "Moderate", "Medium", "Standard", "Full", "Extended", "Long", "Very Long", "Epic"] },
+                          { label: "Plot", value: sliderPlot, set: setSliderPlot, labels: ["Linger", "Dwell", "Savor", "Gentle", "Steady", "Moving", "Driven", "Urgent", "Racing", "Leaping"] },
                           { label: "Dialogue", value: sliderDialogue, set: setSliderDialogue, labels: ["None", "Minimal", "Sparse", "Light", "Moderate", "Balanced", "Frequent", "Rich", "Heavy", "All Talk"] },
                           { label: "Surprise", value: sliderSurprise, set: setSliderSurprise, labels: ["Steady", "Calm", "Gentle", "Mild", "Moderate", "Notable", "Bold", "Dramatic", "Shocking", "Wild"] },
                           { label: "Emotion", value: sliderEmotion, set: setSliderEmotion, labels: ["Stoic", "Reserved", "Subtle", "Restrained", "Moderate", "Open", "Warm", "Vivid", "Intense", "Raw"] },
