@@ -1139,7 +1139,6 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
       display: "flex", flexDirection: "column",
       minHeight: isTouch ? "100dvh" : "100vh", padding: isTouch ? "60px 0 24px" : "80px 0 40px",
       maxWidth: "1200px", margin: "0 auto", width: "100%",
-      ...(isTouch ? { overflow: "auto" } : {}),
     }}>
       <div style={{
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 10,
@@ -1392,7 +1391,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
         })()}
 
         {homeLayout === "activity" && (
-          <div style={{ maxWidth: "600px", margin: "0 auto", padding: isTouch ? "0 20px" : "0 24px", width: "100%" }}>
+          <div style={{ maxWidth: "600px", margin: "0 auto", padding: isTouch ? "0" : "0 24px", width: "100%" }}>
             {activityLoading ? (
               <p style={{ fontFamily: MONO, fontSize: "12px", color: "rgba(255,255,255,0.3)", textAlign: "center" }}>
                 Loading activity...
