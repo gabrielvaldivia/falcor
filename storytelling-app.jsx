@@ -345,13 +345,19 @@ async function deleteStoryData(id) {
    AI Prompt Generation
    ──────────────────────────────────────────── */
 
-async function generatePrompt(existingStory, chapter = 1, isNewChapter = false, genreVoiceCtx = "") {
+async function generatePrompt(existingStory, chapter = 1, isNewChapter = false, genreVoiceCtx = "", plotPace = 5) {
   const storyContext = existingStory.length > 0
     ? existingStory.slice(-3).map((e) => e.text).join("\n\n")
     : "";
 
+  const plotPaceInstruction = plotPace <= 2
+    ? `\nIMPORTANT: Generate a question that invites the user to describe atmosphere, a sensory detail, or an emotion. Do NOT ask about events or what happens next. Examples: "What did the room smell like?", "What sound kept repeating?", "How did the air feel?"\n`
+    : plotPace >= 7
+    ? `\nIMPORTANT: Generate a question that drives the plot forward dramatically. Ask about actions, decisions, confrontations, or turning points. Examples: "What did they decide to do?", "Who appeared at the door?", "What secret was revealed?"\n`
+    : "";
+
   const systemPrompt = `Generate a single question that a person can answer in a few words. It must be a question ending with "?" that invites a short, imaginative response. NOT a story sentence. NOT a statement. It should feel like a question a friend asks you.
-${genreVoiceCtx ? `\nContext: ${genreVoiceCtx}\nThe question should fit naturally within this genre and voice.\n` : ""}
+${genreVoiceCtx ? `\nContext: ${genreVoiceCtx}\nThe question should fit naturally within this genre and voice.\n` : ""}${plotPaceInstruction}
 Good examples:
 - "What did the stranger have in their pocket?"
 - "What was written on the note?"
@@ -2314,6 +2320,8 @@ export default function CollaborativeStoryApp() {
   const [linkCopied, setLinkCopied] = useState(false);
   const [confirmDeleteMenu, setConfirmDeleteMenu] = useState(false);
   const [showSliders, setShowSliders] = useState(false);
+  const [promptLoading, setPromptLoading] = useState(false);
+  const prevPlotRef = useRef(5);
   const [sliderPlot, setSliderPlot] = useState(5);
   const [sliderDialogue, setSliderDialogue] = useState(2);
   const [sliderSurprise, setSliderSurprise] = useState(3);
@@ -2341,6 +2349,26 @@ export default function CollaborativeStoryApp() {
       : { tone: 5, length: 4, mood: 5, dialogue: 2 };
     return { ...base, plot: sliderPlot, dialogue: sliderDialogue, surprise: sliderSurprise, emotion: sliderEmotion };
   }, [activeStoryMeta, sliderPlot, sliderDialogue, sliderSurprise, sliderEmotion]);
+
+  // Regenerate prompt when plot slider changes (debounced)
+  useEffect(() => {
+    if (prevPlotRef.current === sliderPlot) return;
+    prevPlotRef.current = sliderPlot;
+    if (!showSliders || phase !== "input" || story.length === 0) return;
+    const timer = setTimeout(async () => {
+      setPromptLoading(true);
+      try {
+        const ctx = getGenreVoiceCtx();
+        const newPrompt = await generatePrompt(story, currentChapter, false, ctx, sliderPlot);
+        setCurrentPrompt(newPrompt);
+      } catch (err) {
+        console.warn("Plot slider prompt regeneration failed:", err.message);
+      } finally {
+        setPromptLoading(false);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [sliderPlot]);
 
   // Resolve geo label on mount if enabled
   useEffect(() => {
@@ -2409,7 +2437,7 @@ export default function CollaborativeStoryApp() {
           setChapterTitles(backfilled);
           await window.storage.set(storyKey(id, "titles-v1"), JSON.stringify(backfilled), true);
         }
-        const prompt = await generatePrompt(loadedStory, loadedChapter, false, ctx);
+        const prompt = await generatePrompt(loadedStory, loadedChapter, false, ctx, sliderPlot);
         setCurrentPrompt(prompt);
         await window.storage.set(storyKey(id, "prompt-v1"), prompt, true);
       }
@@ -2640,7 +2668,7 @@ export default function CollaborativeStoryApp() {
         }
       }
 
-      const nextPrompt = await generatePrompt(updatedStory, nextChapter, isNewChapter, getGenreVoiceCtx());
+      const nextPrompt = await generatePrompt(updatedStory, nextChapter, isNewChapter, getGenreVoiceCtx(), sliderPlot);
       await window.storage.set(storyKey(activeStoryId, "data-v1"), JSON.stringify(updatedStory), true);
       await window.storage.set(storyKey(activeStoryId, "prompt-v1"), nextPrompt, true);
       await window.storage.set(storyKey(activeStoryId, "count-v1"), String(newCount), true);
@@ -3345,6 +3373,8 @@ export default function CollaborativeStoryApp() {
                       fontFamily: TYPEWRITER, fontSize: "16px",
                       color: "rgba(255,255,255,0.5)", lineHeight: 1.7,
                       marginBottom: "16px",
+                      transition: "opacity 0.3s ease",
+                      ...(promptLoading ? { animation: "pulse 1.5s ease-in-out infinite" } : {}),
                     }}>
                       {currentPrompt}
                     </p>
