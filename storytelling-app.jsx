@@ -919,6 +919,23 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
   const sorted = [...filtered].sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
   const scrollRef = useRef(null);
   const needsLoop = sorted.length > 2;
+  const isTouch = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
+
+  const updateCenterScale = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el || !isTouch) return;
+    const center = el.scrollLeft + el.clientWidth / 2;
+    for (const child of el.children) {
+      const cardCenter = child.offsetLeft + child.offsetWidth / 2;
+      const dist = Math.abs(center - cardCenter);
+      const maxDist = el.clientWidth / 2;
+      const t = Math.min(dist / maxDist, 1);
+      const scale = 1.15 - t * 0.15;
+      const opacity = 1 - t * 0.4;
+      child.style.transform = `scale(${scale})`;
+      child.style.opacity = opacity;
+    }
+  }, [isTouch]);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -929,28 +946,32 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
     } else {
       el.scrollLeft = el.scrollWidth / 3;
     }
-  }, [sorted.length, needsLoop, genreFilter]);
+    updateCenterScale();
+  }, [sorted.length, needsLoop, genreFilter, updateCenterScale]);
 
   useEffect(() => {
     const el = scrollRef.current;
-    if (!el || !needsLoop) return;
+    if (!el) return;
     let ticking = false;
     const onScroll = () => {
       if (ticking) return;
       ticking = true;
       requestAnimationFrame(() => {
-        const oneSetWidth = el.scrollWidth / 3;
-        if (el.scrollLeft >= oneSetWidth * 2 - 1) {
-          el.scrollLeft -= oneSetWidth;
-        } else if (el.scrollLeft <= 1) {
-          el.scrollLeft += oneSetWidth;
+        if (needsLoop) {
+          const oneSetWidth = el.scrollWidth / 3;
+          if (el.scrollLeft >= oneSetWidth * 2 - 1) {
+            el.scrollLeft -= oneSetWidth;
+          } else if (el.scrollLeft <= 1) {
+            el.scrollLeft += oneSetWidth;
+          }
         }
+        updateCenterScale();
         ticking = false;
       });
     };
     el.addEventListener("scroll", onScroll);
     return () => el.removeEventListener("scroll", onScroll);
-  }, [needsLoop]);
+  }, [needsLoop, updateCenterScale]);
 
   return (
     <div style={{
@@ -1000,7 +1021,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
       </div>
       </div>
 
-      <div style={{ position: "relative" }}>
+      <div style={{ position: "relative", width: "100%", overflow: "hidden" }}>
       <div style={{
         position: "absolute", top: 0, bottom: 0, left: 0, right: 0,
         pointerEvents: "none", zIndex: 1,
@@ -1009,12 +1030,14 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
       <div
         ref={scrollRef}
         style={{
-          display: "flex", gap: "16px",
+          display: "flex", gap: isTouch ? "24px" : "16px",
           justifyContent: needsLoop ? "flex-start" : "center",
           overflowX: "auto", WebkitOverflowScrolling: "touch",
           padding: "30px 24px",
           scrollbarWidth: "none", msOverflowStyle: "none",
-          perspective: "800px",
+          perspective: isTouch ? "none" : "800px",
+          width: "100%",
+          ...(isTouch ? { scrollSnapType: "x mandatory" } : {}),
         }}
         className="story-hscroll"
       >
@@ -1040,32 +1063,35 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "space-between",
-                transition: "transform 0.15s ease-out, border-color 0.15s, box-shadow 0.15s",
-                transformStyle: "preserve-3d",
+                transition: "transform 0.2s ease-out, opacity 0.2s ease-out, border-color 0.15s, box-shadow 0.15s",
+                transformStyle: isTouch ? "flat" : "preserve-3d",
                 willChange: "transform",
+                ...(isTouch ? { scrollSnapAlign: "center" } : {}),
               }}
-              onMouseMove={(e) => {
-                if (e.buttons) return;
-                const rect = e.currentTarget.getBoundingClientRect();
-                const x = (e.clientX - rect.left) / rect.width - 0.5;
-                const y = (e.clientY - rect.top) / rect.height - 0.5;
-                e.currentTarget.style.transform = `scale(1.05) rotateY(${x * 8}deg) rotateX(${-y * 8}deg)`;
-                e.currentTarget.style.boxShadow = `${-x * 8}px ${y * 8}px 20px rgba(0,0,0,0.3)`;
-                e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)";
-              }}
-              onMouseDown={(e) => {
-                e.currentTarget.style.transform = "scale(0.95)";
-                e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.3)";
-              }}
-              onMouseUp={(e) => {
-                e.currentTarget.style.transform = "scale(1)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "scale(1) rotateY(0deg) rotateX(0deg)";
-                e.currentTarget.style.boxShadow = "none";
-                e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)";
-              }}
+              {...(!isTouch ? {
+                onMouseMove: (e) => {
+                  if (e.buttons) return;
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const x = (e.clientX - rect.left) / rect.width - 0.5;
+                  const y = (e.clientY - rect.top) / rect.height - 0.5;
+                  e.currentTarget.style.transform = `scale(1.05) rotateY(${x * 8}deg) rotateX(${-y * 8}deg)`;
+                  e.currentTarget.style.boxShadow = `${-x * 8}px ${y * 8}px 20px rgba(0,0,0,0.3)`;
+                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)";
+                },
+                onMouseDown: (e) => {
+                  e.currentTarget.style.transform = "scale(0.95)";
+                  e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.3)";
+                },
+                onMouseUp: (e) => {
+                  e.currentTarget.style.transform = "scale(1)";
+                  e.currentTarget.style.boxShadow = "none";
+                },
+                onMouseLeave: (e) => {
+                  e.currentTarget.style.transform = "scale(1) rotateY(0deg) rotateX(0deg)";
+                  e.currentTarget.style.boxShadow = "none";
+                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)";
+                },
+              } : {})}
             >
               <div>
                 {genre && (
@@ -1134,35 +1160,35 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
       <footer style={{
         marginTop: "64px", padding: "24px 24px 0",
         borderTop: "1px solid rgba(255,255,255,0.06)",
-        display: "flex", justifyContent: "center", gap: "16px",
-        flexWrap: "wrap",
+        display: "flex", flexDirection: "column", alignItems: "center", gap: "8px",
         fontFamily: MONO, fontSize: "11px",
         color: "rgba(255,255,255,0.2)",
       }}>
-        <span>
-          Built by{" "}
+        <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+          <span>
+            Built by{" "}
+            <a
+              href="https://gabrielvaldivia.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: "rgba(255,255,255,0.35)", textDecoration: "none" }}
+              onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}
+              onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.35)"}
+            >
+              Gabriel Valdivia
+            </a>
+          </span>
+          <span style={{ color: "rgba(255,255,255,0.1)" }}>|</span>
           <a
-            href="https://gabrielvaldivia.com"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="#"
+            onClick={(e) => { e.preventDefault(); onAbout(); }}
             style={{ color: "rgba(255,255,255,0.35)", textDecoration: "none" }}
             onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}
             onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.35)"}
           >
-            Gabriel Valdivia
+            About
           </a>
-        </span>
-        <span style={{ color: "rgba(255,255,255,0.1)" }}>|</span>
-        <a
-          href="#"
-          onClick={(e) => { e.preventDefault(); onAbout(); }}
-          style={{ color: "rgba(255,255,255,0.35)", textDecoration: "none" }}
-          onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}
-          onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.35)"}
-        >
-          About
-        </a>
-        <span style={{ color: "rgba(255,255,255,0.1)" }}>|</span>
+        </div>
         <span>&copy; Copyright {new Date().getFullYear()}</span>
       </footer>
 
@@ -2259,7 +2285,7 @@ export default function CollaborativeStoryApp() {
         .filter-pills::-webkit-scrollbar { display: none; }
         .filter-pills-mask { display: none; }
         @media (max-width: 600px) {
-          .filter-pills { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; justify-content: flex-start; margin-left: -24px; margin-right: -24px; padding: 0 24px; -ms-overflow-style: none; scrollbar-width: none; }
+          .filter-pills { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; justify-content: flex-start; margin-left: 0; margin-right: 0; padding: 0 24px; -ms-overflow-style: none; scrollbar-width: none; }
           .filter-pills > button { flex-shrink: 0; }
           .filter-pills-mask { display: block; position: absolute; top: 0; bottom: 0; left: -24px; right: -24px; pointer-events: none; z-index: 1; background: linear-gradient(to right, #0e0d0b 0%, transparent 24px, transparent calc(100% - 24px), #0e0d0b 100%); }
           .about-ascii { font-size: 7px !important; }
