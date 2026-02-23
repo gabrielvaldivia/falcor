@@ -976,9 +976,11 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
   return (
     <div style={{
       display: "flex", flexDirection: "column", justifyContent: "center",
-      minHeight: "100vh", padding: "60px 0 100px",
+      ...(isTouch
+        ? { height: "100vh", overflow: "hidden", padding: "40px 0 0" }
+        : { minHeight: "100vh", padding: "60px 0 100px" }),
     }}>
-      <header style={{ marginBottom: "48px", textAlign: "center" }}>
+      <header style={{ marginBottom: isTouch ? "24px" : "48px", textAlign: "center" }}>
         <h1 style={{
           fontFamily: TYPEWRITER, fontSize: "28px", fontWeight: 400,
           color: "#e8ddd0",
@@ -1021,7 +1023,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
       </div>
       </div>
 
-      <div style={{ position: "relative", width: "100%", overflow: "hidden" }}>
+      <div style={{ position: "relative", width: "100%", overflow: "hidden", ...(isTouch ? { flex: 1, display: "flex", alignItems: "center" } : {}) }}>
       <div style={{
         position: "absolute", top: 0, bottom: 0, left: 0, right: 0,
         pointerEvents: "none", zIndex: 1,
@@ -1128,9 +1130,9 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
       </div>
 
       <div style={{
-        position: "sticky", bottom: "32px",
+        position: isTouch ? "relative" : "sticky", bottom: isTouch ? "auto" : "32px",
         display: "flex", justifyContent: "center",
-        marginTop: "32px", pointerEvents: "none", zIndex: 5,
+        marginTop: isTouch ? "16px" : "32px", pointerEvents: "none", zIndex: 5,
       }}>
         <button
           onClick={(e) => {
@@ -1158,7 +1160,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
       </div>
 
       <footer style={{
-        marginTop: "64px", padding: "24px 24px 0",
+        marginTop: isTouch ? "16px" : "64px", padding: isTouch ? "12px 24px 24px" : "24px 24px 0",
         borderTop: "1px solid rgba(255,255,255,0.06)",
         display: "flex", flexDirection: "column", alignItems: "center", gap: "8px",
         fontFamily: MONO, fontSize: "11px",
@@ -2287,7 +2289,7 @@ export default function CollaborativeStoryApp() {
         @media (max-width: 600px) {
           .filter-pills { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; justify-content: flex-start; margin-left: 0; margin-right: 0; padding: 0 24px; -ms-overflow-style: none; scrollbar-width: none; }
           .filter-pills > button { flex-shrink: 0; }
-          .filter-pills-mask { display: block; position: absolute; top: 0; bottom: 0; left: -24px; right: -24px; pointer-events: none; z-index: 1; background: linear-gradient(to right, #0e0d0b 0%, transparent 24px, transparent calc(100% - 24px), #0e0d0b 100%); }
+          .filter-pills-mask { display: block; position: absolute; top: 0; bottom: 0; left: 0; right: 0; pointer-events: none; z-index: 1; background: linear-gradient(to right, #0e0d0b 0%, transparent 24px, transparent calc(100% - 24px), #0e0d0b 100%); }
           .about-ascii { font-size: 7px !important; }
         }
       `}</style>
