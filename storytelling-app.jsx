@@ -1917,9 +1917,11 @@ export default function CollaborativeStoryApp() {
       chapter: currentChapter,
     };
 
-    const updatedStory = [...story, newEntry];
-
     try {
+      // Re-read fresh from storage to avoid overwriting concurrent contributions
+      const freshResult = await window.storage.get(storyKey(activeStoryId, "data-v1"), true);
+      const freshStory = freshResult ? JSON.parse(freshResult.value) : story;
+      const updatedStory = [...freshStory, newEntry];
       let nextChapter = currentChapter;
       let isNewChapter = false;
       let updatedTitles = chapterTitles;
