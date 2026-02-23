@@ -1137,7 +1137,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
   return (
     <div style={{
       display: "flex", flexDirection: "column",
-      minHeight: "100vh", padding: isTouch ? "60px 0 24px" : "80px 0 40px",
+      minHeight: isTouch ? "100dvh" : "100vh", padding: isTouch ? "60px 0 24px" : "80px 0 40px",
       maxWidth: "1200px", margin: "0 auto", width: "100%",
       ...(isTouch ? { overflow: "auto" } : {}),
     }}>
@@ -1252,7 +1252,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
           return (
             <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
               {!wideEnough && (
-              <div style={{ position: "relative", marginBottom: "16px" }}>
+              <div style={{ position: "relative", marginBottom: "16px", marginTop: isTouch ? "16px" : 0 }}>
                 <div style={{
                   position: "absolute", top: 0, bottom: 0, left: 0, right: 0,
                   pointerEvents: "none", zIndex: 1,
@@ -1439,6 +1439,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
                       height: "150px",
                       display: "flex", flexDirection: "column", justifyContent: "space-between",
                       flexShrink: 0, alignSelf: "flex-start",
+                      position: "sticky", top: isTouch ? "70px" : "90px",
                     }}>
                       <div>
                         {genre && (
