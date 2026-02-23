@@ -834,14 +834,14 @@ function StoryLine({ entry, onHover, onLeave, narrow, onShowDialog, onPinPopover
             style={{
               background: "none", border: "none", cursor: "pointer",
               padding: "2px",
-              color: "rgba(255,255,255,0.2)",
+              color: "rgba(255,255,255,0.45)",
               transition: "opacity 0.15s, color 0.15s",
               opacity: hideIcon ? 0 : (hovered ? 1 : 0),
               pointerEvents: hideIcon ? "none" : (hovered ? "auto" : "none"),
               position: "sticky", top: "24px",
             }}
             onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
-            onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.2)"}
+            onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.45)"}
           >
             <GoInfo size={16} />
           </button>
@@ -861,7 +861,7 @@ function StoryPopover({ entry, onClose }) {
       borderRadius: "6px",
       padding: "14px 16px",
       fontFamily: MONO,
-      fontSize: "12px", color: "rgba(255,255,255,0.4)",
+      fontSize: "12px", color: "rgba(255,255,255,0.5)",
       lineHeight: 1.6,
       width: "280px",
       display: "flex", flexDirection: "column", gap: "8px",
@@ -873,7 +873,7 @@ function StoryPopover({ entry, onClose }) {
           style={{
             position: "absolute", top: "8px", right: "8px",
             background: "none", border: "none",
-            cursor: "pointer", color: "rgba(255,255,255,0.25)",
+            cursor: "pointer", color: "rgba(255,255,255,0.45)",
             fontSize: "14px", lineHeight: 1, padding: "2px",
           }}
           onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
@@ -884,25 +884,25 @@ function StoryPopover({ entry, onClose }) {
       )}
       {entry.location && (
         <div>
-          <div style={{ color: "rgba(255,255,255,0.25)", fontSize: "10px", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Location</div>
+          <div style={{ color: "rgba(255,255,255,0.45)", fontSize: "10px", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Location</div>
           <div style={{ color: "rgba(255,255,255,0.5)" }}>{entry.location}</div>
         </div>
       )}
       {entry.time && (
         <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "8px" }}>
-          <div style={{ color: "rgba(255,255,255,0.25)", fontSize: "10px", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Date</div>
+          <div style={{ color: "rgba(255,255,255,0.45)", fontSize: "10px", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Date</div>
           <div style={{ color: "rgba(255,255,255,0.5)" }}>{entry.time}</div>
         </div>
       )}
       {entry.prompt && (
         <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "8px" }}>
-          <div style={{ color: "rgba(255,255,255,0.25)", fontSize: "10px", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Prompt</div>
+          <div style={{ color: "rgba(255,255,255,0.45)", fontSize: "10px", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Prompt</div>
           <div style={{ color: "rgba(255,255,255,0.5)" }}>{entry.prompt}</div>
         </div>
       )}
       {entry.originalAnswer && (
         <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "8px" }}>
-          <div style={{ color: "rgba(255,255,255,0.25)", fontSize: "10px", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Answer</div>
+          <div style={{ color: "rgba(255,255,255,0.45)", fontSize: "10px", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Answer</div>
           <div style={{ color: "rgba(255,255,255,0.5)" }}>{entry.originalAnswer}</div>
         </div>
       )}
@@ -921,9 +921,9 @@ function StoryRow({ title, stories, onSelectStory, isTouch }) {
     <div style={{ marginBottom: isTouch ? "32px" : "40px" }}>
       <h2 style={{
         fontFamily: MONO, fontSize: "12px", fontWeight: 400,
-        color: "rgba(255,255,255,0.4)", letterSpacing: "0.5px",
-        textTransform: "uppercase", margin: "0 0 12px",
-        padding: "0 32px",
+        color: "rgba(255,255,255,0.5)", letterSpacing: "0.5px",
+        textTransform: "uppercase", margin: 0,
+        padding: isTouch ? "0 20px" : "0 32px",
       }}>
         {title}
       </h2>
@@ -931,7 +931,9 @@ function StoryRow({ title, stories, onSelectStory, isTouch }) {
         <div style={{
           position: "absolute", top: 0, bottom: 0, left: 0, right: 0,
           pointerEvents: "none", zIndex: 1,
-          background: "linear-gradient(to right, #0e0d0b 0%, transparent 32px, transparent calc(100% - 32px), #0e0d0b 100%)",
+          background: isTouch
+            ? "linear-gradient(to right, #0e0d0b 0%, transparent 20px, transparent calc(100% - 20px), #0e0d0b 100%)"
+            : "linear-gradient(to right, #0e0d0b 0%, transparent 32px, transparent calc(100% - 32px), #0e0d0b 100%)",
         }} />
         <div
           ref={scrollRef}
@@ -939,7 +941,7 @@ function StoryRow({ title, stories, onSelectStory, isTouch }) {
           style={{
             display: "flex", gap: "20px",
             overflowX: "auto", WebkitOverflowScrolling: "touch",
-            padding: "30px 32px",
+            padding: isTouch ? "30px 20px" : "30px 32px",
             scrollbarWidth: "none", msOverflowStyle: "none",
             perspective: isTouch ? "none" : "800px",
           }}
@@ -997,7 +999,7 @@ function StoryRow({ title, stories, onSelectStory, isTouch }) {
               </div>
               <span style={{
                 fontFamily: MONO, fontSize: "10px",
-                color: "rgba(255,255,255,0.2)",
+                color: "rgba(255,255,255,0.45)",
               }}>
                 {s.updatedAt ? new Date(s.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : ""}
               </span>
@@ -1229,7 +1231,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
         </div>
       </div>
 
-      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", paddingTop: homeLayout === "rows" ? (isTouch ? "16px" : "24px") : 0 }}>
         {homeLayout === "rows" && genreRows.map((r) => (
           <StoryRow
             key={r.genre.id}
@@ -1360,7 +1362,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
                           {genre && (
                             <div style={{
                               fontFamily: MONO, fontSize: "11px",
-                              color: "rgba(255,255,255,0.3)",
+                              color: "rgba(255,255,255,0.5)",
                               textTransform: "uppercase",
                               letterSpacing: "0.5px",
                               marginBottom: "8px",
@@ -1377,7 +1379,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
                         </div>
                         <span style={{
                           fontFamily: MONO, fontSize: "11px",
-                          color: "rgba(255,255,255,0.2)",
+                          color: "rgba(255,255,255,0.45)",
                         }}>
                           {s.updatedAt ? new Date(s.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : ""}
                         </span>
@@ -1393,11 +1395,13 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
         {homeLayout === "activity" && (
           <div style={{ maxWidth: "600px", margin: "0 auto", padding: isTouch ? "0" : "0 24px", width: "100%" }}>
             {activityLoading ? (
-              <p style={{ fontFamily: MONO, fontSize: "12px", color: "rgba(255,255,255,0.3)", textAlign: "center" }}>
-                Loading activity...
-              </p>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, minHeight: "60vh" }}>
+                <p style={{ fontFamily: MONO, fontSize: "12px", color: "rgba(255,255,255,0.5)", textAlign: "center" }}>
+                  Loading activity...
+                </p>
+              </div>
             ) : activityFeed.length === 0 ? (
-              <p style={{ fontFamily: MONO, fontSize: "12px", color: "rgba(255,255,255,0.3)", textAlign: "center" }}>
+              <p style={{ fontFamily: MONO, fontSize: "12px", color: "rgba(255,255,255,0.5)", textAlign: "center" }}>
                 No activity yet
               </p>
             ) : (
@@ -1444,7 +1448,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
                         {genre && (
                           <div style={{
                             fontFamily: MONO, fontSize: "9px",
-                            color: "rgba(255,255,255,0.3)",
+                            color: "rgba(255,255,255,0.5)",
                             textTransform: "uppercase",
                             letterSpacing: "0.5px",
                             marginBottom: "4px",
@@ -1465,14 +1469,14 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
                       {group.entries.map((entry, ei) => (
                         <div key={`${entry.passageIndex}-${ei}`} style={{ marginBottom: ei < group.entries.length - 1 ? "20px" : 0 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-                            <span style={{ fontFamily: MONO, fontSize: "11px", color: "rgba(255,255,255,0.25)", whiteSpace: "nowrap" }}>
+                            <span style={{ fontFamily: MONO, fontSize: "11px", color: "rgba(255,255,255,0.45)", whiteSpace: "nowrap" }}>
                               {entry.ts ? new Date(entry.ts).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : entry.time || ""}
                             </span>
                             </div>
                           {entry.prompt && (
                             <p style={{
                               fontFamily: MONO, fontSize: "13px", lineHeight: 1.5,
-                              color: "rgba(255,255,255,0.4)", margin: "0 0 4px",
+                              color: "rgba(255,255,255,0.5)", margin: "0 0 4px",
                             }}>
                               {entry.prompt}
                             </p>
@@ -1501,7 +1505,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
         padding: isTouch ? "12px 24px 24px" : "24px 24px 0",
         display: "flex", flexDirection: isTouch ? "column" : "row", alignItems: "center", justifyContent: "center", gap: isTouch ? "8px" : "16px",
         fontFamily: MONO, fontSize: "11px",
-        color: "rgba(255,255,255,0.2)",
+        color: "rgba(255,255,255,0.45)",
       }}>
         <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
           <span>
@@ -1510,9 +1514,9 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
               href="https://gabrielvaldivia.com"
               target="_blank"
               rel="noopener noreferrer"
-              style={{ color: "rgba(255,255,255,0.35)", textDecoration: "none" }}
+              style={{ color: "rgba(255,255,255,0.5)", textDecoration: "none" }}
               onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}
-              onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.35)"}
+              onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
             >
               Gabriel Valdivia
             </a>
@@ -1521,9 +1525,9 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
           <a
             href="#"
             onClick={(e) => { e.preventDefault(); onAbout(); }}
-            style={{ color: "rgba(255,255,255,0.35)", textDecoration: "none" }}
+            style={{ color: "rgba(255,255,255,0.5)", textDecoration: "none" }}
             onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}
-            onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.35)"}
+            onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
           >
             About
           </a>
@@ -1555,7 +1559,7 @@ function AboutScreen({ onBack, narrow }) {
             onClick={onBack}
             style={{
               background: "none", border: "none",
-              color: "rgba(255,255,255,0.4)", cursor: "pointer",
+              color: "rgba(255,255,255,0.5)", cursor: "pointer",
               padding: 0, display: "flex", alignItems: "center",
             }}
           >
@@ -1563,7 +1567,7 @@ function AboutScreen({ onBack, narrow }) {
           </button>
           <span style={{
             fontFamily: MONO, fontSize: "12px",
-            color: "rgba(255,255,255,0.4)",
+            color: "rgba(255,255,255,0.5)",
             letterSpacing: "0.5px", textTransform: "uppercase",
             flex: 1, textAlign: "center",
             marginRight: "16px",
@@ -1581,11 +1585,11 @@ function AboutScreen({ onBack, narrow }) {
             style={{
               background: "none", border: "none",
               fontFamily: MONO, fontSize: "12px",
-              color: "rgba(255,255,255,0.3)", cursor: "pointer",
+              color: "rgba(255,255,255,0.5)", cursor: "pointer",
               padding: 0, textAlign: "left",
             }}
             onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}
-            onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.3)"}
+            onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
           >
             <GoArrowLeft size={14} style={{ marginRight: "6px", verticalAlign: "middle" }} />Back
           </button>
@@ -1661,7 +1665,7 @@ function AboutScreen({ onBack, narrow }) {
           </p>
           <h2 style={{
             fontFamily: MONO, fontSize: "12px", fontWeight: 400,
-            color: "rgba(255,255,255,0.3)", letterSpacing: "0.5px",
+            color: "rgba(255,255,255,0.5)", letterSpacing: "0.5px",
             textTransform: "uppercase", marginTop: "8px",
           }}>
             Why this exists
@@ -1683,7 +1687,7 @@ function AboutScreen({ onBack, narrow }) {
           </p>
           <h2 style={{
             fontFamily: MONO, fontSize: "12px", fontWeight: 400,
-            color: "rgba(255,255,255,0.3)", letterSpacing: "0.5px",
+            color: "rgba(255,255,255,0.5)", letterSpacing: "0.5px",
             textTransform: "uppercase", marginTop: "8px",
           }}>
             How it works
@@ -1707,7 +1711,7 @@ function AboutScreen({ onBack, narrow }) {
           </p>
           <h2 style={{
             fontFamily: MONO, fontSize: "12px", fontWeight: 400,
-            color: "rgba(255,255,255,0.3)", letterSpacing: "0.5px",
+            color: "rgba(255,255,255,0.5)", letterSpacing: "0.5px",
             textTransform: "uppercase", marginTop: "8px",
           }}>
             Credits
@@ -1877,7 +1881,7 @@ function NewStoryScreen({ onCancel, onCreate, narrow }) {
       >
         <span style={{
           fontFamily: MONO, fontSize: "12px", fontWeight: 400,
-          color: "rgba(255,255,255,0.4)", letterSpacing: "0.5px",
+          color: "rgba(255,255,255,0.5)", letterSpacing: "0.5px",
           textTransform: "uppercase",
         }}>
           {step.label}
@@ -1890,7 +1894,7 @@ function NewStoryScreen({ onCancel, onCreate, narrow }) {
           }}>
             {answer || ""}
           </span>
-          <GoPlus size={16} style={{ color: "rgba(255,255,255,0.25)", flexShrink: 0 }} />
+          <GoPlus size={16} style={{ color: "rgba(255,255,255,0.45)", flexShrink: 0 }} />
         </span>
       </button>
     );
@@ -1962,17 +1966,17 @@ function NewStoryScreen({ onCancel, onCreate, narrow }) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 0", marginBottom: "0" }}>
           <h2 style={{
             fontFamily: MONO, fontSize: "12px", fontWeight: 400,
-            color: "rgba(255,255,255,0.4)", letterSpacing: "0.5px",
+            color: "rgba(255,255,255,0.5)", letterSpacing: "0.5px",
             textTransform: "uppercase", margin: 0,
           }}>
-            {step.label}{isOptional && <span style={{ textTransform: "none", color: "rgba(255,255,255,0.2)" }}> (optional{step.key === "themes" ? ", up to 2" : ""})</span>}
+            {step.label}{isOptional && <span style={{ textTransform: "none", color: "rgba(255,255,255,0.45)" }}> (optional{step.key === "themes" ? ", up to 2" : ""})</span>}
           </h2>
           <button
             onClick={() => collapseStep(step.key)}
             style={{
               background: "none", border: "none",
               cursor: "pointer", padding: "2px",
-              color: "rgba(255,255,255,0.25)",
+              color: "rgba(255,255,255,0.45)",
               transition: "color 0.15s",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}
@@ -1997,10 +2001,10 @@ function NewStoryScreen({ onCancel, onCreate, narrow }) {
                 style={{
                   background: "none", border: "none",
                   fontFamily: MONO, fontSize: "12px",
-                  color: "rgba(255,255,255,0.4)", cursor: "pointer", padding: 0,
+                  color: "rgba(255,255,255,0.5)", cursor: "pointer", padding: 0,
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.7)"}
-                onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.4)"}
+                onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
               >
                 {selectedProtagonist ? "Continue" : "Skip"}
               </button>
@@ -2029,7 +2033,7 @@ function NewStoryScreen({ onCancel, onCreate, narrow }) {
             onClick={onCancel}
             style={{
               background: "none", border: "none",
-              color: "rgba(255,255,255,0.4)", cursor: "pointer",
+              color: "rgba(255,255,255,0.5)", cursor: "pointer",
               padding: 0, display: "flex", alignItems: "center",
             }}
           >
@@ -2037,7 +2041,7 @@ function NewStoryScreen({ onCancel, onCreate, narrow }) {
           </button>
           <span style={{
             fontFamily: MONO, fontSize: "12px",
-            color: "rgba(255,255,255,0.4)",
+            color: "rgba(255,255,255,0.5)",
             letterSpacing: "0.5px", textTransform: "uppercase",
             flex: 1, textAlign: "center",
             marginRight: "16px",
@@ -2055,11 +2059,11 @@ function NewStoryScreen({ onCancel, onCreate, narrow }) {
             style={{
               background: "none", border: "none",
               fontFamily: MONO, fontSize: "12px",
-              color: "rgba(255,255,255,0.3)", cursor: "pointer",
+              color: "rgba(255,255,255,0.5)", cursor: "pointer",
               padding: 0, textAlign: "left",
             }}
             onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}
-            onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.3)"}
+            onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
           >
             <GoArrowLeft size={14} style={{ marginRight: "6px", verticalAlign: "middle" }} />Back
           </button>
@@ -2677,7 +2681,7 @@ export default function CollaborativeStoryApp() {
                   style={{
                     background: "none", border: "none",
                     fontFamily: MONO, fontSize: "12px",
-                    color: "rgba(255,255,255,0.4)", cursor: "pointer",
+                    color: "rgba(255,255,255,0.5)", cursor: "pointer",
                     padding: "8px 0",
                   }}
                 >
@@ -2694,7 +2698,7 @@ export default function CollaborativeStoryApp() {
                           style={{
                             background: "none", border: "none",
                             fontFamily: MONO, fontSize: "11px",
-                            color: "rgba(255,255,255,0.4)",
+                            color: "rgba(255,255,255,0.5)",
                             letterSpacing: "0.3px",
                             textAlign: "center",
                             overflow: "hidden",
@@ -2769,7 +2773,7 @@ export default function CollaborativeStoryApp() {
                     onClick={() => { setShowStoryMenu(!showStoryMenu); setConfirmDeleteMenu(false); setLinkCopied(false); }}
                     style={{
                       background: "none", border: "none",
-                      color: "rgba(255,255,255,0.4)", cursor: "pointer",
+                      color: "rgba(255,255,255,0.5)", cursor: "pointer",
                       padding: "8px 0",
                       display: "flex", alignItems: "center",
                     }}
@@ -2937,12 +2941,12 @@ export default function CollaborativeStoryApp() {
                     onClick={() => { setShowStoryMenu(!showStoryMenu); setConfirmDeleteMenu(false); setLinkCopied(false); }}
                     style={{
                       background: "none", border: "none",
-                      color: "rgba(255,255,255,0.3)", cursor: "pointer",
+                      color: "rgba(255,255,255,0.5)", cursor: "pointer",
                       padding: "4px 8px",
                       display: "flex", alignItems: "center",
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}
-                    onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.3)"}
+                    onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
                   >
                     <GoKebabHorizontal size={16} />
                   </button>
@@ -3040,7 +3044,7 @@ export default function CollaborativeStoryApp() {
                   </h1>
                   <p style={{
                     fontFamily: SERIF, fontSize: "15px", fontStyle: "italic",
-                    color: "rgba(255,255,255,0.25)",
+                    color: "rgba(255,255,255,0.45)",
                     textAlign: "center", marginTop: narrowViewport ? "0px" : "12px",
                   }}>
                     {story.length === 0 ? "Loading..." : (
@@ -3079,7 +3083,7 @@ export default function CollaborativeStoryApp() {
                             }}>
                               <div style={{
                                 fontFamily: MONO, fontSize: "12px",
-                                color: "rgba(255,255,255,0.25)",
+                                color: "rgba(255,255,255,0.45)",
                                 letterSpacing: "0.5px",
                                 textTransform: "uppercase",
                               }}>
@@ -3161,7 +3165,7 @@ export default function CollaborativeStoryApp() {
                   <div>
                     <p style={{
                       fontFamily: TYPEWRITER, fontSize: "16px",
-                      color: "rgba(255,255,255,0.4)", lineHeight: 1.7,
+                      color: "rgba(255,255,255,0.5)", lineHeight: 1.7,
                       marginBottom: "16px",
                     }}>
                       {currentPrompt}
@@ -3206,7 +3210,7 @@ export default function CollaborativeStoryApp() {
                               <span style={{ fontFamily: MONO, fontSize: "10px", color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                                 {label}
                               </span>
-                              <span style={{ fontFamily: MONO, fontSize: "10px", color: "rgba(255,255,255,0.25)" }}>
+                              <span style={{ fontFamily: MONO, fontSize: "10px", color: "rgba(255,255,255,0.45)" }}>
                                 {labels[value]}
                               </span>
                             </div>
@@ -3270,7 +3274,7 @@ export default function CollaborativeStoryApp() {
                           >
                             <GoLocation size={14} />
                             {geoEnabled && geoLabel && (
-                              <span style={{ fontFamily: MONO, fontSize: "10px", marginLeft: "5px", color: "rgba(255,255,255,0.4)" }}>
+                              <span style={{ fontFamily: MONO, fontSize: "10px", marginLeft: "5px", color: "rgba(255,255,255,0.5)" }}>
                                 {geoLabel}
                               </span>
                             )}
@@ -3341,7 +3345,7 @@ export default function CollaborativeStoryApp() {
                     {generationSource === "local" && (
                       <p style={{
                         fontFamily: MONO, fontSize: "11px",
-                        color: "rgba(255,255,255,0.25)", marginBottom: "16px",
+                        color: "rgba(255,255,255,0.45)", marginBottom: "16px",
                       }}>
                         AI unavailable — used local fallback
                       </p>
