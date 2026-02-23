@@ -718,7 +718,7 @@ function splitIntoParagraphs(text) {
    Typewriter Reveal
    ──────────────────────────────────────────── */
 
-function TypewriterReveal({ text, narrow }) {
+function TypewriterReveal({ text, narrow, onComplete }) {
   const [charCount, setCharCount] = useState(0);
   const idx = useRef(0);
   const paragraphs = useRef([]);
@@ -734,10 +734,11 @@ function TypewriterReveal({ text, narrow }) {
         setCharCount(idx.current);
       } else {
         clearInterval(interval);
+        if (onComplete) onComplete();
       }
     }, 18);
     return () => clearInterval(interval);
-  }, [text]);
+  }, [text, onComplete]);
 
   // Map charCount to pre-computed paragraphs
   const fullParagraphs = paragraphs.current;
@@ -2061,8 +2062,43 @@ export default function CollaborativeStoryApp() {
     }
   };
 
+  const quickAddAnswerRef = useRef(null);
+
+  const handleQuickAdd = async () => {
+    if (!answer.trim() || phase !== "input") return;
+    setPhase("generating");
+    setError(null);
+    const userAnswer = answer.trim();
+    quickAddAnswerRef.current = userAnswer;
+    try {
+      const result = await generateStoryPassage(
+        story, currentPrompt, userAnswer,
+        getActiveStyleSettings(), currentChapter, getGenreVoiceCtx()
+      );
+      setGeneratedText(result.text);
+      setGenerationSource(result.source);
+      setPhase("streaming");
+      // Scroll to bottom after a tick so the streaming entry is rendered
+      setTimeout(() => storyEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+    } catch (e) {
+      console.error("All generation failed:", e);
+      setError("Something went wrong. Please try again.");
+      setPhase("input");
+    }
+  };
+
+  const handleStreamingComplete = useCallback(async () => {
+    if (phase !== "streaming") return;
+    setPhase("adding");
+    await handleConfirmWith(generatedText, quickAddAnswerRef.current || answer.trim());
+  }, [phase, generatedText, answer]);
+
   const handleConfirm = async () => {
     setPhase("adding");
+    await handleConfirmWith(generatedText, answer.trim());
+  };
+
+  const handleConfirmWith = async (text, originalAnswer) => {
     const newCount = contributorCount + 1;
     const now = new Date();
     const timeStr = now.toLocaleString("en-US", {
@@ -2071,8 +2107,8 @@ export default function CollaborativeStoryApp() {
     const location = await fetchLocation();
 
     const newEntry = {
-      text: generatedText,
-      originalAnswer: answer.trim(),
+      text: text,
+      originalAnswer: originalAnswer,
       prompt: currentPrompt,
       author: newCount,
       location: location,
@@ -2772,13 +2808,22 @@ export default function CollaborativeStoryApp() {
                         </div>
                       );
                     })}
+                    {phase === "streaming" && generatedText && (
+                      <div style={{ position: "relative" }}>
+                        <TypewriterReveal
+                          text={generatedText}
+                          narrow={narrowViewport}
+                          onComplete={handleStreamingComplete}
+                        />
+                      </div>
+                    )}
                     <div ref={storyEndRef} />
                   </div>
                 </div>
               )}
 
               {/* ── Prompt + Interaction Container ── */}
-              <div style={{
+              {phase !== "streaming" && <div style={{
                 background: "rgba(255,255,255,0.03)",
                 borderRadius: "8px",
                 padding: "24px",
@@ -2911,19 +2956,37 @@ export default function CollaborativeStoryApp() {
                           Writing...
                         </span>
                       ) : (
-                        <button
-                          onClick={handleSubmit}
-                          disabled={!answer.trim()}
-                          style={{
-                            background: "none", border: "none",
-                            fontFamily: MONO, fontSize: "13px",
-                            color: answer.trim() ? "#e8ddd0" : "rgba(255,255,255,0.2)",
-                            cursor: answer.trim() ? "pointer" : "default",
-                            padding: 0,
-                          }}
-                        >
-                          SUBMIT
-                        </button>
+                        <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+                          <button
+                            onClick={handleSubmit}
+                            disabled={!answer.trim()}
+                            style={{
+                              background: "none", border: "none",
+                              fontFamily: MONO, fontSize: "13px",
+                              color: answer.trim() ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.15)",
+                              cursor: answer.trim() ? "pointer" : "default",
+                              padding: 0,
+                            }}
+                          >
+                            PREVIEW
+                          </button>
+                          <button
+                            onClick={handleQuickAdd}
+                            disabled={!answer.trim()}
+                            style={{
+                              background: answer.trim() ? "#e8ddd0" : "rgba(255,255,255,0.08)",
+                              border: "none",
+                              borderRadius: "20px",
+                              fontFamily: MONO, fontSize: "12px",
+                              color: answer.trim() ? "#0e0d0b" : "rgba(255,255,255,0.2)",
+                              cursor: answer.trim() ? "pointer" : "default",
+                              padding: "6px 16px",
+                              transition: "all 0.15s",
+                            }}
+                          >
+                            ADD
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -2991,7 +3054,7 @@ export default function CollaborativeStoryApp() {
                   </div>
                 )}
 
-              </div>
+              </div>}
 
             </div>
             {/* ── Popover Dialog (narrow viewport) ── */}
