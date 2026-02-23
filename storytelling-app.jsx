@@ -1685,6 +1685,7 @@ const SERIF = "'Faustina', serif";
 export default function CollaborativeStoryApp() {
   // Navigation state
   const [view, setView] = useState(() => {
+    if (window.location.hash === "#about") return "about";
     return window.location.hash.match(/^#story\//) ? "story" : "home";
   }); // "home" | "new" | "story" | "about"
   const [activeStoryId, setActiveStoryId] = useState(null);
@@ -1848,6 +1849,7 @@ export default function CollaborativeStoryApp() {
   useEffect(() => {
     const onPopState = async () => {
       const hash = window.location.hash;
+      if (hash === "#about") { setView("about"); return; }
       const slugMatch = hash.match(/^#story\/(.+)$/);
       if (slugMatch) {
         const slug = slugMatch[1];
@@ -2298,8 +2300,8 @@ export default function CollaborativeStoryApp() {
           <HomeScreen
             stories={storiesIndex}
             onSelectStory={openStory}
-            onNewStory={() => setView("new")}
-            onAbout={() => setView("about")}
+            onNewStory={() => { window.scrollTo(0, 0); setView("new"); }}
+            onAbout={() => { window.scrollTo(0, 0); window.location.hash = "about"; setView("about"); }}
           />
         )}
 
@@ -2314,7 +2316,7 @@ export default function CollaborativeStoryApp() {
 
         {/* ── About View ── */}
         {view === "about" && (
-          <AboutScreen onBack={() => setView("home")} narrow={narrowViewport} />
+          <AboutScreen onBack={() => { window.location.hash = ""; setView("home"); }} narrow={narrowViewport} />
         )}
 
         {/* ── Story View ── */}
