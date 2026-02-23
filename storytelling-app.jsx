@@ -1106,28 +1106,58 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
    About Screen
    ──────────────────────────────────────────── */
 
-function AboutScreen({ onBack }) {
+function AboutScreen({ onBack, narrow }) {
   return (
     <>
-      <div style={{
-        position: "fixed", left: "24px", top: "24px",
-        zIndex: 5,
-      }}>
-        <button
-          onClick={onBack}
-          style={{
-            background: "none", border: "none",
+      {narrow ? (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0,
+          zIndex: 10,
+          background: "linear-gradient(to bottom, #181714 60%, transparent)",
+          padding: "16px 24px",
+          display: "flex", alignItems: "center",
+        }}>
+          <button
+            onClick={onBack}
+            style={{
+              background: "none", border: "none",
+              color: "rgba(255,255,255,0.4)", cursor: "pointer",
+              padding: 0, display: "flex", alignItems: "center",
+            }}
+          >
+            <GoArrowLeft size={16} />
+          </button>
+          <span style={{
             fontFamily: MONO, fontSize: "12px",
-            color: "rgba(255,255,255,0.3)", cursor: "pointer",
-            padding: 0, textAlign: "left",
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}
-          onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.3)"}
-        >
-          <GoArrowLeft size={14} style={{ marginRight: "6px", verticalAlign: "middle" }} />Back
-        </button>
-      </div>
-      <div style={{ maxWidth: "600px", margin: "0 auto", padding: "60px 24px 40px" }}>
+            color: "rgba(255,255,255,0.4)",
+            letterSpacing: "0.5px", textTransform: "uppercase",
+            flex: 1, textAlign: "center",
+            marginRight: "16px",
+          }}>
+            About
+          </span>
+        </div>
+      ) : (
+        <div style={{
+          position: "fixed", left: "24px", top: "24px",
+          zIndex: 5,
+        }}>
+          <button
+            onClick={onBack}
+            style={{
+              background: "none", border: "none",
+              fontFamily: MONO, fontSize: "12px",
+              color: "rgba(255,255,255,0.3)", cursor: "pointer",
+              padding: 0, textAlign: "left",
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}
+            onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.3)"}
+          >
+            <GoArrowLeft size={14} style={{ marginRight: "6px", verticalAlign: "middle" }} />Back
+          </button>
+        </div>
+      )}
+      <div style={{ maxWidth: "600px", margin: "0 auto", padding: narrow ? "56px 24px 40px" : "60px 24px 40px" }}>
         <pre className="about-ascii" style={{
           fontFamily: "'Courier New', monospace", fontSize: "9px", lineHeight: 1.0,
           color: "rgba(255,255,255,0.6)", marginBottom: "32px",
@@ -1190,9 +1220,32 @@ function AboutScreen({ onBack }) {
           display: "flex", flexDirection: "column", gap: "20px",
         }}>
           <p>
-            Falcor is a collaborative storytelling experiment. You provide short
-            answers to creative prompts, and AI transforms them into literary
-            prose that weaves together into an evolving narrative.
+            Falcor is an experiment in co-creative storytelling. Anyone can
+            contribute to a shared story. You answer a simple question about
+            what should happen next, and AI turns it into prose. The result
+            is a living artifact shaped by strangers.
+          </p>
+          <h2 style={{
+            fontFamily: MONO, fontSize: "12px", fontWeight: 400,
+            color: "rgba(255,255,255,0.3)", letterSpacing: "0.5px",
+            textTransform: "uppercase", marginTop: "8px",
+          }}>
+            Why this exists
+          </h2>
+          <p>
+            Writing is hard. But answering "what should happen next?" is
+            easy. This lowers the barrier to entry by turning storytelling 
+            into a back-and-forth, where your direction sets the path 
+            and AI carries it forward. This feels like a new kind of media 
+            experience. It isn't writing per se, 
+            but it is shaped by human input.
+          </ p>
+
+          <p>
+            All stories are shared and open. You can see what
+            each person wrote and where in the world they wrote it from.
+            When strangers from different places contribute
+            to a shared output, the world feels a little smaller.
           </p>
           <h2 style={{
             fontFamily: MONO, fontSize: "12px", fontWeight: 400,
@@ -2261,7 +2314,7 @@ export default function CollaborativeStoryApp() {
 
         {/* ── About View ── */}
         {view === "about" && (
-          <AboutScreen onBack={() => setView("home")} />
+          <AboutScreen onBack={() => setView("home")} narrow={narrowViewport} />
         )}
 
         {/* ── Story View ── */}
