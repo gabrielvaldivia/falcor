@@ -10,7 +10,7 @@ import { BsSliders2Vertical } from "react-icons/bs";
 
 const GENRES = [
   { id: "fantasy", label: "Fantasy", mood: 7, prompt: "mythical creatures, ancient magic, epic quests" },
-  { id: "romance", label: "Romance", mood: 6, dialogue: 6, prompt: "emotional tension, relationships, longing" },
+  { id: "drama", label: "Drama", mood: 5, dialogue: 6, prompt: "conflict, moral dilemmas, human struggle, high stakes" },
   { id: "mystery", label: "Mystery", mood: 3, prompt: "clues, suspicion, hidden truths, tension" },
   { id: "scifi", label: "Sci-Fi", mood: 5, prompt: "technology, alien worlds, future societies" },
   { id: "bedtime", label: "Bedtime", mood: 7, prompt: "wonder, imagination, gentle lessons, playful adventures" },
@@ -26,12 +26,12 @@ const VOICES_BY_GENRE = {
     { id: "mythic", label: "Mythic & Ancient", tone: 7, length: 5, description: "Timeless cadence, legend-like narration" },
     { id: "spare", label: "Spare & Direct", tone: 2, length: 3, description: "Short sentences, no embellishment" },
   ],
-  romance: [
-    { id: "lyrical", label: "Lyrical & Tender", tone: 7, length: 6, description: "Flowing prose, emotionally rich" },
-    { id: "witty", label: "Witty & Sparkling", tone: 5, length: 4, dialogue: 6, description: "Sharp banter, playful tension" },
-    { id: "slow-burn", label: "Slow Burn", tone: 6, length: 6, dialogue: 4, description: "Gradual intimacy, lingering detail" },
+  drama: [
+    { id: "raw", label: "Raw & Unflinching", tone: 4, length: 5, dialogue: 5, description: "Brutally honest, no sentimentality" },
+    { id: "literary", label: "Literary & Layered", tone: 7, length: 6, description: "Rich subtext, moral complexity" },
+    { id: "tense", label: "Tense & Restrained", tone: 5, length: 4, dialogue: 6, description: "Simmering conflict, controlled prose" },
     { id: "passionate", label: "Passionate & Bold", tone: 8, length: 5, dialogue: 5, description: "Intense emotions, dramatic moments" },
-    { id: "spare", label: "Spare & Honest", tone: 3, length: 3, description: "Understated, raw, emotionally direct" },
+    { id: "spare", label: "Spare & Direct", tone: 3, length: 3, description: "Understated, emotionally direct" },
     { id: "cinematic", label: "Cinematic & Vivid", tone: 6, length: 5, dialogue: 4, description: "Visual, fast-paced, sensory-driven" },
   ],
   mystery: [
@@ -82,13 +82,13 @@ const THEMES_BY_GENRE = {
     { id: "sacrifice", label: "Sacrifice", prompt: "giving up what matters most for a greater cause" },
     { id: "legacy", label: "Legacy", prompt: "what we inherit and what we leave behind" },
   ],
-  romance: [
-    { id: "love-loss", label: "Love & Loss", prompt: "deep emotional bonds and the pain of separation" },
+  drama: [
+    { id: "power", label: "Power", prompt: "the pursuit of control and its corrupting influence" },
     { id: "identity", label: "Identity", prompt: "questioning who we are and who we become" },
     { id: "betrayal", label: "Betrayal", prompt: "broken trust and its consequences" },
-    { id: "freedom", label: "Freedom", prompt: "the struggle for liberation and autonomy" },
-    { id: "forgiveness", label: "Forgiveness", prompt: "letting go of hurt and finding peace" },
-    { id: "desire", label: "Desire", prompt: "longing, want, and what we chase" },
+    { id: "justice", label: "Justice", prompt: "the fight for what is right against impossible odds" },
+    { id: "sacrifice", label: "Sacrifice", prompt: "what we give up for something greater" },
+    { id: "legacy", label: "Legacy", prompt: "what we leave behind and how we are remembered" },
   ],
   mystery: [
     { id: "betrayal", label: "Betrayal", prompt: "broken trust and its consequences" },
@@ -138,12 +138,12 @@ const PROTAGONISTS_BY_GENRE = {
     { id: "ruler", label: "Ruler", prompt: "a leader burdened by the weight of command and consequence" },
     { id: "outcast", label: "Outcast", prompt: "a rejected figure forging their own path" },
   ],
-  romance: [
+  drama: [
     { id: "outsider", label: "Outsider", prompt: "a protagonist who doesn't belong and sees society from the margins" },
-    { id: "wanderer", label: "Wanderer", prompt: "a rootless traveler searching for meaning or home" },
-    { id: "caretaker", label: "Caretaker", prompt: "someone who puts others first, learning to accept love in return" },
+    { id: "patriarch", label: "Patriarch / Matriarch", prompt: "a family leader holding everything together — or apart" },
+    { id: "whistleblower", label: "Whistleblower", prompt: "someone who risks everything to expose the truth" },
     { id: "rebel", label: "Rebel", prompt: "a free spirit who resists expectations" },
-    { id: "dreamer", label: "Dreamer", prompt: "an idealist chasing something just out of reach" },
+    { id: "fallen", label: "Fallen Figure", prompt: "someone powerful brought low, seeking redemption or revenge" },
     { id: "stranger", label: "Stranger in Town", prompt: "a newcomer who disrupts the familiar" },
   ],
   mystery: [
@@ -194,13 +194,13 @@ const TENSIONS_BY_GENRE = {
     { id: "vs-power", label: "Person vs Power", prompt: "standing against a force far greater than oneself" },
     { id: "quest", label: "The Quest", prompt: "a journey toward a goal that keeps shifting" },
   ],
-  romance: [
+  drama: [
     { id: "vs-self", label: "Person vs Self", prompt: "internal struggle, doubt, and inner demons" },
     { id: "vs-person", label: "Person vs Person", prompt: "direct conflict between characters with opposing goals" },
     { id: "vs-society", label: "Person vs Society", prompt: "rebellion against social norms and institutions" },
-    { id: "timing", label: "Wrong Timing", prompt: "love that arrives at the worst possible moment" },
-    { id: "secret", label: "Hidden Truth", prompt: "a secret that could change everything between them" },
-    { id: "distance", label: "Distance", prompt: "separation that tests the strength of connection" },
+    { id: "moral-dilemma", label: "Moral Dilemma", prompt: "a choice where every option demands a price" },
+    { id: "secret", label: "Hidden Truth", prompt: "a secret that could change everything" },
+    { id: "downfall", label: "Downfall", prompt: "pride, ambition, or obsession leading to ruin" },
   ],
   mystery: [
     { id: "vs-person", label: "Person vs Person", prompt: "direct conflict between characters with opposing goals" },
@@ -2185,10 +2185,10 @@ const MONO = "'SF Pro Mono', 'SF Mono', 'Menlo', 'Courier New', monospace";
 const TYPEWRITER = "'Courier New', 'Courier', monospace";
 const SERIF = "'Faustina', serif";
 const GENRE_FONTS = {
-  romance: [
-    { family: "'Felipa', cursive" },
-    { family: "'Elsie', cursive" },
-    { family: "'Great Vibes', cursive", scale: 0.85 },
+  drama: [
+    { family: "'Playfair Display', serif" },
+    { family: "'Libre Baskerville', serif" },
+    { family: "'Cormorant Garamond', serif" },
   ],
   scifi: [
     { family: "'Tektur', sans-serif" },
@@ -2252,7 +2252,7 @@ function buildFontIndexMap(stories) {
 }
 const GENRE_HUE_RANGE = {
   fantasy:  [240, 320],
-  romance:  [310, 390],
+  drama:    [20, 50],
   mystery:  [40, 70],
   scifi:    [140, 220],
   bedtime:  [290, 340],
