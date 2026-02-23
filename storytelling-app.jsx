@@ -695,6 +695,29 @@ async function callClaude(system, userMessage, maxTokens = 100) {
     .trim();
 }
 
+// Translation cache for story content
+const translationCache = new Map();
+
+async function translateText(text, targetLang) {
+  if (!text || targetLang === "en") return text;
+  const cacheKey = `${targetLang}:${text}`;
+  if (translationCache.has(cacheKey)) return translationCache.get(cacheKey);
+  try {
+    const translated = await callClaude(
+      `Translate the following text to ${targetLang === "es" ? "Spanish" : "English"}. Output ONLY the translated text, nothing else. Preserve paragraph breaks, formatting, and tone.`,
+      text,
+      Math.max(200, text.length * 2)
+    );
+    if (translated && translated.length > 0) {
+      translationCache.set(cacheKey, translated);
+      return translated;
+    }
+  } catch (err) {
+    console.warn("Translation failed:", err.message);
+  }
+  return text;
+}
+
 async function deleteStoryData(id) {
   const suffixes = ["data-v1", "prompt-v1", "count-v1", "chapter-v1", "titles-v1"];
   for (const s of suffixes) {
@@ -1155,7 +1178,7 @@ function TypewriterReveal({ text, narrow, onComplete }) {
    Story Entry (minimal)
    ──────────────────────────────────────────── */
 
-function StoryLine({ entry, onHover, onLeave, narrow, onShowDialog, onPinPopover, hideIcon, isChapterStart }) {
+function StoryLine({ entry, onHover, onLeave, narrow, onShowDialog, onPinPopover, hideIcon, isChapterStart, translatedText }) {
   const ref = useRef(null);
   const [hovered, setHovered] = useState(false);
   const isTouch = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
@@ -1189,7 +1212,7 @@ function StoryLine({ entry, onHover, onLeave, narrow, onShowDialog, onPinPopover
         overflowWrap: "break-word", maxWidth: "65ch",
         display: "flex", flexDirection: "column", gap: "12px",
       }}>
-        {splitIntoParagraphs(entry.text).map((para, i) => (
+        {splitIntoParagraphs(translatedText || entry.text).map((para, i) => (
           <p key={i} className={isChapterStart && i === 0 ? "drop-cap" : undefined} style={{ margin: 0 }}>{para.charAt(0).toUpperCase() + para.slice(1)}</p>
         ))}
       </div>
@@ -1319,7 +1342,7 @@ function BookTitle({ children, style, ...rest }) {
    Home Screen — Grid of Books
    ──────────────────────────────────────────── */
 
-function StoryRow({ title, stories, onSelectStory, isTouch, genreId, fontIndexMap, t, lang }) {
+function StoryRow({ title, stories, onSelectStory, isTouch, genreId, fontIndexMap, t, lang, translatedTitles }) {
   const scrollRef = useRef(null);
 
   return (
@@ -1409,7 +1432,7 @@ function StoryRow({ title, stories, onSelectStory, isTouch, genreId, fontIndexMa
                   fontFamily: storyFontForId(genreId, s.id, fontIndexMap).family, fontSize: `${Math.round(20 * (storyFontForId(genreId, s.id, fontIndexMap).scale || 1))}px`, fontWeight: storyFontForId(genreId, s.id, fontIndexMap).weight || 600,
                   color: "#fff", lineHeight: 1.3, padding: "0 2px", maxWidth: "100%",
                 }}>
-                  {s.title || t("untitled")}
+                  {translatedTitles[s.id] || s.title || t("untitled")}
                 </BookTitle>
               </div>
               <span style={{
@@ -1431,6 +1454,20 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, s
   const isTouch = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
   const carouselRef = useRef(null);
   const [carouselFilter, setCarouselFilter] = useState("all");
+  const [translatedTitles, setTranslatedTitles] = useState({});
+
+  useEffect(() => {
+    if (lang === "en") { setTranslatedTitles({}); return; }
+    let cancelled = false;
+    stories.forEach((s) => {
+      if (s.title) {
+        translateText(s.title, lang).then((tr) => {
+          if (!cancelled) setTranslatedTitles((prev) => ({ ...prev, [s.id]: tr }));
+        });
+      }
+    });
+    return () => { cancelled = true; };
+  }, [lang, stories]);
   const [wideEnough, setWideEnough] = useState(() => typeof window !== "undefined" && window.innerWidth >= 900);
 
   useEffect(() => {
@@ -1460,7 +1497,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, s
               entries.push({
                 ...entry,
                 storyId: s.id,
-                storyTitle: s.title || t("untitled"),
+                storyTitle: translatedTitles[s.id] || s.title || t("untitled"),
                 storyGenre: s.genre,
                 passageIndex: idx,
               });
@@ -1658,6 +1695,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, s
             fontIndexMap={fontIndexMap}
             t={t}
             lang={lang}
+            translatedTitles={translatedTitles}
           />
         ))}
 
@@ -1790,7 +1828,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, s
                             fontFamily: storyFontForId(s.genre, s.id, fontIndexMap).family, fontSize: `${Math.round(24 * (storyFontForId(s.genre, s.id, fontIndexMap).scale || 1))}px`, fontWeight: storyFontForId(s.genre, s.id, fontIndexMap).weight || 600,
                             color: "#fff", lineHeight: 1.3, padding: "0 2px", maxWidth: "100%",
                           }}>
-                            {s.title || t("untitled")}
+                            {translatedTitles[s.id] || s.title || t("untitled")}
                           </BookTitle>
                         </div>
                         <span style={{
@@ -2669,6 +2707,40 @@ export default function CollaborativeStoryApp() {
   useEffect(() => { localStorage.setItem("falcor_lang", lang); }, [lang]);
   const dateLocale = lang === "es" ? "es-ES" : "en-US";
 
+  // Translate story content when language changes
+  useEffect(() => {
+    if (lang === "en") {
+      setTranslatedTitle(null);
+      setTranslatedTexts({});
+      setTranslatedChapterTitles({});
+      return;
+    }
+    let cancelled = false;
+    // Translate title
+    if (activeStoryMeta?.title) {
+      translateText(activeStoryMeta.title, lang).then((tr) => {
+        if (!cancelled) setTranslatedTitle(tr);
+      });
+    }
+    // Translate passages
+    if (story.length > 0) {
+      story.forEach((entry, i) => {
+        translateText(entry.text, lang).then((tr) => {
+          if (!cancelled) setTranslatedTexts((prev) => ({ ...prev, [i]: tr }));
+        });
+      });
+    }
+    // Translate chapter titles
+    if (chapterTitles && Object.keys(chapterTitles).length > 0) {
+      Object.entries(chapterTitles).forEach(([ch, title]) => {
+        translateText(title, lang).then((tr) => {
+          if (!cancelled) setTranslatedChapterTitles((prev) => ({ ...prev, [ch]: tr }));
+        });
+      });
+    }
+    return () => { cancelled = true; };
+  }, [lang, activeStoryMeta?.title, story, chapterTitles]);
+
   const [activeStoryId, setActiveStoryId] = useState(null);
   const [storiesIndex, setStoriesIndex] = useState([]);
 
@@ -2685,6 +2757,9 @@ export default function CollaborativeStoryApp() {
   const [chapterTitles, setChapterTitles] = useState({});
   const [error, setError] = useState(null);
   const [hoveredEntry, setHoveredEntry] = useState(null);
+  const [translatedTitle, setTranslatedTitle] = useState(null);
+  const [translatedTexts, setTranslatedTexts] = useState({});
+  const [translatedChapterTitles, setTranslatedChapterTitles] = useState({});
 
   const [narrowViewport, setNarrowViewport] = useState(false);
   const [visibleChapter, setVisibleChapter] = useState(1);
@@ -3286,7 +3361,7 @@ export default function CollaborativeStoryApp() {
                             {visibleChapter === 0
                               ? (hasMultiple ? t("select_chapter") : "")
                               : chapterTitles[visibleChapter]
-                              ? `${t("ch")} ${visibleChapter} — ${chapterTitles[visibleChapter]}`
+                              ? `${t("ch")} ${visibleChapter} — ${translatedChapterTitles[visibleChapter] || chapterTitles[visibleChapter]}`
                               : `${t("chapter")} ${visibleChapter}`}
                           </span>
                           {hasMultiple && <GoChevronDown size={12} />}
@@ -3329,7 +3404,7 @@ export default function CollaborativeStoryApp() {
                                     }}
                                   >
                                     <span style={{ marginRight: "8px" }}>{ch}.</span>
-                                    {ch === currentChapter ? t("in_progress") : (chapterTitles[ch] || `${t("chapter")} ${ch}`)}
+                                    {ch === currentChapter ? t("in_progress") : (translatedChapterTitles[ch] || chapterTitles[ch] || `${t("chapter")} ${ch}`)}
                                   </button>
                                 );
                               })}
@@ -3477,7 +3552,7 @@ export default function CollaborativeStoryApp() {
                     onMouseLeave={(e) => e.currentTarget.style.color = visibleChapter === 0 ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.3)"}
                   >
                     <GoArrowLeft size={14} style={{ flexShrink: 0, width: "16px" }} />
-                    <span>{activeStoryMeta?.title || t("home")}</span>
+                    <span>{translatedTitle || activeStoryMeta?.title || t("home")}</span>
                   </button>
                   {(() => {
                     const chapters = [...new Set(story.map((e) => e.chapter || 1))].sort((a, b) => a - b);
@@ -3506,7 +3581,7 @@ export default function CollaborativeStoryApp() {
                               onMouseLeave={(e) => e.currentTarget.style.color = isActive ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.25)"}
                             >
                               <span style={{ width: "16px", textAlign: "center", flexShrink: 0 }}>{ch}</span>
-                              <span>{ch === currentChapter ? t("in_progress") : (chapterTitles[ch] || "")}</span>
+                              <span>{ch === currentChapter ? t("in_progress") : (translatedChapterTitles[ch] || chapterTitles[ch] || "")}</span>
                             </button>
                           );
                         })}
@@ -3627,7 +3702,7 @@ export default function CollaborativeStoryApp() {
                     textAlign: "center",
                     textWrap: "balance",
                   }}>
-                    {activeStoryMeta.title}
+                    {translatedTitle || activeStoryMeta.title}
                   </h1>
                   <p style={{
                     fontFamily: SERIF, fontSize: "15px", fontStyle: "italic",
@@ -3683,7 +3758,7 @@ export default function CollaborativeStoryApp() {
                                   fontWeight: activeStoryFont.weight || 700,
                                   marginTop: "8px",
                                 }}>
-                                  {chapterTitles[entry.chapter || 1]}
+                                  {translatedChapterTitles[entry.chapter || 1] || chapterTitles[entry.chapter || 1]}
                                 </div>
                               )}
                             </div>
@@ -3695,6 +3770,7 @@ export default function CollaborativeStoryApp() {
                           }}>
                             <StoryLine
                               entry={entry}
+                              translatedText={translatedTexts[i]}
                               narrow={narrowViewport}
                               isChapterStart={showChapterHeading}
                               onHover={(e) => {
