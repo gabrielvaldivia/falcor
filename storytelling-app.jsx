@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { GoArrowLeft, GoInfo, GoPlus, GoDash, GoKebabHorizontal, GoLocation, GoChevronDown, GoPulse } from "react-icons/go";
 import { TbLayoutListFilled, TbLayoutList } from "react-icons/tb";
 import { MdOutlineViewCarousel } from "react-icons/md";
@@ -914,7 +914,7 @@ function StoryPopover({ entry, onClose }) {
    Home Screen — Grid of Books
    ──────────────────────────────────────────── */
 
-function StoryRow({ title, stories, onSelectStory, isTouch }) {
+function StoryRow({ title, stories, onSelectStory, isTouch, genreId, storyFontIndex }) {
   const scrollRef = useRef(null);
 
   return (
@@ -946,7 +946,7 @@ function StoryRow({ title, stories, onSelectStory, isTouch }) {
             perspective: isTouch ? "none" : "800px",
           }}
         >
-          {stories.map((s) => (
+          {stories.map((s, si) => (
             <div
               key={s.id}
               onClick={(e) => {
@@ -992,14 +992,19 @@ function StoryRow({ title, stories, onSelectStory, isTouch }) {
               } : {})}
             >
               <div style={{
-                fontFamily: SERIF, fontSize: "16px", fontWeight: 600,
-                color: "#e8ddd0", lineHeight: 1.3,
+                flex: 1, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center",
               }}>
-                {s.title || "Untitled"}
+                <div style={{
+                  fontFamily: genreFont(genreId, storyFontIndex[s.id] || 0).family, fontSize: "20px", fontWeight: genreFont(genreId, storyFontIndex[s.id] || 0).weight || 600,
+                  color: "#e8ddd0", lineHeight: 1.3,
+                }}>
+                  {s.title || "Untitled"}
+                </div>
               </div>
               <span style={{
                 fontFamily: MONO, fontSize: "10px",
                 color: "rgba(255,255,255,0.45)",
+                textAlign: "center",
               }}>
                 {s.updatedAt ? new Date(s.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : ""}
               </span>
@@ -1027,6 +1032,18 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
   const [activityFeed, setActivityFeed] = useState([]);
   const [activityLoading, setActivityLoading] = useState(false);
   const sorted = [...stories].sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
+
+  // Map each story to its index within its genre (for font cycling)
+  const storyFontIndex = useMemo(() => {
+    const counters = {};
+    const map = {};
+    for (const s of sorted) {
+      counters[s.genre] = (counters[s.genre] || 0);
+      map[s.id] = counters[s.genre];
+      counters[s.genre]++;
+    }
+    return map;
+  }, [sorted]);
 
   // Load activity feed when switching to activity tab
   useEffect(() => {
@@ -1239,6 +1256,8 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
             stories={r.stories}
             onSelectStory={onSelectStory}
             isTouch={isTouch}
+            genreId={r.genre.id}
+            storyFontIndex={storyFontIndex}
           />
         ))}
 
@@ -1358,20 +1377,11 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
                           },
                         } : {})}
                       >
-                        <div>
-                          {genre && (
-                            <div style={{
-                              fontFamily: MONO, fontSize: "11px",
-                              color: "rgba(255,255,255,0.5)",
-                              textTransform: "uppercase",
-                              letterSpacing: "0.5px",
-                              marginBottom: "8px",
-                            }}>
-                              {genre.label}
-                            </div>
-                          )}
+                        <div style={{
+                          flex: 1, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center",
+                        }}>
                           <div style={{
-                            fontFamily: SERIF, fontSize: "20px", fontWeight: 600,
+                            fontFamily: genreFont(s.genre, storyFontIndex[s.id] || 0).family, fontSize: "24px", fontWeight: genreFont(s.genre, storyFontIndex[s.id] || 0).weight || 600,
                             color: "#e8ddd0", lineHeight: 1.3,
                           }}>
                             {s.title || "Untitled"}
@@ -1380,6 +1390,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
                         <span style={{
                           fontFamily: MONO, fontSize: "11px",
                           color: "rgba(255,255,255,0.45)",
+                          textAlign: "center",
                         }}>
                           {s.updatedAt ? new Date(s.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : ""}
                         </span>
@@ -1444,20 +1455,11 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
                       flexShrink: 0, alignSelf: "flex-start",
                       position: "sticky", top: isTouch ? "70px" : "90px",
                     }}>
-                      <div>
-                        {genre && (
-                          <div style={{
-                            fontFamily: MONO, fontSize: "9px",
-                            color: "rgba(255,255,255,0.5)",
-                            textTransform: "uppercase",
-                            letterSpacing: "0.5px",
-                            marginBottom: "4px",
-                          }}>
-                            {genre.label}
-                          </div>
-                        )}
+                      <div style={{
+                        flex: 1, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center",
+                      }}>
                         <div style={{
-                          fontFamily: SERIF, fontSize: "13px", fontWeight: 600,
+                          fontFamily: genreFont(group.storyGenre, storyFontIndex[group.storyId] || 0).family, fontSize: "15px", fontWeight: genreFont(group.storyGenre, storyFontIndex[group.storyId] || 0).weight || 600,
                           color: "#e8ddd0", lineHeight: 1.3,
                         }}>
                           {group.storyTitle}
@@ -2134,6 +2136,51 @@ function NewStoryScreen({ onCancel, onCreate, narrow }) {
 const MONO = "'SF Pro Mono', 'SF Mono', 'Menlo', 'Courier New', monospace";
 const TYPEWRITER = "'Courier New', 'Courier', monospace";
 const SERIF = "'Faustina', serif";
+const GENRE_FONTS = {
+  romance: [
+    { family: "'Felipa', cursive" },
+    { family: "'Marko One', serif" },
+    { family: "'Elsie', cursive" },
+    { family: "'Great Vibes', cursive" },
+  ],
+  scifi: [
+    { family: "'Tektur', sans-serif" },
+    { family: "'Bruno Ace SC', sans-serif" },
+    { family: "'Syne Mono', monospace" },
+    { family: "'Space Mono', monospace" },
+    { family: "'Jersey 20', sans-serif" },
+  ],
+  mystery: [
+    { family: "'Gloock', serif" },
+    { family: "'Anton', sans-serif" },
+    { family: "'Archivo Black', sans-serif" },
+    { family: "'Castoro Titling', serif" },
+  ],
+  bedtime: [
+    { family: "'Chewy', cursive" },
+    { family: "'Boogaloo', cursive" },
+    { family: "'Borel', cursive" },
+    { family: "'Walter Turncoat', cursive" },
+  ],
+  horror: [
+    { family: "'UnifrakturMaguntia', cursive" },
+    { family: "'Amarante', serif" },
+    { family: "'Faculty Glyphic', serif" },
+    { family: "'New Rocker', cursive" },
+  ],
+  fantasy: [
+    { family: "'Cormorant Unicase', serif", weight: 600 },
+    { family: "'Alegreya SC', serif" },
+    { family: "'Romanesco', cursive" },
+    { family: "'Cinzel Decorative', cursive" },
+    { family: "'Uncial Antiqua', serif" },
+  ],
+};
+function genreFont(genreId, index = 0) {
+  const fonts = GENRE_FONTS[genreId];
+  if (!fonts) return { family: SERIF, weight: 600 };
+  return fonts[index % fonts.length];
+}
 
 export default function CollaborativeStoryApp() {
   // Navigation state
@@ -2179,6 +2226,17 @@ export default function CollaborativeStoryApp() {
 
   // Active story metadata
   const activeStoryMeta = storiesIndex.find((s) => s.id === activeStoryId);
+  const activeStoryFontIndex = useMemo(() => {
+    if (!activeStoryMeta) return 0;
+    const sortedAll = [...storiesIndex].sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
+    let count = 0;
+    for (const s of sortedAll) {
+      if (s.id === activeStoryMeta.id) return count;
+      if (s.genre === activeStoryMeta.genre) count++;
+    }
+    return 0;
+  }, [storiesIndex, activeStoryMeta]);
+  const activeStoryFont = activeStoryMeta ? genreFont(activeStoryMeta.genre, activeStoryFontIndex) : { family: SERIF, weight: 600 };
 
   const getGenreVoiceCtx = useCallback(() => {
     if (!activeStoryMeta) return "";
@@ -2268,6 +2326,7 @@ export default function CollaborativeStoryApp() {
   const openStory = useCallback(async (id) => {
     setActiveStoryId(id);
     setStory([]);
+    prevStoryLenRef.current = 0;
     setCurrentPrompt("");
     setAnswer("");
     setPhase("input");
@@ -3033,7 +3092,7 @@ export default function CollaborativeStoryApp() {
                   }),
                 }}>
                   <h1 style={{
-                    fontFamily: SERIF, fontSize: "42px", fontWeight: 700,
+                    fontFamily: activeStoryFont.family, fontSize: "64px", fontWeight: activeStoryFont.weight || 700,
                     color: "#e8ddd0", lineHeight: 1.2,
                     padding: "40px 0",
                     marginBottom: 0,
@@ -3091,9 +3150,9 @@ export default function CollaborativeStoryApp() {
                               </div>
                               {chapterTitles[entry.chapter || 1] && (
                                 <div style={{
-                                  fontFamily: SERIF, fontSize: "28px",
+                                  fontFamily: activeStoryFont.family, fontSize: "28px",
                                   color: "#e8ddd0",
-                                  fontWeight: 700,
+                                  fontWeight: activeStoryFont.weight || 700,
                                   marginTop: "8px",
                                 }}>
                                   {chapterTitles[entry.chapter || 1]}
