@@ -955,8 +955,8 @@ function StoryRow({ title, stories, onSelectStory, isTouch, genreId, storyFontIn
                 setTimeout(() => onSelectStory(s.id), 150);
               }}
               style={{
-                background: "rgba(255,255,255,0.03)",
-                border: "1px solid rgba(255,255,255,0.06)",
+                background: bookColor(s.genre || genreId, s.id).bg,
+                border: `1px solid ${bookColor(s.genre || genreId, s.id).border}`,
                 borderRadius: "4px",
                 padding: "20px 16px",
                 cursor: "pointer",
@@ -987,7 +987,7 @@ function StoryRow({ title, stories, onSelectStory, isTouch, genreId, storyFontIn
                 onMouseLeave: (e) => {
                   e.currentTarget.style.transform = "scale(1) rotateY(0deg) rotateX(0deg)";
                   e.currentTarget.style.boxShadow = "none";
-                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)";
+                  e.currentTarget.style.borderColor = bookColor(s.genre || genreId, s.id).border;
                 },
               } : {})}
             >
@@ -995,8 +995,8 @@ function StoryRow({ title, stories, onSelectStory, isTouch, genreId, storyFontIn
                 flex: 1, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center",
               }}>
                 <div style={{
-                  fontFamily: genreFont(genreId, storyFontIndex[s.id] || 0).family, fontSize: "20px", fontWeight: genreFont(genreId, storyFontIndex[s.id] || 0).weight || 600,
-                  color: "#e8ddd0", lineHeight: 1.3,
+                  fontFamily: genreFont(genreId, storyFontIndex[s.id] || 0).family, fontSize: "18px", fontWeight: genreFont(genreId, storyFontIndex[s.id] || 0).weight || 600,
+                  color: "#fff", lineHeight: 1.3,
                 }}>
                   {s.title || "Untitled"}
                 </div>
@@ -1339,8 +1339,8 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
                           setTimeout(() => onSelectStory(s.id), 150);
                         }}
                         style={{
-                          background: "rgba(255,255,255,0.03)",
-                          border: "1px solid rgba(255,255,255,0.06)",
+                          background: bookColor(s.genre || genreId, s.id).bg,
+                          border: `1px solid ${bookColor(s.genre || genreId, s.id).border}`,
                           borderRadius: "4px",
                           padding: "24px 20px",
                           cursor: "pointer",
@@ -1373,7 +1373,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
                           onMouseLeave: (e) => {
                             e.currentTarget.style.transform = "scale(1) rotateY(0deg) rotateX(0deg)";
                             e.currentTarget.style.boxShadow = "none";
-                            e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)";
+                            e.currentTarget.style.borderColor = bookColor(s.genre || genreId, s.id).border;
                           },
                         } : {})}
                       >
@@ -1381,8 +1381,8 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
                           flex: 1, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center",
                         }}>
                           <div style={{
-                            fontFamily: genreFont(s.genre, storyFontIndex[s.id] || 0).family, fontSize: "24px", fontWeight: genreFont(s.genre, storyFontIndex[s.id] || 0).weight || 600,
-                            color: "#e8ddd0", lineHeight: 1.3,
+                            fontFamily: genreFont(s.genre, storyFontIndex[s.id] || 0).family, fontSize: "26px", fontWeight: genreFont(s.genre, storyFontIndex[s.id] || 0).weight || 600,
+                            color: "#fff", lineHeight: 1.3,
                           }}>
                             {s.title || "Untitled"}
                           </div>
@@ -1445,8 +1445,8 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
                   >
                     {/* Book card */}
                     <div style={{
-                      background: "rgba(255,255,255,0.03)",
-                      border: "1px solid rgba(255,255,255,0.06)",
+                      background: bookColor(group.storyGenre, group.storyId).bg,
+                      border: `1px solid ${bookColor(group.storyGenre, group.storyId).border}`,
                       borderRadius: "4px",
                       padding: "14px 12px",
                       width: "100px", minWidth: "100px",
@@ -1459,8 +1459,8 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
                         flex: 1, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center",
                       }}>
                         <div style={{
-                          fontFamily: genreFont(group.storyGenre, storyFontIndex[group.storyId] || 0).family, fontSize: "15px", fontWeight: genreFont(group.storyGenre, storyFontIndex[group.storyId] || 0).weight || 600,
-                          color: "#e8ddd0", lineHeight: 1.3,
+                          fontFamily: genreFont(group.storyGenre, storyFontIndex[group.storyId] || 0).family, fontSize: "14px", fontWeight: genreFont(group.storyGenre, storyFontIndex[group.storyId] || 0).weight || 600,
+                          color: "#fff", lineHeight: 1.3,
                         }}>
                           {group.storyTitle}
                         </div>
@@ -2181,6 +2181,31 @@ function genreFont(genreId, index = 0) {
   if (!fonts) return { family: SERIF, weight: 600 };
   return fonts[index % fonts.length];
 }
+const GENRE_HUE_RANGE = {
+  fantasy:  [240, 320],
+  romance:  [310, 390],
+  mystery:  [190, 270],
+  scifi:    [140, 220],
+  bedtime:  [40, 120],
+  horror:   [350, 430],
+};
+function bookColor(genreId, storyId) {
+  const range = GENRE_HUE_RANGE[genreId];
+  if (!range) return { bg: "rgba(255,255,255,0.03)", text: "#e8ddd0", border: "rgba(255,255,255,0.06)" };
+  // Hash story ID to a position within the genre's hue range
+  let hash = 0;
+  const str = String(storyId);
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const t = (((hash % 1000) + 1000) % 1000) / 1000;
+  const hue = range[0] + t * (range[1] - range[0]);
+  return {
+    bg: `oklch(0.25 0.04 ${hue.toFixed(1)})`,
+    text: `oklch(0.85 0.04 ${hue.toFixed(1)})`,
+    border: `oklch(0.35 0.04 ${hue.toFixed(1)})`,
+  };
+}
 
 export default function CollaborativeStoryApp() {
   // Navigation state
@@ -2237,6 +2262,7 @@ export default function CollaborativeStoryApp() {
     return 0;
   }, [storiesIndex, activeStoryMeta]);
   const activeStoryFont = activeStoryMeta ? genreFont(activeStoryMeta.genre, activeStoryFontIndex) : { family: SERIF, weight: 600 };
+  const activeStoryColor = activeStoryMeta ? bookColor(activeStoryMeta.genre, activeStoryMeta.id) : null;
 
   const getGenreVoiceCtx = useCallback(() => {
     if (!activeStoryMeta) return "";
@@ -3075,7 +3101,14 @@ export default function CollaborativeStoryApp() {
               </>
             )}
 
-            <div ref={contentRef} style={{ maxWidth: "600px", margin: "0 auto", padding: narrowViewport ? "48px 24px 40px" : "60px 24px 40px", overflow: "visible" }}>
+            {activeStoryColor && (
+              <div style={{
+                position: "absolute", top: 0, left: 0, right: 0, height: "80vh",
+                background: `radial-gradient(ellipse 80% 60% at 50% 0%, ${activeStoryColor.bg} 0%, transparent 100%)`,
+                pointerEvents: "none", zIndex: 0,
+              }} />
+            )}
+            <div ref={contentRef} style={{ maxWidth: "600px", margin: "0 auto", padding: narrowViewport ? "48px 24px 40px" : "60px 24px 40px", overflow: "visible", position: "relative", zIndex: 1 }}>
 
               {/* ── Spacer ── */}
               <div style={{ marginBottom: narrowViewport ? "24px" : "48px" }} />
@@ -3092,7 +3125,7 @@ export default function CollaborativeStoryApp() {
                   }),
                 }}>
                   <h1 style={{
-                    fontFamily: activeStoryFont.family, fontSize: "64px", fontWeight: activeStoryFont.weight || 700,
+                    fontFamily: activeStoryFont.family, fontSize: narrowViewport ? "42px" : "64px", fontWeight: activeStoryFont.weight || 700,
                     color: "#e8ddd0", lineHeight: 1.2,
                     padding: "40px 0",
                     marginBottom: 0,
