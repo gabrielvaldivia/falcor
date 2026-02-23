@@ -1259,7 +1259,7 @@ function AboutScreen({ onBack }) {
    New Story Screen — Genre + Voice Selection
    ──────────────────────────────────────────── */
 
-function NewStoryScreen({ onCancel, onCreate }) {
+function NewStoryScreen({ onCancel, onCreate, narrow }) {
   const [selectedGenre, setSelectedGenre] = useState(null);
   const [selectedVoice, setSelectedVoice] = useState(null);
   const [selectedThemes, setSelectedThemes] = useState([]);
@@ -1515,33 +1515,65 @@ function NewStoryScreen({ onCancel, onCreate }) {
 
   return (
     <>
-      <div style={{
-        position: "fixed", left: "24px", top: "24px",
-        zIndex: 5,
-      }}>
-        <button
-          onClick={onCancel}
-          style={{
-            background: "none", border: "none",
+      {narrow ? (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0,
+          zIndex: 10,
+          background: "linear-gradient(to bottom, #181714 60%, transparent)",
+          padding: "16px 24px",
+          display: "flex", alignItems: "center",
+        }}>
+          <button
+            onClick={onCancel}
+            style={{
+              background: "none", border: "none",
+              color: "rgba(255,255,255,0.4)", cursor: "pointer",
+              padding: 0, display: "flex", alignItems: "center",
+            }}
+          >
+            <GoArrowLeft size={16} />
+          </button>
+          <span style={{
             fontFamily: MONO, fontSize: "12px",
-            color: "rgba(255,255,255,0.3)", cursor: "pointer",
-            padding: 0, textAlign: "left",
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}
-          onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.3)"}
-        >
-          <GoArrowLeft size={14} style={{ marginRight: "6px", verticalAlign: "middle" }} />Back
-        </button>
-      </div>
-    <div style={{ maxWidth: "600px", margin: "0 auto", padding: "60px 24px 40px" }}>
+            color: "rgba(255,255,255,0.4)",
+            letterSpacing: "0.5px", textTransform: "uppercase",
+            flex: 1, textAlign: "center",
+            marginRight: "16px",
+          }}>
+            New Story
+          </span>
+        </div>
+      ) : (
+        <div style={{
+          position: "fixed", left: "24px", top: "24px",
+          zIndex: 5,
+        }}>
+          <button
+            onClick={onCancel}
+            style={{
+              background: "none", border: "none",
+              fontFamily: MONO, fontSize: "12px",
+              color: "rgba(255,255,255,0.3)", cursor: "pointer",
+              padding: 0, textAlign: "left",
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}
+            onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.3)"}
+          >
+            <GoArrowLeft size={14} style={{ marginRight: "6px", verticalAlign: "middle" }} />Back
+          </button>
+        </div>
+      )}
+    <div style={{ maxWidth: "600px", margin: "0 auto", padding: narrow ? "56px 24px 40px" : "60px 24px 40px" }}>
 
-      <h1 style={{
-        fontFamily: SERIF, fontSize: "28px", fontWeight: 600,
-        color: "#e8ddd0", textAlign: "center",
-        marginBottom: "48px",
-      }}>
-        New Story
-      </h1>
+      {!narrow && (
+        <h1 style={{
+          fontFamily: SERIF, fontSize: "28px", fontWeight: 600,
+          color: "#e8ddd0", textAlign: "center",
+          marginBottom: "48px",
+        }}>
+          New Story
+        </h1>
+      )}
 
       {steps.map((step) => {
         const answer = getStepAnswer(step.key);
@@ -2223,6 +2255,7 @@ export default function CollaborativeStoryApp() {
           <NewStoryScreen
             onCancel={() => setView("home")}
             onCreate={handleCreateStory}
+            narrow={narrowViewport}
           />
         )}
 
