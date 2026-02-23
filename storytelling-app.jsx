@@ -2429,7 +2429,7 @@ export default function CollaborativeStoryApp() {
                         <button
                           onClick={() => {
                             const activeMeta = storiesIndex.find((s) => s.id === activeStoryId);
-                            const url = window.location.origin + window.location.pathname + "#story/" + (activeMeta?.slug || activeStoryId);
+                            const url = window.location.origin + "/api/story/" + (activeMeta?.slug || activeStoryId);
                             navigator.clipboard.writeText(url);
                             setLinkCopied(true);
                             setTimeout(() => { setLinkCopied(false); setShowStoryMenu(false); }, 2000);
@@ -2599,7 +2599,7 @@ export default function CollaborativeStoryApp() {
                         <button
                           onClick={() => {
                             const activeMeta = storiesIndex.find((s) => s.id === activeStoryId);
-                            const url = window.location.origin + window.location.pathname + "#story/" + (activeMeta?.slug || activeStoryId);
+                            const url = window.location.origin + "/api/story/" + (activeMeta?.slug || activeStoryId);
                             navigator.clipboard.writeText(url);
                             setLinkCopied(true);
                             setTimeout(() => { setLinkCopied(false); setShowStoryMenu(false); }, 2000);
