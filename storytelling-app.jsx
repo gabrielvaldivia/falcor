@@ -1096,7 +1096,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
           About
         </a>
         <span style={{ color: "rgba(255,255,255,0.1)" }}>|</span>
-        <span>&copy; {new Date().getFullYear()}</span>
+        <span>&copy; Copyright {new Date().getFullYear()}</span>
       </footer>
     </div>
   );
