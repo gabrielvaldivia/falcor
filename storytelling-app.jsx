@@ -1812,6 +1812,7 @@ export default function CollaborativeStoryApp() {
         if (found) { openStory(found.id); return; }
       }
       if (pollRef.current) clearInterval(pollRef.current);
+      window.scrollTo(0, 0);
       setView("home");
       setActiveStoryId(null);
       setShowStoryMenu(false);
@@ -1968,6 +1969,8 @@ export default function CollaborativeStoryApp() {
       setPhase("input");
     } catch (e) {
       console.error("Storage error:", e);
+      setError("Failed to save. Please try again.");
+      setPhase("reveal");
     }
   };
 
@@ -2090,6 +2093,7 @@ export default function CollaborativeStoryApp() {
 
   const goHome = () => {
     if (pollRef.current) clearInterval(pollRef.current);
+    window.scrollTo(0, 0);
     setView("home");
     setActiveStoryId(null);
     setShowStoryMenu(false);
@@ -2629,13 +2633,12 @@ export default function CollaborativeStoryApp() {
                                 setGeoEnabled(false);
                                 setGeoLabel("");
                               } else {
-                                localStorage.setItem("falcor_geo_enabled", "true");
-                                setGeoEnabled(true);
                                 const loc = await requestBrowserLocation();
                                 if (loc) {
+                                  localStorage.setItem("falcor_geo_enabled", "true");
+                                  setGeoEnabled(true);
                                   setGeoLabel(loc);
                                 } else {
-                                  localStorage.removeItem("falcor_geo_enabled");
                                   setGeoEnabled(false);
                                   setGeoLabel("");
                                 }
