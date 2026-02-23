@@ -939,12 +939,14 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
 
   useEffect(() => {
     const el = scrollRef.current;
-    if (!el || !needsLoop) return;
-    const firstCard = el.children[sorted.length];
-    if (firstCard) {
-      el.scrollLeft = firstCard.offsetLeft - (el.clientWidth - firstCard.offsetWidth) / 2;
-    } else {
-      el.scrollLeft = el.scrollWidth / 3;
+    if (!el) return;
+    if (needsLoop) {
+      const firstCard = el.children[sorted.length];
+      if (firstCard) {
+        el.scrollLeft = firstCard.offsetLeft - (el.clientWidth - firstCard.offsetWidth) / 2;
+      } else {
+        el.scrollLeft = el.scrollWidth / 3;
+      }
     }
     updateCenterScale();
   }, [sorted.length, needsLoop, genreFilter, updateCenterScale]);
@@ -975,7 +977,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
 
   return (
     <div style={{
-      display: "flex", flexDirection: "column", justifyContent: "center",
+      display: "flex", flexDirection: "column",
       ...(isTouch
         ? { height: "100vh", overflow: "hidden", padding: "40px 0 0" }
         : { minHeight: "100vh", padding: "60px 0 100px" }),
@@ -1023,7 +1025,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
       </div>
       </div>
 
-      <div style={{ position: "relative", width: "100%", overflow: "hidden", ...(isTouch ? { flex: 1, display: "flex", alignItems: "center" } : {}) }}>
+      <div style={{ position: "relative", width: "100%", overflow: "hidden" }}>
       <div style={{
         position: "absolute", top: 0, bottom: 0, left: 0, right: 0,
         pointerEvents: "none", zIndex: 1,
@@ -1033,9 +1035,9 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
         ref={scrollRef}
         style={{
           display: "flex", gap: isTouch ? "24px" : "16px",
-          justifyContent: needsLoop ? "flex-start" : "center",
+          justifyContent: (!isTouch && !needsLoop) ? "center" : "flex-start",
           overflowX: "auto", WebkitOverflowScrolling: "touch",
-          padding: "30px 24px",
+          padding: isTouch ? "90px calc(50% - 75px)" : "30px 24px",
           scrollbarWidth: "none", msOverflowStyle: "none",
           perspective: isTouch ? "none" : "800px",
           width: "100%",
@@ -1132,7 +1134,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
       <div style={{
         position: isTouch ? "relative" : "sticky", bottom: isTouch ? "auto" : "32px",
         display: "flex", justifyContent: "center",
-        marginTop: isTouch ? "16px" : "32px", pointerEvents: "none", zIndex: 5,
+        marginTop: isTouch ? "16px" : "32px", marginBottom: isTouch ? "24px" : 0, pointerEvents: "none", zIndex: 5,
       }}>
         <button
           onClick={(e) => {
