@@ -306,6 +306,40 @@ function findStoryBySlug(index, slug) {
 }
 
 /* ────────────────────────────────────────────
+   Shared API Helper
+   ──────────────────────────────────────────── */
+
+async function callClaude(system, userMessage, maxTokens = 100) {
+  const resp = await fetch("/api/anthropic/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: maxTokens,
+      system,
+      messages: [{ role: "user", content: userMessage }],
+    }),
+  });
+  if (!resp.ok) {
+    const errBody = await resp.text().catch(() => "unknown");
+    throw new Error(`API ${resp.status}: ${errBody.slice(0, 200)}`);
+  }
+  const data = await resp.json();
+  return (data.content || [])
+    .filter((b) => b.type === "text")
+    .map((b) => b.text)
+    .join("")
+    .trim();
+}
+
+async function deleteStoryData(id) {
+  const suffixes = ["data-v1", "prompt-v1", "count-v1", "chapter-v1", "titles-v1"];
+  for (const s of suffixes) {
+    await window.storage.delete(storyKey(id, s), true).catch(() => {});
+  }
+}
+
+/* ────────────────────────────────────────────
    AI Prompt Generation
    ──────────────────────────────────────────── */
 
@@ -339,24 +373,7 @@ Output ONLY the question. No quotes. Under 12 words.`;
   }
 
   try {
-    const resp = await fetch("/api/anthropic/v1/messages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 100,
-        system: systemPrompt,
-        messages: [{ role: "user", content: userMessage }],
-      }),
-    });
-
-    if (!resp.ok) throw new Error(`API ${resp.status}`);
-    const data = await resp.json();
-    const text = data.content
-      .filter((b) => b.type === "text")
-      .map((b) => b.text)
-      .join("")
-      .trim();
+    const text = await callClaude(systemPrompt, userMessage, 100);
     if (text && text.length > 5) return text;
   } catch (err) {
     console.warn("Prompt generation failed:", err.message);
@@ -427,26 +444,12 @@ async function shouldEndChapter(story, currentChapter) {
   const chapterText = chapterPassages.map((e) => e.text).join("\n\n");
 
   try {
-    const resp = await fetch("/api/anthropic/v1/messages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 10,
-        system: `You are a narrative structure analyst. Given the passages of a story chapter, determine if the chapter's narrative arc feels complete — has it built tension and reached a natural resolution or resting point? Consider: has there been a setup, development, and some form of payoff or shift? Chapters typically run 5-8 passages but can be shorter if the arc resolves early. Respond with ONLY "yes" or "no".`,
-        messages: [{ role: "user", content: `Here are the passages of Chapter ${currentChapter}:\n\n${chapterText}\n\nIs this chapter's narrative arc complete?` }],
-      }),
-    });
-
-    if (!resp.ok) return false;
-    const data = await resp.json();
-    const answer = data.content
-      .filter((b) => b.type === "text")
-      .map((b) => b.text)
-      .join("")
-      .trim()
-      .toLowerCase();
-    return answer.startsWith("yes");
+    const answer = await callClaude(
+      `You are a narrative structure analyst. Given the passages of a story chapter, determine if the chapter's narrative arc feels complete — has it built tension and reached a natural resolution or resting point? Consider: has there been a setup, development, and some form of payoff or shift? Chapters typically run 5-8 passages but can be shorter if the arc resolves early. Respond with ONLY "yes" or "no".`,
+      `Here are the passages of Chapter ${currentChapter}:\n\n${chapterText}\n\nIs this chapter's narrative arc complete?`,
+      10
+    );
+    return answer.toLowerCase().startsWith("yes");
   } catch (err) {
     console.warn("Chapter check failed:", err.message);
     return false;
@@ -460,26 +463,13 @@ async function generateChapterTitle(story, chapter) {
     .join("\n\n");
 
   try {
-    const resp = await fetch("/api/anthropic/v1/messages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 30,
-        system: `You are a literary editor. Given the text of a story chapter, produce a short, evocative chapter title. Output ONLY the title — no quotes, no "Chapter N:", no punctuation unless it's part of the title. 2-5 words.`,
-        messages: [{ role: "user", content: `Here is Chapter ${chapter}:\n\n${chapterText}\n\nWhat should this chapter be titled?` }],
-      }),
-    });
-
-    if (!resp.ok) return null;
-    const data = await resp.json();
-    const title = data.content
-      .filter((b) => b.type === "text")
-      .map((b) => b.text)
-      .join("")
-      .trim()
-      .replace(/^["']|["']$/g, "");
-    return title && title.length > 0 ? title : null;
+    const title = await callClaude(
+      `You are a literary editor. Given the text of a story chapter, produce a short, evocative chapter title. Output ONLY the title — no quotes, no "Chapter N:", no punctuation unless it's part of the title. 2-5 words.`,
+      `Here is Chapter ${chapter}:\n\n${chapterText}\n\nWhat should this chapter be titled?`,
+      30
+    );
+    const cleaned = title.replace(/^["']|["']$/g, "");
+    return cleaned && cleaned.length > 0 ? cleaned : null;
   } catch (err) {
     console.warn("Chapter title generation failed:", err.message);
     return null;
@@ -516,34 +506,7 @@ These style settings override any other instinct you have. If the style says "sp
       ? `STORY SO FAR (last passages):\n"""${storyContext}"""\n\nPROMPT SHOWN TO USER: "${prompt}"\nUSER'S ANSWER: "${userAnswer}"\n\nTransform their answer into the next story passage following the style settings exactly. Continue naturally from what came before. Output ONLY the story text.`
       : `This is the FIRST passage of a brand new story — the opening paragraph.\n\nPROMPT SHOWN TO USER: "${prompt}"\nUSER'S ANSWER: "${userAnswer}"\n\nWrite this as the opening paragraph of a novel. It should establish setting, character, or atmosphere and draw the reader in immediately. Ground the reader in a specific scene — a place, a moment, a sensory detail. Weave the user's answer naturally into the prose. This must read like the first paragraph you'd find on page one of a published book. Follow the style settings exactly. Output ONLY the story text.`;
 
-  const requestBody = {
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 1000,
-    system: systemPrompt,
-    messages: [{ role: "user", content: userMessage }],
-  };
-  const resp = await fetch("/api/anthropic/v1/messages", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(requestBody),
-  });
-
-  if (!resp.ok) {
-    const errBody = await resp.text().catch(() => "unknown");
-    throw new Error(`API ${resp.status}: ${errBody.slice(0, 200)}`);
-  }
-
-  const data = await resp.json();
-
-  if (!data.content || !Array.isArray(data.content)) {
-    throw new Error("Unexpected API response shape: " + JSON.stringify(data).slice(0, 300));
-  }
-
-  const text = data.content
-    .filter((b) => b.type === "text")
-    .map((b) => b.text)
-    .join("")
-    .trim();
+  const text = await callClaude(systemPrompt, userMessage, 1000);
 
   if (!text || text.length < 10) {
     throw new Error("API returned empty or too-short text");
@@ -583,13 +546,8 @@ async function generateStoryOpener(meta) {
   }
 
   try {
-    const resp = await fetch("/api/anthropic/v1/messages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 600,
-        system: `You are a novelist. Given a genre and writing voice, generate the title and opening paragraph of an original story.
+    const text = await callClaude(
+      `You are a novelist. Given a genre and writing voice, generate the title and opening paragraph of an original story.
 
 Genre: ${genreObj.label} — themes: ${genreObj.prompt}
 Voice: ${voiceObj.label} — ${voiceObj.description.toLowerCase()}${extraContext}
@@ -602,17 +560,9 @@ TITLE: <a short evocative title, 2-5 words>
 PARAGRAPH: <the opening paragraph>
 
 The opening paragraph must read like page one of a published novel — establish a character, setting, or atmosphere. Ground the reader in a specific scene. Follow the style constraints literally.`,
-        messages: [{ role: "user", content: "Write the title and opening paragraph." }],
-      }),
-    });
-
-    if (!resp.ok) return null;
-    const data = await resp.json();
-    const text = data.content
-      .filter((b) => b.type === "text")
-      .map((b) => b.text)
-      .join("")
-      .trim();
+      "Write the title and opening paragraph.",
+      600
+    );
 
     const titleMatch = text.match(/TITLE:\s*(.+)/i);
     const paraMatch = text.match(/PARAGRAPH:\s*([\s\S]+)/i);
@@ -2040,13 +1990,7 @@ export default function CollaborativeStoryApp() {
 
   const handleReset = async () => {
     if (!activeStoryId) return;
-    try {
-      await window.storage.delete(storyKey(activeStoryId, "data-v1"), true);
-      await window.storage.delete(storyKey(activeStoryId, "prompt-v1"), true);
-      await window.storage.delete(storyKey(activeStoryId, "count-v1"), true);
-      await window.storage.delete(storyKey(activeStoryId, "chapter-v1"), true);
-      await window.storage.delete(storyKey(activeStoryId, "titles-v1"), true);
-    } catch (e) {}
+    await deleteStoryData(activeStoryId);
 
     // Remove from index
     const updatedIndex = storiesIndex.filter((s) => s.id !== activeStoryId);
@@ -2060,13 +2004,7 @@ export default function CollaborativeStoryApp() {
   };
 
   const handleDeleteStory = async (id) => {
-    try {
-      await window.storage.delete(storyKey(id, "data-v1"), true);
-      await window.storage.delete(storyKey(id, "prompt-v1"), true);
-      await window.storage.delete(storyKey(id, "count-v1"), true);
-      await window.storage.delete(storyKey(id, "chapter-v1"), true);
-      await window.storage.delete(storyKey(id, "titles-v1"), true);
-    } catch (e) {}
+    await deleteStoryData(id);
 
     const updatedIndex = storiesIndex.filter((s) => s.id !== id);
     await saveStoriesIndex(updatedIndex);
