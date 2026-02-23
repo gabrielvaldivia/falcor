@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { GoArrowLeft, GoInfo, GoPlus, GoDash, GoKebabHorizontal, GoLocation, GoChevronDown } from "react-icons/go";
+import { GoArrowLeft, GoInfo, GoPlus, GoDash, GoKebabHorizontal, GoLocation, GoChevronDown, GoPulse } from "react-icons/go";
+import { TbLayoutListFilled, TbLayoutList } from "react-icons/tb";
+import { MdOutlineViewCarousel } from "react-icons/md";
 import { BsSliders2Vertical } from "react-icons/bs";
 
 /* ────────────────────────────────────────────
@@ -912,145 +914,39 @@ function StoryPopover({ entry, onClose }) {
    Home Screen — Grid of Books
    ──────────────────────────────────────────── */
 
-function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
-  const [genreFilter, setGenreFilter] = useState("all");
-  const filtered = genreFilter === "all"
-    ? stories
-    : stories.filter((s) => s.genre === genreFilter);
-  const sorted = [...filtered].sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
+function StoryRow({ title, stories, onSelectStory, isTouch }) {
   const scrollRef = useRef(null);
-  const needsLoop = sorted.length > 2;
-  const isTouch = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
-
-  const updateCenterScale = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el || !isTouch) return;
-    const center = el.scrollLeft + el.clientWidth / 2;
-    for (const child of el.children) {
-      const cardCenter = child.offsetLeft + child.offsetWidth / 2;
-      const dist = Math.abs(center - cardCenter);
-      const maxDist = el.clientWidth / 2;
-      const t = Math.min(dist / maxDist, 1);
-      const scale = 1.15 - t * 0.15;
-      const opacity = 1 - t * 0.4;
-      child.style.transform = `scale(${scale})`;
-      child.style.opacity = opacity;
-    }
-  }, [isTouch]);
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    if (needsLoop) {
-      const firstCard = el.children[sorted.length];
-      if (firstCard) {
-        el.scrollLeft = firstCard.offsetLeft - (el.clientWidth - firstCard.offsetWidth) / 2;
-      } else {
-        el.scrollLeft = el.scrollWidth / 3;
-      }
-    }
-    updateCenterScale();
-  }, [sorted.length, needsLoop, genreFilter, updateCenterScale]);
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    let ticking = false;
-    const onScroll = () => {
-      if (ticking) return;
-      ticking = true;
-      requestAnimationFrame(() => {
-        if (needsLoop) {
-          const oneSetWidth = el.scrollWidth / 3;
-          if (el.scrollLeft >= oneSetWidth * 2 - 1) {
-            el.scrollLeft -= oneSetWidth;
-          } else if (el.scrollLeft <= 1) {
-            el.scrollLeft += oneSetWidth;
-          }
-        }
-        updateCenterScale();
-        ticking = false;
-      });
-    };
-    el.addEventListener("scroll", onScroll);
-    return () => el.removeEventListener("scroll", onScroll);
-  }, [needsLoop, updateCenterScale]);
 
   return (
-    <div style={{
-      display: "flex", flexDirection: "column",
-      ...(isTouch
-        ? { height: "100vh", overflow: "hidden", padding: "40px 0 0" }
-        : { minHeight: "100vh", padding: "60px 0 100px" }),
-    }}>
-      <header style={{ marginBottom: isTouch ? "24px" : "48px", textAlign: "center" }}>
-        <h1 style={{
-          fontFamily: TYPEWRITER, fontSize: "28px", fontWeight: 400,
-          color: "#e8ddd0",
-          marginBottom: "8px",
-        }}>
-          Falcor
-        </h1>
-        <p style={{
-          fontFamily: SERIF, fontSize: "15px", fontStyle: "italic",
-          color: "rgba(255,255,255,0.3)", margin: 0,
-        }}>
-          Collaborative storytelling with AI
-        </p>
-      </header>
-
-      <div style={{ position: "relative" }}>
-      <div className="filter-pills-mask" />
-      <div className="filter-pills">
-        {[{ id: "all", label: "All" }, ...GENRES].map((g) => {
-          const active = genreFilter === g.id;
-          return (
-            <button
-              key={g.id}
-              onClick={() => setGenreFilter(g.id)}
-              style={{
-                fontFamily: MONO, fontSize: "11px", textTransform: "uppercase",
-                letterSpacing: "0.5px",
-                padding: "6px 14px", borderRadius: "20px",
-                border: active ? "1px solid rgba(255,255,255,0.4)" : "1px solid rgba(255,255,255,0.1)",
-                background: active ? "rgba(255,255,255,0.08)" : "transparent",
-                color: active ? "#e8ddd0" : "rgba(255,255,255,0.3)",
-                cursor: "pointer",
-                transition: "all 0.15s",
-              }}
-            >
-              {g.label}
-            </button>
-          );
-        })}
-      </div>
-      </div>
-
-      <div style={{ position: "relative", width: "100%", overflow: "hidden" }}>
-      <div style={{
-        position: "absolute", top: 0, bottom: 0, left: 0, right: 0,
-        pointerEvents: "none", zIndex: 1,
-        background: "linear-gradient(to right, #0e0d0b 0%, transparent 48px, transparent calc(100% - 48px), #0e0d0b 100%)",
-      }} />
-      <div
-        ref={scrollRef}
-        style={{
-          display: "flex", gap: isTouch ? "24px" : "16px",
-          justifyContent: (!isTouch && !needsLoop) ? "center" : "flex-start",
-          overflowX: "auto", WebkitOverflowScrolling: "touch",
-          padding: isTouch ? "70px calc(50% - 75px)" : "30px 24px",
-          scrollbarWidth: "none", msOverflowStyle: "none",
-          perspective: isTouch ? "none" : "800px",
-          width: "100%",
-          ...(isTouch ? { scrollSnapType: "x mandatory" } : {}),
-        }}
-        className="story-hscroll"
-      >
-        {(needsLoop ? [...sorted, ...sorted, ...sorted] : sorted).map((s, i) => {
-          const genre = GENRES.find((g) => g.id === s.genre);
-          return (
+    <div style={{ marginBottom: isTouch ? "32px" : "40px" }}>
+      <h2 style={{
+        fontFamily: MONO, fontSize: "12px", fontWeight: 400,
+        color: "rgba(255,255,255,0.4)", letterSpacing: "0.5px",
+        textTransform: "uppercase", margin: "0 0 12px",
+        padding: "0 32px",
+      }}>
+        {title}
+      </h2>
+      <div style={{ position: "relative", overflow: "clip visible" }}>
+        <div style={{
+          position: "absolute", top: 0, bottom: 0, left: 0, right: 0,
+          pointerEvents: "none", zIndex: 1,
+          background: "linear-gradient(to right, #0e0d0b 0%, transparent 32px, transparent calc(100% - 32px), #0e0d0b 100%)",
+        }} />
+        <div
+          ref={scrollRef}
+          className="story-hscroll"
+          style={{
+            display: "flex", gap: "20px",
+            overflowX: "auto", WebkitOverflowScrolling: "touch",
+            padding: "30px 32px",
+            scrollbarWidth: "none", msOverflowStyle: "none",
+            perspective: isTouch ? "none" : "800px",
+          }}
+        >
+          {stories.map((s) => (
             <div
-              key={`${s.id}-${i}`}
+              key={s.id}
               onClick={(e) => {
                 e.currentTarget.style.transform = "scale(1.08)";
                 e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.35)";
@@ -1062,16 +958,11 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
                 borderRadius: "4px",
                 padding: "20px 16px",
                 cursor: "pointer",
-                position: "relative",
                 width: "150px", minWidth: "150px",
                 aspectRatio: "2 / 3",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "space-between",
-                transition: "transform 0.2s ease-out, opacity 0.2s ease-out, border-color 0.15s, box-shadow 0.15s",
+                display: "flex", flexDirection: "column", justifyContent: "space-between",
+                transition: "transform 0.2s ease-out, border-color 0.15s, box-shadow 0.15s",
                 transformStyle: isTouch ? "flat" : "preserve-3d",
-                willChange: "transform",
-                ...(isTouch ? { scrollSnapAlign: "center" } : {}),
               }}
               {...(!isTouch ? {
                 onMouseMove: (e) => {
@@ -1098,73 +989,494 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
                 },
               } : {})}
             >
-              <div>
-                {genre && (
-                  <div style={{
-                    fontFamily: MONO, fontSize: "10px",
-                    color: "rgba(255,255,255,0.3)",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                    marginBottom: "6px",
-                  }}>
-                    {genre.label}
-                  </div>
-                )}
-                <div style={{
-                  fontFamily: SERIF, fontSize: "16px", fontWeight: 600,
-                  color: "#e8ddd0",
-                  lineHeight: 1.3,
-                }}>
-                  {s.title || "Untitled"}
-                </div>
+              <div style={{
+                fontFamily: SERIF, fontSize: "16px", fontWeight: 600,
+                color: "#e8ddd0", lineHeight: 1.3,
+              }}>
+                {s.title || "Untitled"}
               </div>
-              <div>
-                <span style={{
-                  fontFamily: MONO, fontSize: "10px",
-                  color: "rgba(255,255,255,0.2)",
-                }}>
-                  {s.updatedAt ? new Date(s.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : ""}
-                </span>
+              <span style={{
+                fontFamily: MONO, fontSize: "10px",
+                color: "rgba(255,255,255,0.2)",
+              }}>
+                {s.updatedAt ? new Date(s.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : ""}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
+  const isTouch = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
+  const [homeLayout, setHomeLayout] = useState("rows"); // "rows" | "carousel" | "activity"
+  const carouselRef = useRef(null);
+  const [carouselFilter, setCarouselFilter] = useState("all");
+  const [wideEnough, setWideEnough] = useState(() => typeof window !== "undefined" && window.innerWidth >= 900);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 900px)");
+    const handler = (e) => setWideEnough(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  const [activityFeed, setActivityFeed] = useState([]);
+  const [activityLoading, setActivityLoading] = useState(false);
+  const sorted = [...stories].sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
+
+  // Load activity feed when switching to activity tab
+  useEffect(() => {
+    if (homeLayout !== "activity" || stories.length === 0) return;
+    let cancelled = false;
+    setActivityLoading(true);
+    (async () => {
+      const entries = [];
+      for (const s of stories) {
+        try {
+          const result = await window.storage.get(storyKey(s.id, "data-v1"), true);
+          if (result) {
+            const data = JSON.parse(result.value);
+            data.forEach((entry, idx) => {
+              entries.push({
+                ...entry,
+                storyId: s.id,
+                storyTitle: s.title || "Untitled",
+                storyGenre: s.genre,
+                passageIndex: idx,
+              });
+            });
+          }
+        } catch { /* skip */ }
+      }
+      entries.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+      if (!cancelled) {
+        setActivityFeed(entries);
+        setActivityLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [homeLayout, stories]);
+
+  // Carousel: center on load + infinite scroll loop for "all" filter
+  useEffect(() => {
+    if (homeLayout !== "carousel" || carouselFilter !== "all") return;
+    const el = carouselRef.current;
+    if (!el) return;
+    const needsLoop = sorted.length > 2;
+    if (!needsLoop) return;
+    // Center on the first card of the middle copy
+    requestAnimationFrame(() => {
+      const firstCard = el.children[sorted.length];
+      if (firstCard) {
+        el.scrollLeft = firstCard.offsetLeft - (el.clientWidth - firstCard.offsetWidth) / 2;
+      } else {
+        el.scrollLeft = el.scrollWidth / 3;
+      }
+    });
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        const oneSetWidth = el.scrollWidth / 3;
+        if (el.scrollLeft >= oneSetWidth * 2 - 1) {
+          el.scrollLeft -= oneSetWidth;
+        } else if (el.scrollLeft <= 1) {
+          el.scrollLeft += oneSetWidth;
+        }
+        ticking = false;
+      });
+    };
+    el.addEventListener("scroll", onScroll);
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [homeLayout, carouselFilter, sorted.length]);
+
+  // Carousel: mobile center-scale effect
+  const updateCenterScale = useCallback(() => {
+    const el = carouselRef.current;
+    if (!el || !isTouch) return;
+    const center = el.scrollLeft + el.clientWidth / 2;
+    for (const child of el.children) {
+      const cardCenter = child.offsetLeft + child.offsetWidth / 2;
+      const dist = Math.abs(center - cardCenter);
+      const maxDist = el.clientWidth / 2;
+      const t = Math.min(dist / maxDist, 1);
+      const scale = 1.12 - t * 0.12;
+      const opacity = 1 - t * 0.4;
+      child.style.transform = `scale(${scale})`;
+      child.style.opacity = opacity;
+    }
+  }, [isTouch]);
+
+  useEffect(() => {
+    if (homeLayout !== "carousel" || !isTouch) return;
+    const el = carouselRef.current;
+    if (!el) return;
+    requestAnimationFrame(updateCenterScale);
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        updateCenterScale();
+        ticking = false;
+      });
+    };
+    el.addEventListener("scroll", onScroll);
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [homeLayout, isTouch, carouselFilter, updateCenterScale]);
+
+  // Group stories by genre, only show genres that have stories
+  const genreRows = GENRES
+    .map((g) => ({ genre: g, stories: sorted.filter((s) => s.genre === g.id) }))
+    .filter((r) => r.stories.length > 0);
+
+  return (
+    <div style={{
+      display: "flex", flexDirection: "column",
+      minHeight: "100vh", padding: isTouch ? "60px 0 24px" : "80px 0 40px",
+      maxWidth: "1200px", margin: "0 auto", width: "100%",
+      ...(isTouch ? { overflow: "auto" } : {}),
+    }}>
+      <div style={{
+        position: "fixed", top: 0, left: 0, right: 0, zIndex: 10,
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+        padding: isTouch ? "16px 20px" : "20px 32px",
+        maxWidth: "1200px", margin: "0 auto",
+        background: "linear-gradient(to bottom, #0e0d0b 60%, transparent)",
+        paddingBottom: isTouch ? "32px" : "40px",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0, flex: 1 }}>
+          <h1 style={{
+            fontFamily: TYPEWRITER, fontSize: isTouch ? "18px" : "20px", fontWeight: 400,
+            color: "#e8ddd0", margin: 0, flexShrink: 0,
+          }}>
+            Falcor
+          </h1>
+          {homeLayout === "carousel" && wideEnough && (
+            <div className="story-hscroll" style={{ display: "flex", gap: "6px", marginLeft: "12px", overflowX: "auto", scrollbarWidth: "none", msOverflowStyle: "none" }}>
+              {[{ id: "all", label: "All" }, ...GENRES].map((g) => {
+                const active = carouselFilter === g.id;
+                return (
+                  <button
+                    key={g.id}
+                    onClick={() => setCarouselFilter(g.id)}
+                    style={{
+                      fontFamily: MONO, fontSize: "10px", textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                      padding: "4px 12px", borderRadius: "20px",
+                      border: active ? "1px solid rgba(255,255,255,0.4)" : "1px solid rgba(255,255,255,0.1)",
+                      background: active ? "rgba(255,255,255,0.08)" : "transparent",
+                      color: active ? "#e8ddd0" : "rgba(255,255,255,0.3)",
+                      cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    {g.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 }}>
+          <div style={{ display: "flex", gap: "2px", background: "rgba(255,255,255,0.05)", borderRadius: "20px", padding: "2px" }}>
+            {[{ id: "rows", icon: TbLayoutListFilled, iconOff: TbLayoutList }, { id: "carousel", icon: MdOutlineViewCarousel, iconOff: MdOutlineViewCarousel }, { id: "activity", icon: GoPulse, iconOff: GoPulse }].map((tab) => {
+              const active = homeLayout === tab.id;
+              const Icon = active ? tab.icon : tab.iconOff;
+              return (
+              <button
+                key={tab.id}
+                onClick={() => setHomeLayout(tab.id)}
+                style={{
+                  background: active ? "rgba(255,255,255,0.12)" : "transparent",
+                  border: "none", borderRadius: "18px",
+                  padding: "6px 10px",
+                  color: active ? "#e8ddd0" : "rgba(255,255,255,0.35)",
+                  cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  transition: "background 0.15s, color 0.15s",
+                }}
+              >
+                <Icon size={14} />
+              </button>
+              );
+            })}
+          </div>
+          <button
+            onClick={(e) => {
+              e.currentTarget.style.transform = "scale(1.05)";
+              e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.5)";
+              setTimeout(() => onNewStory(), 150);
+            }}
+            style={{
+              padding: isTouch ? "6px 16px" : "8px 20px", borderRadius: "28px",
+              background: "#e8ddd0", border: "none", color: "#0e0d0b",
+              cursor: "pointer",
+              boxShadow: "0 2px 12px rgba(0,0,0,0.4)",
+              display: "flex", alignItems: "center", gap: "8px",
+              transition: "transform 0.15s, box-shadow 0.15s",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.05)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.5)"; }}
+            onMouseDown={(e) => { e.currentTarget.style.transform = "scale(0.95)"; e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.3)"; }}
+            onMouseUp={(e) => { e.currentTarget.style.transform = "scale(1.05)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.5)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = "0 2px 12px rgba(0,0,0,0.4)"; }}
+          >
+            <span style={{ fontSize: isTouch ? "14px" : "16px", lineHeight: 1 }}>+</span>
+          </button>
+        </div>
+      </div>
+
+      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        {homeLayout === "rows" && genreRows.map((r) => (
+          <StoryRow
+            key={r.genre.id}
+            title={r.genre.label}
+            stories={r.stories}
+            onSelectStory={onSelectStory}
+            isTouch={isTouch}
+          />
+        ))}
+
+        {homeLayout === "carousel" && (() => {
+          const carouselBase = carouselFilter === "all"
+            ? sorted
+            : sorted.filter((s) => s.genre === carouselFilter);
+          const needsLoop = carouselFilter === "all" && carouselBase.length > 2;
+          const carouselStories = needsLoop
+            ? [...carouselBase, ...carouselBase, ...carouselBase]
+            : carouselBase;
+          return (
+            <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+              {!wideEnough && (
+              <div style={{ position: "relative", marginBottom: "16px" }}>
+                <div style={{
+                  position: "absolute", top: 0, bottom: 0, left: 0, right: 0,
+                  pointerEvents: "none", zIndex: 1,
+                  background: "linear-gradient(to right, #0e0d0b 0%, transparent 24px, transparent calc(100% - 24px), #0e0d0b 100%)",
+                }} />
+              <div className="story-hscroll" style={{
+                display: "flex", gap: "8px",
+                overflowX: "auto", WebkitOverflowScrolling: "touch",
+                padding: "0 24px",
+                scrollbarWidth: "none", msOverflowStyle: "none",
+              }}>
+                {[{ id: "all", label: "All" }, ...GENRES].map((g) => {
+                  const active = carouselFilter === g.id;
+                  return (
+                    <button
+                      key={g.id}
+                      onClick={() => setCarouselFilter(g.id)}
+                      style={{
+                        fontFamily: MONO, fontSize: "11px", textTransform: "uppercase",
+                        letterSpacing: "0.5px",
+                        padding: "6px 14px", borderRadius: "20px",
+                        border: active ? "1px solid rgba(255,255,255,0.4)" : "1px solid rgba(255,255,255,0.1)",
+                        background: active ? "rgba(255,255,255,0.08)" : "transparent",
+                        color: active ? "#e8ddd0" : "rgba(255,255,255,0.3)",
+                        cursor: "pointer", flexShrink: 0,
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      {g.label}
+                    </button>
+                  );
+                })}
+              </div>
+              </div>
+              )}
+              <div style={{ position: "relative", overflow: "hidden", display: "flex", alignItems: "center", flex: 1 }}>
+                <div style={{
+                  position: "absolute", top: 0, bottom: 0, left: 0, right: 0,
+                  pointerEvents: "none", zIndex: 1,
+                  background: "linear-gradient(to right, #0e0d0b 0%, transparent 48px, transparent calc(100% - 48px), #0e0d0b 100%)",
+                }} />
+                <div
+                  ref={carouselRef}
+                  className="story-hscroll"
+                  style={{
+                    display: "flex", gap: isTouch ? "24px" : "20px",
+                    overflowX: "auto", WebkitOverflowScrolling: "touch",
+                    padding: isTouch ? "20px calc(50% - 100px)" : "30px 32px",
+                    scrollbarWidth: "none", msOverflowStyle: "none",
+                    perspective: isTouch ? "none" : "800px",
+                    width: "100%",
+                    ...(!needsLoop && !isTouch ? { justifyContent: "center" } : {}),
+                    ...(isTouch ? { scrollSnapType: "x mandatory" } : {}),
+                  }}
+                >
+                  {carouselStories.map((s, i) => {
+                    const genre = GENRES.find((g) => g.id === s.genre);
+                    return (
+                      <div
+                        key={`${s.id}-${i}`}
+                        onClick={(e) => {
+                          e.currentTarget.style.transform = "scale(1.08)";
+                          e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.35)";
+                          setTimeout(() => onSelectStory(s.id), 150);
+                        }}
+                        style={{
+                          background: "rgba(255,255,255,0.03)",
+                          border: "1px solid rgba(255,255,255,0.06)",
+                          borderRadius: "4px",
+                          padding: "24px 20px",
+                          cursor: "pointer",
+                          width: "200px", minWidth: "200px",
+                          aspectRatio: "2 / 3",
+                          display: "flex", flexDirection: "column", justifyContent: "space-between",
+                          transition: "transform 0.2s ease-out, opacity 0.2s ease-out, border-color 0.15s, box-shadow 0.15s",
+                          transformStyle: isTouch ? "flat" : "preserve-3d",
+                          willChange: isTouch ? "transform" : "auto",
+                          ...(isTouch ? { scrollSnapAlign: "center" } : {}),
+                        }}
+                        {...(!isTouch ? {
+                          onMouseMove: (e) => {
+                            if (e.buttons) return;
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            const x = (e.clientX - rect.left) / rect.width - 0.5;
+                            const y = (e.clientY - rect.top) / rect.height - 0.5;
+                            e.currentTarget.style.transform = `scale(1.08) rotateY(${x * 14}deg) rotateX(${-y * 14}deg)`;
+                            e.currentTarget.style.boxShadow = `${-x * 14}px ${y * 14}px 25px rgba(0,0,0,0.35)`;
+                            e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)";
+                          },
+                          onMouseDown: (e) => {
+                            e.currentTarget.style.transform = "scale(0.95)";
+                            e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.3)";
+                          },
+                          onMouseUp: (e) => {
+                            e.currentTarget.style.transform = "scale(1)";
+                            e.currentTarget.style.boxShadow = "none";
+                          },
+                          onMouseLeave: (e) => {
+                            e.currentTarget.style.transform = "scale(1) rotateY(0deg) rotateX(0deg)";
+                            e.currentTarget.style.boxShadow = "none";
+                            e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)";
+                          },
+                        } : {})}
+                      >
+                        <div>
+                          {genre && (
+                            <div style={{
+                              fontFamily: MONO, fontSize: "11px",
+                              color: "rgba(255,255,255,0.3)",
+                              textTransform: "uppercase",
+                              letterSpacing: "0.5px",
+                              marginBottom: "8px",
+                            }}>
+                              {genre.label}
+                            </div>
+                          )}
+                          <div style={{
+                            fontFamily: SERIF, fontSize: "20px", fontWeight: 600,
+                            color: "#e8ddd0", lineHeight: 1.3,
+                          }}>
+                            {s.title || "Untitled"}
+                          </div>
+                        </div>
+                        <span style={{
+                          fontFamily: MONO, fontSize: "11px",
+                          color: "rgba(255,255,255,0.2)",
+                        }}>
+                          {s.updatedAt ? new Date(s.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : ""}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           );
-        })}
-      </div>
-      </div>
+        })()}
 
-      <div style={{
-        position: isTouch ? "relative" : "sticky", bottom: isTouch ? "auto" : "32px",
-        display: "flex", justifyContent: "center",
-        marginTop: isTouch ? "16px" : "32px", marginBottom: isTouch ? "24px" : 0, pointerEvents: "none", zIndex: 5,
-      }}>
-        <button
-          onClick={(e) => {
-            e.currentTarget.style.transform = "scale(1.05)";
-            e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.5)";
-            setTimeout(() => onNewStory(), 150);
-          }}
-          style={{
-            padding: "12px 24px", borderRadius: "28px",
-            background: "#e8ddd0", border: "none",
-            color: "#0e0d0b",
-            cursor: "pointer", pointerEvents: "auto",
-            boxShadow: "0 2px 12px rgba(0,0,0,0.4)",
-            display: "flex", alignItems: "center", gap: "8px",
-            transition: "transform 0.15s, box-shadow 0.15s",
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.05)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.5)"; }}
-          onMouseDown={(e) => { e.currentTarget.style.transform = "scale(0.95)"; e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.3)"; }}
-          onMouseUp={(e) => { e.currentTarget.style.transform = "scale(1.05)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.5)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = "0 2px 12px rgba(0,0,0,0.4)"; }}
-        >
-          <span style={{ fontSize: "20px", lineHeight: 1 }}>+</span>
-          <span style={{ fontFamily: MONO, fontSize: "11px", fontWeight: 600, letterSpacing: "0.5px" }}>NEW STORY</span>
-        </button>
+        {homeLayout === "activity" && (
+          <div style={{ maxWidth: "600px", margin: "0 auto", padding: isTouch ? "0 20px" : "0 24px", width: "100%" }}>
+            {activityLoading ? (
+              <p style={{ fontFamily: MONO, fontSize: "12px", color: "rgba(255,255,255,0.3)", textAlign: "center" }}>
+                Loading activity...
+              </p>
+            ) : activityFeed.length === 0 ? (
+              <p style={{ fontFamily: MONO, fontSize: "12px", color: "rgba(255,255,255,0.3)", textAlign: "center" }}>
+                No activity yet
+              </p>
+            ) : (
+              (() => {
+                // Group consecutive entries by story
+                const groups = [];
+                for (const entry of activityFeed) {
+                  const last = groups[groups.length - 1];
+                  if (last && last.storyId === entry.storyId) {
+                    last.entries.push(entry);
+                  } else {
+                    groups.push({ storyId: entry.storyId, storyTitle: entry.storyTitle, entries: [entry] });
+                  }
+                }
+                return groups.map((group, gi) => (
+                  <div
+                    key={`${group.storyId}-${gi}`}
+                    onClick={() => onSelectStory(group.storyId)}
+                    style={{
+                      padding: "20px 16px",
+                      borderBottom: "1px solid rgba(255,255,255,0.05)",
+                      cursor: "pointer",
+                      transition: "background 0.15s",
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.06)"}
+                    onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                  >
+                    <div style={{ marginBottom: "12px" }}>
+                      <span style={{
+                        fontFamily: SERIF, fontSize: "18px", fontWeight: 600,
+                        color: "#e8ddd0",
+                      }}>
+                        {group.storyTitle}
+                      </span>
+                    </div>
+                    {group.entries.map((entry, ei) => (
+                      <div key={`${entry.passageIndex}-${ei}`} style={{ marginBottom: ei < group.entries.length - 1 ? "16px" : 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
+                          <span style={{ fontFamily: MONO, fontSize: "12px", color: "rgba(255,255,255,0.25)", whiteSpace: "nowrap" }}>
+                            {entry.ts ? new Date(entry.ts).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : entry.time || ""}
+                          </span>
+                          {entry.location && (
+                            <span style={{
+                              fontFamily: MONO, fontSize: "12px", color: "rgba(255,255,255,0.2)",
+                              display: "flex", alignItems: "center", gap: "4px",
+                            }}>
+                              <GoLocation size={11} />
+                              {entry.location}
+                            </span>
+                          )}
+                        </div>
+                        {entry.prompt && (
+                          <p style={{
+                            fontFamily: TYPEWRITER, fontSize: "15px", lineHeight: 1.5,
+                            color: "rgba(255,255,255,0.4)", margin: "0 0 4px",
+                          }}>
+                            {entry.prompt}
+                          </p>
+                        )}
+                        {entry.originalAnswer && (
+                          <p style={{
+                            fontFamily: TYPEWRITER, fontSize: "16px", lineHeight: 1.6,
+                            color: "rgba(255,255,255,0.7)", margin: 0,
+                          }}>
+                            {entry.originalAnswer}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ));
+              })()
+            )}
+          </div>
+        )}
       </div>
 
       <footer style={{
-        marginTop: isTouch ? "16px" : "64px", padding: isTouch ? "12px 24px 24px" : "24px 24px 0",
-        borderTop: "none",
+        padding: isTouch ? "12px 24px 24px" : "24px 24px 0",
         display: "flex", flexDirection: isTouch ? "column" : "row", alignItems: "center", justifyContent: "center", gap: isTouch ? "8px" : "16px",
         fontFamily: MONO, fontSize: "11px",
         color: "rgba(255,255,255,0.2)",
@@ -2322,13 +2634,7 @@ export default function CollaborativeStoryApp() {
         .passage-slider::-moz-range-thumb { width: 10px; height: 10px; border-radius: 50%; background: #e8ddd0; cursor: pointer; border: none; }
         .drop-cap::first-letter { float: left; font-size: 3.7em; line-height: 0.75; padding-right: 6px; padding-top: 4px; font-weight: 400; }
         .story-hscroll::-webkit-scrollbar { display: none; }
-        .filter-pills { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 32px; padding: 0 24px; }
-        .filter-pills::-webkit-scrollbar { display: none; }
-        .filter-pills-mask { display: none; }
         @media (max-width: 600px) {
-          .filter-pills { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; justify-content: flex-start; margin-left: 0; margin-right: 0; padding: 0 24px; -ms-overflow-style: none; scrollbar-width: none; }
-          .filter-pills > button { flex-shrink: 0; }
-          .filter-pills-mask { display: block; position: absolute; top: 0; bottom: 0; left: 0; right: 0; pointer-events: none; z-index: 1; background: linear-gradient(to right, #0e0d0b 0%, transparent 24px, transparent calc(100% - 24px), #0e0d0b 100%); }
           .about-ascii { font-size: 7px !important; }
         }
       `}</style>
