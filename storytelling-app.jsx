@@ -2126,7 +2126,7 @@ const GENRE_FONTS = {
   romance: [
     { family: "'Felipa', cursive" },
     { family: "'Elsie', cursive" },
-    { family: "'Great Vibes', cursive" },
+    { family: "'Great Vibes', cursive", scale: 0.85 },
   ],
   scifi: [
     { family: "'Tektur', sans-serif" },
@@ -3125,7 +3125,7 @@ export default function CollaborativeStoryApp() {
                   }),
                 }}>
                   <h1 style={{
-                    fontFamily: activeStoryFont.family, fontSize: `${Math.round((narrowViewport ? 42 : 64) * (activeStoryFont.scale || 1))}px`, fontWeight: activeStoryFont.weight || 700,
+                    fontFamily: activeStoryFont.family, fontSize: narrowViewport ? "42px" : "64px", fontWeight: activeStoryFont.weight || 700,
                     color: "#e8ddd0", lineHeight: 1.2,
                     padding: "40px 0",
                     marginBottom: 0,
