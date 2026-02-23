@@ -1039,6 +1039,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
           if (result) {
             const data = JSON.parse(result.value);
             data.forEach((entry, idx) => {
+              if (idx === 0) return; // skip story creation
               entries.push({
                 ...entry,
                 storyId: s.id,
@@ -1409,10 +1410,12 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
                   if (last && last.storyId === entry.storyId) {
                     last.entries.push(entry);
                   } else {
-                    groups.push({ storyId: entry.storyId, storyTitle: entry.storyTitle, entries: [entry] });
+                    groups.push({ storyId: entry.storyId, storyTitle: entry.storyTitle, storyGenre: entry.storyGenre, entries: [entry] });
                   }
                 }
-                return groups.map((group, gi) => (
+                return groups.map((group, gi) => {
+                  const genre = GENRES.find((g) => g.id === group.storyGenre);
+                  return (
                   <div
                     key={`${group.storyId}-${gi}`}
                     onClick={() => onSelectStory(group.storyId)}
@@ -1421,54 +1424,73 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
                       borderBottom: "1px solid rgba(255,255,255,0.05)",
                       cursor: "pointer",
                       transition: "background 0.15s",
+                      display: "flex", gap: "20px",
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.06)"}
                     onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
                   >
-                    <div style={{ marginBottom: "12px" }}>
-                      <span style={{
-                        fontFamily: SERIF, fontSize: "18px", fontWeight: 600,
-                        color: "#e8ddd0",
-                      }}>
-                        {group.storyTitle}
-                      </span>
+                    {/* Book card */}
+                    <div style={{
+                      background: "rgba(255,255,255,0.03)",
+                      border: "1px solid rgba(255,255,255,0.06)",
+                      borderRadius: "4px",
+                      padding: "14px 12px",
+                      width: "100px", minWidth: "100px",
+                      height: "150px",
+                      display: "flex", flexDirection: "column", justifyContent: "space-between",
+                      flexShrink: 0, alignSelf: "flex-start",
+                    }}>
+                      <div>
+                        {genre && (
+                          <div style={{
+                            fontFamily: MONO, fontSize: "9px",
+                            color: "rgba(255,255,255,0.3)",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.5px",
+                            marginBottom: "4px",
+                          }}>
+                            {genre.label}
+                          </div>
+                        )}
+                        <div style={{
+                          fontFamily: SERIF, fontSize: "13px", fontWeight: 600,
+                          color: "#e8ddd0", lineHeight: 1.3,
+                        }}>
+                          {group.storyTitle}
+                        </div>
+                      </div>
                     </div>
-                    {group.entries.map((entry, ei) => (
-                      <div key={`${entry.passageIndex}-${ei}`} style={{ marginBottom: ei < group.entries.length - 1 ? "16px" : 0 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
-                          <span style={{ fontFamily: MONO, fontSize: "12px", color: "rgba(255,255,255,0.25)", whiteSpace: "nowrap" }}>
-                            {entry.ts ? new Date(entry.ts).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : entry.time || ""}
-                          </span>
-                          {entry.location && (
-                            <span style={{
-                              fontFamily: MONO, fontSize: "12px", color: "rgba(255,255,255,0.2)",
-                              display: "flex", alignItems: "center", gap: "4px",
-                            }}>
-                              <GoLocation size={11} />
-                              {entry.location}
+                    {/* Entries */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      {group.entries.map((entry, ei) => (
+                        <div key={`${entry.passageIndex}-${ei}`} style={{ marginBottom: ei < group.entries.length - 1 ? "20px" : 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+                            <span style={{ fontFamily: MONO, fontSize: "11px", color: "rgba(255,255,255,0.25)", whiteSpace: "nowrap" }}>
+                              {entry.ts ? new Date(entry.ts).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : entry.time || ""}
                             </span>
+                            </div>
+                          {entry.prompt && (
+                            <p style={{
+                              fontFamily: MONO, fontSize: "13px", lineHeight: 1.5,
+                              color: "rgba(255,255,255,0.4)", margin: "0 0 4px",
+                            }}>
+                              {entry.prompt}
+                            </p>
+                          )}
+                          {entry.originalAnswer && (
+                            <p style={{
+                              fontFamily: MONO, fontSize: "14px", lineHeight: 1.6,
+                              color: "rgba(255,255,255,0.7)", margin: 0,
+                            }}>
+                              {entry.originalAnswer}
+                            </p>
                           )}
                         </div>
-                        {entry.prompt && (
-                          <p style={{
-                            fontFamily: TYPEWRITER, fontSize: "15px", lineHeight: 1.5,
-                            color: "rgba(255,255,255,0.4)", margin: "0 0 4px",
-                          }}>
-                            {entry.prompt}
-                          </p>
-                        )}
-                        {entry.originalAnswer && (
-                          <p style={{
-                            fontFamily: TYPEWRITER, fontSize: "16px", lineHeight: 1.6,
-                            color: "rgba(255,255,255,0.7)", margin: 0,
-                          }}>
-                            {entry.originalAnswer}
-                          </p>
-                        )}
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                ));
+                  );
+                });
               })()
             )}
           </div>
