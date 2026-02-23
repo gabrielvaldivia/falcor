@@ -2266,11 +2266,20 @@ function bookColor(genreId, storyId) {
 
 export default function CollaborativeStoryApp() {
   // Navigation state
+  const HASH_TO_LAYOUT = { "#rows": "rows", "#slideshow": "carousel", "#activity": "activity" };
+  const LAYOUT_TO_HASH = { rows: "#rows", carousel: "#slideshow", activity: "#activity" };
   const [view, setView] = useState(() => {
     if (window.location.hash === "#about") return "about";
-    return window.location.hash.match(/^#story\//) ? "story" : "home";
+    if (window.location.hash.match(/^#story\//)) return "story";
+    return "home";
   }); // "home" | "new" | "story" | "about"
-  const [homeLayout, setHomeLayout] = useState("rows"); // "rows" | "carousel" | "activity"
+  const [homeLayout, setHomeLayout] = useState(() => {
+    return HASH_TO_LAYOUT[window.location.hash] || "rows";
+  }); // "rows" | "carousel" | "activity"
+  const updateHomeLayout = useCallback((layout) => {
+    setHomeLayout(layout);
+    window.location.hash = LAYOUT_TO_HASH[layout] || "rows";
+  }, []);
   const [activeStoryId, setActiveStoryId] = useState(null);
   const [storiesIndex, setStoriesIndex] = useState([]);
 
@@ -2352,6 +2361,8 @@ export default function CollaborativeStoryApp() {
         if (found) {
           openStory(found.id);
         }
+      } else if (!hash || hash === "#") {
+        window.location.hash = "rows";
       }
     })();
   }, []);
@@ -2457,6 +2468,8 @@ export default function CollaborativeStoryApp() {
       setView("home");
       setActiveStoryId(null);
       setShowStoryMenu(false);
+      const layoutFromHash = HASH_TO_LAYOUT[hash];
+      if (layoutFromHash) setHomeLayout(layoutFromHash);
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
@@ -2782,7 +2795,7 @@ export default function CollaborativeStoryApp() {
     setView("home");
     setActiveStoryId(null);
     setShowStoryMenu(false);
-    window.location.hash = "";
+    window.location.hash = LAYOUT_TO_HASH[homeLayout] || "rows";
   };
 
   return (
@@ -3001,7 +3014,7 @@ export default function CollaborativeStoryApp() {
             onNewStory={() => { window.scrollTo(0, 0); setView("new"); }}
             onAbout={() => { window.scrollTo(0, 0); window.location.hash = "about"; setView("about"); }}
             homeLayout={homeLayout}
-            setHomeLayout={setHomeLayout}
+            setHomeLayout={updateHomeLayout}
             fontIndexMap={fontIndexMap}
           />
         )}
@@ -3009,7 +3022,7 @@ export default function CollaborativeStoryApp() {
         {/* ── New Story View ── */}
         {view === "new" && (
           <NewStoryScreen
-            onCancel={() => setView("home")}
+            onCancel={() => { window.location.hash = LAYOUT_TO_HASH[homeLayout] || "rows"; setView("home"); }}
             onCreate={handleCreateStory}
             narrow={narrowViewport}
           />
@@ -3017,7 +3030,7 @@ export default function CollaborativeStoryApp() {
 
         {/* ── About View ── */}
         {view === "about" && (
-          <AboutScreen onBack={() => { window.location.hash = ""; setView("home"); }} narrow={narrowViewport} />
+          <AboutScreen onBack={() => { window.location.hash = LAYOUT_TO_HASH[homeLayout] || "rows"; setView("home"); }} narrow={narrowViewport} />
         )}
 
         {/* ── Story View ── */}
