@@ -1037,7 +1037,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
           display: "flex", gap: isTouch ? "24px" : "16px",
           justifyContent: (!isTouch && !needsLoop) ? "center" : "flex-start",
           overflowX: "auto", WebkitOverflowScrolling: "touch",
-          padding: isTouch ? "60px calc(50% - 75px)" : "30px 24px",
+          padding: isTouch ? "70px calc(50% - 75px)" : "30px 24px",
           scrollbarWidth: "none", msOverflowStyle: "none",
           perspective: isTouch ? "none" : "800px",
           width: "100%",
