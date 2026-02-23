@@ -2022,10 +2022,10 @@ export default function CollaborativeStoryApp() {
   };
 
   const handleCreateStory = async (meta) => {
-    // Save to index, stay on new-story screen while generating
-    const updatedIndex = [...storiesIndex, meta];
-    await saveStoriesIndex(updatedIndex);
-    setStoriesIndex(updatedIndex);
+    // Generate opener BEFORE saving to index — prevents zombie entries on failure
+    const opener = await generateStoryOpener(meta);
+
+    // Reset local state
     setActiveStoryId(meta.id);
     setStory([]);
     setCurrentPrompt("");
@@ -2037,8 +2037,6 @@ export default function CollaborativeStoryApp() {
     setChapterTitles({});
     setError(null);
 
-    // Generate title + opening paragraph
-    const opener = await generateStoryOpener(meta);
     if (opener) {
       const now = new Date();
       const timeStr = now.toLocaleString("en-US", {
@@ -2056,19 +2054,17 @@ export default function CollaborativeStoryApp() {
         chapter: 1,
       };
       const newStory = [firstEntry];
+      const slug = slugify(opener.title) || String(meta.id);
+      const savedMeta = { ...meta, title: opener.title, slug, passageCount: 1, updatedAt: new Date().toISOString() };
 
-      // Save story data
+      // Save everything at once — index + story data
+      const updatedIndex = [...storiesIndex, savedMeta];
+      await saveStoriesIndex(updatedIndex);
+      setStoriesIndex(updatedIndex);
       await window.storage.set(storyKey(meta.id, "data-v1"), JSON.stringify(newStory), true);
       await window.storage.set(storyKey(meta.id, "count-v1"), "1", true);
       await window.storage.set(storyKey(meta.id, "chapter-v1"), "1", true);
 
-      // Update index with title and slug
-      const slug = slugify(opener.title) || String(meta.id);
-      const idxWithTitle = updatedIndex.map((s) =>
-        s.id === meta.id ? { ...s, title: opener.title, slug, passageCount: 1, updatedAt: new Date().toISOString() } : s
-      );
-      await saveStoriesIndex(idxWithTitle);
-      setStoriesIndex(idxWithTitle);
       setStory(newStory);
       setContributorCount(1);
 
@@ -2078,10 +2074,13 @@ export default function CollaborativeStoryApp() {
       setCurrentPrompt(prompt);
       await window.storage.set(storyKey(meta.id, "prompt-v1"), prompt, true);
 
-      // Navigate to story — use replaceState to avoid triggering popstate
       history.replaceState(null, "", "#story/" + slug);
     } else {
-      // Fallback: just generate a prompt with no opener
+      // Opener failed — still save to index so user isn't stuck, but with no story data
+      const updatedIndex = [...storiesIndex, meta];
+      await saveStoriesIndex(updatedIndex);
+      setStoriesIndex(updatedIndex);
+
       const ctx = getStoryContext(meta);
       const prompt = await generatePrompt([], 1, false, ctx);
       setCurrentPrompt(prompt);
