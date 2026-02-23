@@ -479,10 +479,13 @@ async function generateChapterTitle(story, chapter) {
 async function callClaudeAPI(existingStory, prompt, userAnswer, styleSettings, chapter = 1, genreVoiceCtx = "") {
   const storyContext =
     existingStory.length > 0
-      ? existingStory
-          .slice(-5)
-          .map((e) => e.text)
-          .join("\n\n")
+      ? (() => {
+          const recent = existingStory.slice(-8);
+          const first = existingStory[0];
+          // Include first passage for grounding if it's not already in the recent window
+          const passages = recent.includes(first) ? recent : [first, ...recent];
+          return passages.map((e) => e.text).join("\n\n");
+        })()
       : "";
 
   const styleInstructions = getStyleInstructions(styleSettings);
