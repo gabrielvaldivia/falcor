@@ -1034,11 +1034,11 @@ function StoryRow({ title, stories, onSelectStory, isTouch, genreId, fontIndexMa
                 {title}
               </div>
               <div style={{
-                flex: 1, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", overflow: "hidden",
+                flex: 1, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center",
               }}>
                 <BookTitle style={{
                   fontFamily: storyFontForId(genreId, s.id, fontIndexMap).family, fontSize: `${Math.round(20 * (storyFontForId(genreId, s.id, fontIndexMap).scale || 1))}px`, fontWeight: storyFontForId(genreId, s.id, fontIndexMap).weight || 600,
-                  color: "#fff", lineHeight: 1.3,
+                  color: "#fff", lineHeight: 1.3, padding: "0 2px",
                 }}>
                   {s.title || "Untitled"}
                 </BookTitle>
@@ -1413,11 +1413,11 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, s
                           {genre?.label}
                         </div>
                         <div style={{
-                          flex: 1, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", overflow: "hidden",
+                          flex: 1, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center",
                         }}>
                           <BookTitle style={{
                             fontFamily: storyFontForId(s.genre, s.id, fontIndexMap).family, fontSize: `${Math.round(24 * (storyFontForId(s.genre, s.id, fontIndexMap).scale || 1))}px`, fontWeight: storyFontForId(s.genre, s.id, fontIndexMap).weight || 600,
-                            color: "#fff", lineHeight: 1.3,
+                            color: "#fff", lineHeight: 1.3, padding: "0 2px",
                           }}>
                             {s.title || "Untitled"}
                           </BookTitle>
@@ -1491,11 +1491,11 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, s
                       position: "sticky", top: isTouch ? "70px" : "90px",
                     }}>
                       <div style={{
-                        flex: 1, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", overflow: "hidden",
+                        flex: 1, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center",
                       }}>
                         <BookTitle style={{
-                          fontFamily: storyFontForId(group.storyGenre, group.storyId, fontIndexMap).family, fontSize: `${Math.round(15 * (storyFontForId(group.storyGenre, group.storyId, fontIndexMap).scale || 1))}px`, fontWeight: storyFontForId(group.storyGenre, group.storyId, fontIndexMap).weight || 600,
-                          color: "#fff", lineHeight: 1.3,
+                          fontFamily: storyFontForId(group.storyGenre, group.storyId, fontIndexMap).family, fontSize: `${Math.round(12 * (storyFontForId(group.storyGenre, group.storyId, fontIndexMap).scale || 1))}px`, fontWeight: storyFontForId(group.storyGenre, group.storyId, fontIndexMap).weight || 600,
+                          color: "#fff", lineHeight: 1.3, padding: "0 2px",
                         }}>
                           {group.storyTitle}
                         </BookTitle>
