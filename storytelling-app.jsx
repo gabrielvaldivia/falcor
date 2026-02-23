@@ -2707,40 +2707,6 @@ export default function CollaborativeStoryApp() {
   useEffect(() => { localStorage.setItem("falcor_lang", lang); }, [lang]);
   const dateLocale = lang === "es" ? "es-ES" : "en-US";
 
-  // Translate story content when language changes
-  useEffect(() => {
-    if (lang === "en") {
-      setTranslatedTitle(null);
-      setTranslatedTexts({});
-      setTranslatedChapterTitles({});
-      return;
-    }
-    let cancelled = false;
-    // Translate title
-    if (activeStoryMeta?.title) {
-      translateText(activeStoryMeta.title, lang).then((tr) => {
-        if (!cancelled) setTranslatedTitle(tr);
-      });
-    }
-    // Translate passages
-    if (story.length > 0) {
-      story.forEach((entry, i) => {
-        translateText(entry.text, lang).then((tr) => {
-          if (!cancelled) setTranslatedTexts((prev) => ({ ...prev, [i]: tr }));
-        });
-      });
-    }
-    // Translate chapter titles
-    if (chapterTitles && Object.keys(chapterTitles).length > 0) {
-      Object.entries(chapterTitles).forEach(([ch, title]) => {
-        translateText(title, lang).then((tr) => {
-          if (!cancelled) setTranslatedChapterTitles((prev) => ({ ...prev, [ch]: tr }));
-        });
-      });
-    }
-    return () => { cancelled = true; };
-  }, [lang, activeStoryMeta?.title, story, chapterTitles]);
-
   const [activeStoryId, setActiveStoryId] = useState(null);
   const [storiesIndex, setStoriesIndex] = useState([]);
 
@@ -2800,6 +2766,37 @@ export default function CollaborativeStoryApp() {
       : { tone: 5, length: 4, mood: 5, dialogue: 2 };
     return { ...base, plot: sliderPlot, dialogue: sliderDialogue, surprise: sliderSurprise, emotion: sliderEmotion };
   }, [activeStoryMeta, sliderPlot, sliderDialogue, sliderSurprise, sliderEmotion]);
+
+  // Translate story content when language changes
+  useEffect(() => {
+    if (lang === "en") {
+      setTranslatedTitle(null);
+      setTranslatedTexts({});
+      setTranslatedChapterTitles({});
+      return;
+    }
+    let cancelled = false;
+    if (activeStoryMeta?.title) {
+      translateText(activeStoryMeta.title, lang).then((tr) => {
+        if (!cancelled) setTranslatedTitle(tr);
+      });
+    }
+    if (story.length > 0) {
+      story.forEach((entry, i) => {
+        translateText(entry.text, lang).then((tr) => {
+          if (!cancelled) setTranslatedTexts((prev) => ({ ...prev, [i]: tr }));
+        });
+      });
+    }
+    if (chapterTitles && Object.keys(chapterTitles).length > 0) {
+      Object.entries(chapterTitles).forEach(([ch, title]) => {
+        translateText(title, lang).then((tr) => {
+          if (!cancelled) setTranslatedChapterTitles((prev) => ({ ...prev, [ch]: tr }));
+        });
+      });
+    }
+    return () => { cancelled = true; };
+  }, [lang, activeStoryMeta?.title, story, chapterTitles]);
 
   // Regenerate prompt when plot slider changes (debounced)
   useEffect(() => {
