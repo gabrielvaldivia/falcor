@@ -1785,12 +1785,14 @@ export default function CollaborativeStoryApp() {
     setSliderDialogue(defaults.dialogue);
     setSliderSurprise(defaults.surprise ?? 3);
     setSliderEmotion(defaults.emotion ?? 4);
+    // Clear any existing polling before starting new story
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
     setView("story");
     window.location.hash = "story/" + (meta?.slug || id);
 
     await loadStoryData(id, true);
 
-    // Start polling
+    // Only start polling if we're still on this story
     if (pollRef.current) clearInterval(pollRef.current);
     pollRef.current = setInterval(() => loadStoryData(id, false), 5000);
   }, [loadStoryData, storiesIndex]);
@@ -2001,7 +2003,7 @@ export default function CollaborativeStoryApp() {
     setStoriesIndex(updatedIndex);
 
     // Go home
-    if (pollRef.current) clearInterval(pollRef.current);
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
     setView("home");
     setActiveStoryId(null);
   };
@@ -2092,7 +2094,7 @@ export default function CollaborativeStoryApp() {
   };
 
   const goHome = () => {
-    if (pollRef.current) clearInterval(pollRef.current);
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
     window.scrollTo(0, 0);
     setView("home");
     setActiveStoryId(null);
