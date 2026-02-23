@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from "react";
 import { GoArrowLeft, GoInfo, GoPlus, GoDash, GoKebabHorizontal, GoLocation, GoChevronDown, GoPulse } from "react-icons/go";
 import { TbLayoutListFilled, TbLayoutList } from "react-icons/tb";
 import { MdOutlineViewCarousel } from "react-icons/md";
@@ -12,7 +12,7 @@ const GENRES = [
   { id: "fantasy", label: "Fantasy", mood: 7, prompt: "mythical creatures, ancient magic, epic quests" },
   { id: "romance", label: "Romance", mood: 6, dialogue: 6, prompt: "emotional tension, relationships, longing" },
   { id: "mystery", label: "Mystery", mood: 3, prompt: "clues, suspicion, hidden truths, tension" },
-  { id: "scifi", label: "Science Fiction", mood: 5, prompt: "technology, alien worlds, future societies" },
+  { id: "scifi", label: "Sci-Fi", mood: 5, prompt: "technology, alien worlds, future societies" },
   { id: "bedtime", label: "Bedtime", mood: 7, prompt: "wonder, imagination, gentle lessons, playful adventures" },
   { id: "horror", label: "Horror", mood: 1, prompt: "dread, the uncanny, creeping fear" },
 ];
@@ -911,10 +911,46 @@ function StoryPopover({ entry, onClose }) {
 }
 
 /* ────────────────────────────────────────────
+   BookTitle — auto-shrinks until text no longer wraps
+   ──────────────────────────────────────────── */
+
+function BookTitle({ children, style, ...rest }) {
+  const ref = useRef(null);
+  const [fontSize, setFontSize] = useState(null);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const base = parseFloat(style.fontSize);
+    const minSize = Math.round(base * 0.55);
+    let size = base;
+    // Disable word-break so long words cause horizontal overflow instead of breaking
+    el.style.overflowWrap = "normal";
+    el.style.wordBreak = "normal";
+    el.style.fontSize = `${size}px`;
+    // Shrink until no word overflows the container width
+    while (el.scrollWidth > el.clientWidth + 1 && size > minSize) {
+      size -= 1;
+      el.style.fontSize = `${size}px`;
+    }
+    // Restore word-break as fallback for extremely long words
+    el.style.overflowWrap = "";
+    el.style.wordBreak = "";
+    setFontSize(size);
+  }, [children, style.fontSize, style.fontFamily]);
+
+  return (
+    <div ref={ref} style={{ ...style, fontSize: fontSize != null ? `${fontSize}px` : style.fontSize }} {...rest}>
+      {children}
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────
    Home Screen — Grid of Books
    ──────────────────────────────────────────── */
 
-function StoryRow({ title, stories, onSelectStory, isTouch, genreId }) {
+function StoryRow({ title, stories, onSelectStory, isTouch, genreId, fontIndexMap }) {
   const scrollRef = useRef(null);
 
   return (
@@ -992,14 +1028,20 @@ function StoryRow({ title, stories, onSelectStory, isTouch, genreId }) {
               } : {})}
             >
               <div style={{
-                flex: 1, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", overflow: "hidden", wordBreak: "break-word",
+                fontFamily: MONO, fontSize: "8px", color: "rgba(255,255,255,0.5)",
+                textTransform: "uppercase", letterSpacing: "0.5px", textAlign: "center",
               }}>
-                <div style={{
-                  fontFamily: storyFontForId(genreId, s.id).family, fontSize: `${Math.round(18 * (storyFontForId(genreId, s.id).scale || 1))}px`, fontWeight: storyFontForId(genreId, s.id).weight || 600,
+                {title}
+              </div>
+              <div style={{
+                flex: 1, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", overflow: "hidden",
+              }}>
+                <BookTitle style={{
+                  fontFamily: storyFontForId(genreId, s.id, fontIndexMap).family, fontSize: `${Math.round(20 * (storyFontForId(genreId, s.id, fontIndexMap).scale || 1))}px`, fontWeight: storyFontForId(genreId, s.id, fontIndexMap).weight || 600,
                   color: "#fff", lineHeight: 1.3,
                 }}>
                   {s.title || "Untitled"}
-                </div>
+                </BookTitle>
               </div>
               <span style={{
                 fontFamily: MONO, fontSize: "10px",
@@ -1016,7 +1058,7 @@ function StoryRow({ title, stories, onSelectStory, isTouch, genreId }) {
   );
 }
 
-function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, setHomeLayout }) {
+function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, setHomeLayout, fontIndexMap }) {
   const isTouch = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
   const carouselRef = useRef(null);
   const [carouselFilter, setCarouselFilter] = useState("all");
@@ -1244,6 +1286,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, s
             onSelectStory={onSelectStory}
             isTouch={isTouch}
             genreId={r.genre.id}
+            fontIndexMap={fontIndexMap}
           />
         ))}
 
@@ -1364,14 +1407,20 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, s
                         } : {})}
                       >
                         <div style={{
-                          flex: 1, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", overflow: "hidden", wordBreak: "break-word",
+                          fontFamily: MONO, fontSize: "9px", color: "rgba(255,255,255,0.5)",
+                          textTransform: "uppercase", letterSpacing: "0.5px", textAlign: "center",
                         }}>
-                          <div style={{
-                            fontFamily: storyFontForId(s.genre, s.id).family, fontSize: `${Math.round(26 * (storyFontForId(s.genre, s.id).scale || 1))}px`, fontWeight: storyFontForId(s.genre, s.id).weight || 600,
+                          {genre?.label}
+                        </div>
+                        <div style={{
+                          flex: 1, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", overflow: "hidden",
+                        }}>
+                          <BookTitle style={{
+                            fontFamily: storyFontForId(s.genre, s.id, fontIndexMap).family, fontSize: `${Math.round(24 * (storyFontForId(s.genre, s.id, fontIndexMap).scale || 1))}px`, fontWeight: storyFontForId(s.genre, s.id, fontIndexMap).weight || 600,
                             color: "#fff", lineHeight: 1.3,
                           }}>
                             {s.title || "Untitled"}
-                          </div>
+                          </BookTitle>
                         </div>
                         <span style={{
                           fontFamily: MONO, fontSize: "11px",
@@ -1442,14 +1491,14 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, s
                       position: "sticky", top: isTouch ? "70px" : "90px",
                     }}>
                       <div style={{
-                        flex: 1, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", overflow: "hidden", wordBreak: "break-word",
+                        flex: 1, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", overflow: "hidden",
                       }}>
-                        <div style={{
-                          fontFamily: storyFontForId(group.storyGenre, group.storyId).family, fontSize: `${Math.round(14 * (storyFontForId(group.storyGenre, group.storyId).scale || 1))}px`, fontWeight: storyFontForId(group.storyGenre, group.storyId).weight || 600,
+                        <BookTitle style={{
+                          fontFamily: storyFontForId(group.storyGenre, group.storyId, fontIndexMap).family, fontSize: `${Math.round(15 * (storyFontForId(group.storyGenre, group.storyId, fontIndexMap).scale || 1))}px`, fontWeight: storyFontForId(group.storyGenre, group.storyId, fontIndexMap).weight || 600,
                           color: "#fff", lineHeight: 1.3,
                         }}>
                           {group.storyTitle}
-                        </div>
+                        </BookTitle>
                       </div>
                     </div>
                     {/* Entries */}
@@ -2133,7 +2182,7 @@ const GENRE_FONTS = {
     { family: "'Bruno Ace SC', sans-serif" },
     { family: "'Syne Mono', monospace" },
     { family: "'Space Mono', monospace" },
-    { family: "'Jersey 20', sans-serif" },
+    { family: "'Jersey 20', sans-serif", scale: 1.2 },
   ],
   mystery: [
     { family: "'Gloock', serif" },
@@ -2172,8 +2221,21 @@ function genreFont(genreId, index = 0) {
   if (!fonts) return { family: SERIF, weight: 600 };
   return fonts[((index % fonts.length) + fonts.length) % fonts.length];
 }
-function storyFontForId(genreId, storyId) {
-  return genreFont(genreId, hashStr(storyId));
+function storyFontForId(genreId, storyId, fontIndexMap) {
+  const idx = fontIndexMap ? (fontIndexMap[storyId] ?? 0) : 0;
+  return genreFont(genreId, idx);
+}
+function buildFontIndexMap(stories) {
+  const byGenre = {};
+  // Sort by ID for stable creation order
+  const sorted = [...stories].sort((a, b) => String(a.id).localeCompare(String(b.id)));
+  const map = {};
+  for (const s of sorted) {
+    byGenre[s.genre] = (byGenre[s.genre] || 0);
+    map[s.id] = byGenre[s.genre];
+    byGenre[s.genre]++;
+  }
+  return map;
 }
 const GENRE_HUE_RANGE = {
   fantasy:  [240, 320],
@@ -2247,8 +2309,9 @@ export default function CollaborativeStoryApp() {
   const pollRef = useRef(null);
 
   // Active story metadata
+  const fontIndexMap = useMemo(() => buildFontIndexMap(storiesIndex), [storiesIndex]);
   const activeStoryMeta = storiesIndex.find((s) => s.id === activeStoryId);
-  const activeStoryFont = activeStoryMeta ? storyFontForId(activeStoryMeta.genre, activeStoryMeta.id) : { family: SERIF, weight: 600 };
+  const activeStoryFont = activeStoryMeta ? storyFontForId(activeStoryMeta.genre, activeStoryMeta.id, fontIndexMap) : { family: SERIF, weight: 600 };
   const activeStoryColor = activeStoryMeta ? bookColor(activeStoryMeta.genre, activeStoryMeta.id) : null;
 
   const getGenreVoiceCtx = useCallback(() => {
@@ -2939,6 +3002,7 @@ export default function CollaborativeStoryApp() {
             onAbout={() => { window.scrollTo(0, 0); window.location.hash = "about"; setView("about"); }}
             homeLayout={homeLayout}
             setHomeLayout={setHomeLayout}
+            fontIndexMap={fontIndexMap}
           />
         )}
 
