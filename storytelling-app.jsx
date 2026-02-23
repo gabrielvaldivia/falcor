@@ -1034,11 +1034,11 @@ function StoryRow({ title, stories, onSelectStory, isTouch, genreId, fontIndexMa
                 {title}
               </div>
               <div style={{
-                flex: 1, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center",
+                flex: 1, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", width: "100%", minWidth: 0,
               }}>
                 <BookTitle style={{
                   fontFamily: storyFontForId(genreId, s.id, fontIndexMap).family, fontSize: `${Math.round(20 * (storyFontForId(genreId, s.id, fontIndexMap).scale || 1))}px`, fontWeight: storyFontForId(genreId, s.id, fontIndexMap).weight || 600,
-                  color: "#fff", lineHeight: 1.3, padding: "0 2px",
+                  color: "#fff", lineHeight: 1.3, padding: "0 2px", maxWidth: "100%",
                 }}>
                   {s.title || "Untitled"}
                 </BookTitle>
@@ -1413,11 +1413,11 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, s
                           {genre?.label}
                         </div>
                         <div style={{
-                          flex: 1, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center",
+                          flex: 1, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", width: "100%", minWidth: 0,
                         }}>
                           <BookTitle style={{
                             fontFamily: storyFontForId(s.genre, s.id, fontIndexMap).family, fontSize: `${Math.round(24 * (storyFontForId(s.genre, s.id, fontIndexMap).scale || 1))}px`, fontWeight: storyFontForId(s.genre, s.id, fontIndexMap).weight || 600,
-                            color: "#fff", lineHeight: 1.3, padding: "0 2px",
+                            color: "#fff", lineHeight: 1.3, padding: "0 2px", maxWidth: "100%",
                           }}>
                             {s.title || "Untitled"}
                           </BookTitle>
@@ -1491,11 +1491,11 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, s
                       position: "sticky", top: isTouch ? "70px" : "90px",
                     }}>
                       <div style={{
-                        flex: 1, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center",
+                        flex: 1, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", width: "100%", minWidth: 0,
                       }}>
                         <BookTitle style={{
                           fontFamily: storyFontForId(group.storyGenre, group.storyId, fontIndexMap).family, fontSize: `${Math.round(12 * (storyFontForId(group.storyGenre, group.storyId, fontIndexMap).scale || 1))}px`, fontWeight: storyFontForId(group.storyGenre, group.storyId, fontIndexMap).weight || 600,
-                          color: "#fff", lineHeight: 1.3, padding: "0 2px",
+                          color: "#fff", lineHeight: 1.3, padding: "0 2px", maxWidth: "100%",
                         }}>
                           {group.storyTitle}
                         </BookTitle>
@@ -2270,7 +2270,7 @@ export default function CollaborativeStoryApp() {
   const LAYOUT_TO_HASH = { rows: "#rows", carousel: "#slideshow", activity: "#activity" };
   const [view, setView] = useState(() => {
     if (window.location.hash === "#about") return "about";
-    if (window.location.hash.match(/^#story\//)) return "story";
+    if (window.location.hash.match(/^#story\//) || window.location.pathname.match(/^\/api\/story\//)) return "story";
     return "home";
   }); // "home" | "new" | "story" | "about"
   const [homeLayout, setHomeLayout] = useState(() => {
@@ -2350,7 +2350,7 @@ export default function CollaborativeStoryApp() {
       setLoading(false);
 
       const hash = window.location.hash;
-      const slugMatch = hash.match(/^#story\/(.+)$/);
+      const slugMatch = hash.match(/^#story\/(.+)$/) || window.location.pathname.match(/^\/api\/story\/(.+)$/);
       if (slugMatch) {
         const slug = slugMatch[1];
         // Support legacy numeric IDs
@@ -2438,7 +2438,8 @@ export default function CollaborativeStoryApp() {
     // Clear any existing polling before starting new story
     if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
     setView("story");
-    window.location.hash = "story/" + (meta?.slug || id);
+    const storySlug = meta?.slug || id;
+    history.pushState({ story: storySlug }, "", "/api/story/" + storySlug);
 
     await loadStoryData(id, true);
 
@@ -2451,8 +2452,9 @@ export default function CollaborativeStoryApp() {
   useEffect(() => {
     const onPopState = async () => {
       const hash = window.location.hash;
+      const path = window.location.pathname;
       if (hash === "#about") { setView("about"); return; }
-      const slugMatch = hash.match(/^#story\/(.+)$/);
+      const slugMatch = hash.match(/^#story\/(.+)$/) || path.match(/^\/api\/story\/(.+)$/);
       if (slugMatch) {
         const slug = slugMatch[1];
         const numId = parseInt(slug, 10);
