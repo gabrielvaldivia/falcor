@@ -916,8 +916,47 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
   const filtered = genreFilter === "all"
     ? stories
     : stories.filter((s) => s.genre === genreFilter);
+  const sorted = [...filtered].sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
+  const scrollRef = useRef(null);
+  const needsLoop = sorted.length > 2;
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || !needsLoop) return;
+    const firstCard = el.children[sorted.length];
+    if (firstCard) {
+      el.scrollLeft = firstCard.offsetLeft - (el.clientWidth - firstCard.offsetWidth) / 2;
+    } else {
+      el.scrollLeft = el.scrollWidth / 3;
+    }
+  }, [sorted.length, needsLoop, genreFilter]);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || !needsLoop) return;
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        const oneSetWidth = el.scrollWidth / 3;
+        if (el.scrollLeft >= oneSetWidth * 2 - 1) {
+          el.scrollLeft -= oneSetWidth;
+        } else if (el.scrollLeft <= 1) {
+          el.scrollLeft += oneSetWidth;
+        }
+        ticking = false;
+      });
+    };
+    el.addEventListener("scroll", onScroll);
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [needsLoop]);
+
   return (
-    <div style={{ maxWidth: "720px", margin: "0 auto", padding: "60px 24px 100px" }}>
+    <div style={{
+      display: "flex", flexDirection: "column", justifyContent: "center",
+      minHeight: "100vh", padding: "60px 0 100px",
+    }}>
       <header style={{ marginBottom: "48px", textAlign: "center" }}>
         <h1 style={{
           fontFamily: TYPEWRITER, fontSize: "28px", fontWeight: 400,
@@ -961,17 +1000,34 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
       </div>
       </div>
 
+      <div style={{ position: "relative" }}>
       <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
-        gap: "20px",
-      }}>
-        {[...filtered].sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || "")).map((s) => {
+        position: "absolute", top: 0, bottom: 0, left: 0, right: 0,
+        pointerEvents: "none", zIndex: 1,
+        background: "linear-gradient(to right, #0e0d0b 0%, transparent 48px, transparent calc(100% - 48px), #0e0d0b 100%)",
+      }} />
+      <div
+        ref={scrollRef}
+        style={{
+          display: "flex", gap: "16px",
+          justifyContent: needsLoop ? "flex-start" : "center",
+          overflowX: "auto", WebkitOverflowScrolling: "touch",
+          padding: "30px 24px",
+          scrollbarWidth: "none", msOverflowStyle: "none",
+          perspective: "800px",
+        }}
+        className="story-hscroll"
+      >
+        {(needsLoop ? [...sorted, ...sorted, ...sorted] : sorted).map((s, i) => {
           const genre = GENRES.find((g) => g.id === s.genre);
           return (
             <div
-              key={s.id}
-              onClick={() => onSelectStory(s.id)}
+              key={`${s.id}-${i}`}
+              onClick={(e) => {
+                e.currentTarget.style.transform = "scale(1.05)";
+                e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.3)";
+                setTimeout(() => onSelectStory(s.id), 150);
+              }}
               style={{
                 background: "rgba(255,255,255,0.03)",
                 border: "1px solid rgba(255,255,255,0.06)",
@@ -979,14 +1035,37 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
                 padding: "20px 16px",
                 cursor: "pointer",
                 position: "relative",
+                width: "150px", minWidth: "150px",
                 aspectRatio: "2 / 3",
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "space-between",
-                transition: "border-color 0.15s",
+                transition: "transform 0.15s ease-out, border-color 0.15s, box-shadow 0.15s",
+                transformStyle: "preserve-3d",
+                willChange: "transform",
               }}
-              onMouseEnter={(e) => e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"}
-              onMouseLeave={(e) => e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)"}
+              onMouseMove={(e) => {
+                if (e.buttons) return;
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = (e.clientX - rect.left) / rect.width - 0.5;
+                const y = (e.clientY - rect.top) / rect.height - 0.5;
+                e.currentTarget.style.transform = `scale(1.05) rotateY(${x * 8}deg) rotateX(${-y * 8}deg)`;
+                e.currentTarget.style.boxShadow = `${-x * 8}px ${y * 8}px 20px rgba(0,0,0,0.3)`;
+                e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)";
+              }}
+              onMouseDown={(e) => {
+                e.currentTarget.style.transform = "scale(0.95)";
+                e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.3)";
+              }}
+              onMouseUp={(e) => {
+                e.currentTarget.style.transform = "scale(1)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "scale(1) rotateY(0deg) rotateX(0deg)";
+                e.currentTarget.style.boxShadow = "none";
+                e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)";
+              }}
             >
               <div>
                 {genre && (
@@ -1019,7 +1098,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
             </div>
           );
         })}
-
+      </div>
       </div>
 
       <div style={{
@@ -1028,7 +1107,11 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
         marginTop: "32px", pointerEvents: "none", zIndex: 5,
       }}>
         <button
-          onClick={onNewStory}
+          onClick={(e) => {
+            e.currentTarget.style.transform = "scale(1.05)";
+            e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.5)";
+            setTimeout(() => onNewStory(), 150);
+          }}
           style={{
             padding: "12px 24px", borderRadius: "28px",
             background: "#e8ddd0", border: "none",
@@ -1039,6 +1122,8 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
             transition: "transform 0.15s, box-shadow 0.15s",
           }}
           onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.05)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.5)"; }}
+          onMouseDown={(e) => { e.currentTarget.style.transform = "scale(0.95)"; e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.3)"; }}
+          onMouseUp={(e) => { e.currentTarget.style.transform = "scale(1.05)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.5)"; }}
           onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = "0 2px 12px rgba(0,0,0,0.4)"; }}
         >
           <span style={{ fontSize: "20px", lineHeight: 1 }}>+</span>
@@ -1047,7 +1132,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout }) {
       </div>
 
       <footer style={{
-        marginTop: "64px", paddingTop: "24px",
+        marginTop: "64px", padding: "24px 24px 0",
         borderTop: "1px solid rgba(255,255,255,0.06)",
         display: "flex", justifyContent: "center", gap: "16px",
         flexWrap: "wrap",
@@ -1466,10 +1551,25 @@ function NewStoryScreen({ onCancel, onCreate, narrow }) {
               textAlign: "center",
               transition: "all 0.15s",
             }}
+            onMouseEnter={(e) => {
+              if (!isSelected) {
+                e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+                e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)";
+                e.currentTarget.querySelector("[data-label]").style.color = "#e8ddd0";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isSelected) {
+                e.currentTarget.style.background = "rgba(255,255,255,0.02)";
+                e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)";
+                e.currentTarget.querySelector("[data-label]").style.color = "rgba(255,255,255,0.5)";
+              }
+            }}
           >
-            <div style={{
+            <div data-label="" style={{
               fontFamily: TYPEWRITER, fontSize: "15px", fontWeight: 400,
               color: isSelected ? "#e8ddd0" : "rgba(255,255,255,0.5)",
+              transition: "color 0.15s",
             }}>
               {item.label}
             </div>
@@ -2154,7 +2254,8 @@ export default function CollaborativeStoryApp() {
         .passage-slider::-moz-range-track { height: 2px; background: rgba(255,255,255,0.1); border-radius: 1px; border: none; }
         .passage-slider::-moz-range-thumb { width: 10px; height: 10px; border-radius: 50%; background: #e8ddd0; cursor: pointer; border: none; }
         .drop-cap::first-letter { float: left; font-size: 3.7em; line-height: 0.75; padding-right: 6px; padding-top: 4px; font-weight: 400; }
-        .filter-pills { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 32px; }
+        .story-hscroll::-webkit-scrollbar { display: none; }
+        .filter-pills { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 32px; padding: 0 24px; }
         .filter-pills::-webkit-scrollbar { display: none; }
         .filter-pills-mask { display: none; }
         @media (max-width: 600px) {
