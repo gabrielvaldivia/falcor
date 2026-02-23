@@ -2157,10 +2157,10 @@ const GENRE_FONTS = {
     { family: "'Castoro Titling', serif" },
   ],
   bedtime: [
-    { family: "'Chewy', cursive" },
-    { family: "'Boogaloo', cursive" },
     { family: "'Borel', cursive" },
     { family: "'Walter Turncoat', cursive" },
+    { family: "'Galindo', cursive" },
+    { family: "'Ranchers', cursive" },
   ],
   horror: [
     { family: "'UnifrakturMaguntia', cursive" },
