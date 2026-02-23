@@ -252,6 +252,367 @@ function getStyleForStory(genre, voice) {
   };
 }
 
+/* ────────────────────────────────────────────
+   Translations (EN / ES)
+   ──────────────────────────────────────────── */
+
+const TRANSLATIONS = {
+  en: {
+    // App
+    app_name: "Falcor",
+    // Nav & actions
+    back: "Back",
+    home: "Home",
+    about: "About",
+    all: "All",
+    // Footer
+    built_by: "Built by",
+    copyright: "Copyright",
+    // New story
+    new_story: "New Story",
+    continue_btn: "Continue",
+    skip: "Skip",
+    start_story: "Start Story",
+    creating: "Creating...",
+    step_genre: "Genre",
+    step_voice: "Writing Voice",
+    step_themes: "Themes",
+    step_protagonist: "Protagonist",
+    step_tension: "Narrative Tension",
+    optional: "(optional)",
+    up_to_2: ", up to 2",
+    // Story view
+    chapter: "Chapter",
+    ch: "Ch.",
+    in_progress: "In progress",
+    loading: "Loading...",
+    loading_activity: "Loading activity...",
+    no_activity: "No activity yet",
+    contributions: "contributions",
+    contribution: "contribution",
+    last_updated: "Last updated",
+    select_chapter: "Select a chapter",
+    copied: "Copied!",
+    copy_link: "Copy Link",
+    delete_btn: "Delete",
+    confirm_delete: "Confirm delete?",
+    untitled: "Untitled",
+    // Interaction
+    write_answer: "Write your answer...",
+    writing: "Writing...",
+    adding: "Adding...",
+    preview: "PREVIEW",
+    add: "ADD",
+    back_btn: "BACK",
+    rewrite: "REWRITE",
+    local_fallback: "AI unavailable — used local fallback",
+    // Errors
+    error_generation: "Something went wrong. Please try again.",
+    error_save: "Failed to save. Please try again.",
+    error_rewrite: "Rewrite failed.",
+    // Sliders
+    slider_plot: "Plot",
+    slider_dialogue: "Dialogue",
+    slider_surprise: "Surprise",
+    slider_emotion: "Emotion",
+    slider_tooltip: "Passage style sliders",
+    // Slider value labels
+    plot_labels: ["Linger", "Dwell", "Savor", "Gentle", "Steady", "Moving", "Driven", "Urgent", "Racing", "Leaping"],
+    dialogue_labels: ["None", "Minimal", "Sparse", "Light", "Moderate", "Balanced", "Frequent", "Rich", "Heavy", "All Talk"],
+    surprise_labels: ["Steady", "Calm", "Gentle", "Mild", "Moderate", "Notable", "Bold", "Dramatic", "Shocking", "Wild"],
+    emotion_labels: ["Stoic", "Reserved", "Subtle", "Restrained", "Moderate", "Open", "Warm", "Vivid", "Intense", "Raw"],
+    // Location
+    geo_on: "Using precise location",
+    geo_off: "Enable precise location",
+    // Popover
+    popover_location: "Location",
+    popover_date: "Date",
+    popover_prompt: "Prompt",
+    popover_answer: "Answer",
+    // About page
+    about_title: "About Falcor",
+    about_p1: "Falcor is an experiment in co-creative storytelling. Anyone can contribute to a shared story. You answer a simple question about what should happen next, and AI turns it into prose. The result is a living artifact shaped by strangers.",
+    about_why: "Why this exists",
+    about_p2: 'Writing is hard. But answering "what should happen next?" is easy. This lowers the barrier to entry by turning storytelling into a back-and-forth, where your direction sets the path and AI carries it forward. This feels like a new kind of media experience. It isn\'t writing per se, but it is shaped by human input.',
+    about_p3: "All stories are shared and open. You can see what each person wrote and where in the world they wrote it from. When strangers from different places contribute to a shared output, the world feels a little smaller.",
+    about_how: "How it works",
+    about_p4: "Start by choosing a genre. Each genre unlocks its own curated set of writing voices, themes, protagonist types, and narrative tensions, all tailored to fit the kind of story you want to tell.",
+    about_p5: "Falcor generates a title and opening passage, then asks you questions about what happens next. Your brief answers become the seeds for each new passage. The AI considers everything that came before, building on earlier choices, tracking narrative arcs, deciding when chapters should end, and generating chapter titles.",
+    about_p6: "Stories are stored in the cloud and can be shared with a direct link using the menu on any story page. Anyone with the link can read along and contribute to the story.",
+    about_credits: "Credits",
+    about_built_by: "Built by",
+    about_powered_by: "Powered by",
+    // Genres
+    genre_fantasy: "Fantasy",
+    genre_drama: "Drama",
+    genre_mystery: "Mystery",
+    genre_scifi: "Sci-Fi",
+    genre_bedtime: "Bedtime",
+    genre_horror: "Horror",
+    // Voices — Fantasy
+    voice_fantasy_lyrical: "Lyrical & Labyrinthine", voicedesc_fantasy_lyrical: "Winding, dreamlike, nested clauses",
+    voice_fantasy_poetic: "Poetic & Dramatic", voicedesc_fantasy_poetic: "Elevated language, rhythm, metaphor",
+    voice_fantasy_gothic: "Lush & Gothic", voicedesc_fantasy_gothic: "Dense atmosphere, ornate description",
+    voice_fantasy_cinematic: "Cinematic & Vivid", voicedesc_fantasy_cinematic: "Visual, fast-paced, sensory-driven",
+    voice_fantasy_mythic: "Mythic & Ancient", voicedesc_fantasy_mythic: "Timeless cadence, legend-like narration",
+    voice_fantasy_spare: "Spare & Direct", voicedesc_fantasy_spare: "Short sentences, no embellishment",
+    // Voices — Drama
+    voice_drama_raw: "Raw & Unflinching", voicedesc_drama_raw: "Brutally honest, no sentimentality",
+    voice_drama_literary: "Literary & Layered", voicedesc_drama_literary: "Rich subtext, moral complexity",
+    voice_drama_tense: "Tense & Restrained", voicedesc_drama_tense: "Simmering conflict, controlled prose",
+    voice_drama_passionate: "Passionate & Bold", voicedesc_drama_passionate: "Intense emotions, dramatic moments",
+    voice_drama_spare: "Spare & Direct", voicedesc_drama_spare: "Understated, emotionally direct",
+    voice_drama_cinematic: "Cinematic & Vivid", voicedesc_drama_cinematic: "Visual, fast-paced, sensory-driven",
+    // Voices — Mystery
+    voice_mystery_spare: "Spare & Direct", voicedesc_mystery_spare: "Short sentences, no embellishment",
+    voice_mystery_noir: "Noir & Hardboiled", voicedesc_mystery_noir: "Cynical voice, streetwise, moody",
+    voice_mystery_wry: "Wry & Observant", voicedesc_mystery_wry: "Dry wit, sharp observation",
+    voice_mystery_atmospheric: "Atmospheric & Tense", voicedesc_mystery_atmospheric: "Slow dread, layered detail",
+    voice_mystery_clinical: "Clinical & Precise", voicedesc_mystery_clinical: "Forensic eye, methodical, detached",
+    voice_mystery_cinematic: "Cinematic & Vivid", voicedesc_mystery_cinematic: "Visual, fast-paced, sensory-driven",
+    // Voices — Sci-Fi
+    voice_scifi_spare: "Spare & Direct", voicedesc_scifi_spare: "Short sentences, no embellishment",
+    voice_scifi_cinematic: "Cinematic & Vivid", voicedesc_scifi_cinematic: "Visual, fast-paced, sensory-driven",
+    voice_scifi_cerebral: "Cerebral & Cool", voicedesc_scifi_cerebral: "Ideas-driven, detached, philosophical",
+    voice_scifi_lyrical: "Lyrical & Strange", voicedesc_scifi_lyrical: "Alien beauty, dreamlike imagery",
+    voice_scifi_wry: "Wry & Observant", voicedesc_scifi_wry: "Dry wit, sharp observation",
+    voice_scifi_clinical: "Clinical & Precise", voicedesc_scifi_clinical: "Detached, technical, matter-of-fact",
+    // Voices — Bedtime
+    voice_bedtime_warm: "Warm & Gentle", voicedesc_bedtime_warm: "Soft, soothing, reassuring",
+    voice_bedtime_playful: "Playful & Silly", voicedesc_bedtime_playful: "Fun voices, giggles, surprises",
+    voice_bedtime_whimsical: "Whimsical & Magical", voicedesc_bedtime_whimsical: "Fairy-tale wonder, enchanting details",
+    voice_bedtime_rhyming: "Rhythmic & Singsongy", voicedesc_bedtime_rhyming: "Musical cadence, near-rhymes",
+    voice_bedtime_adventurous: "Adventurous & Brave", voicedesc_bedtime_adventurous: "Exciting journeys, can-do spirit",
+    voice_bedtime_cozy: "Cozy & Snug", voicedesc_bedtime_cozy: "Blanket-soft narration, safe and calm",
+    // Voices — Horror
+    voice_horror_gothic: "Lush & Gothic", voicedesc_horror_gothic: "Dense atmosphere, ornate description",
+    voice_horror_spare: "Spare & Dread", voicedesc_horror_spare: "Stark, stripped-down, unsettling",
+    voice_horror_atmospheric: "Creeping & Slow", voicedesc_horror_atmospheric: "Building unease, lingering detail",
+    voice_horror_clinical: "Clinical & Wrong", voicedesc_horror_clinical: "Detached tone that makes it worse",
+    voice_horror_feverish: "Feverish & Unhinged", voicedesc_horror_feverish: "Frantic, unreliable, spiraling",
+    voice_horror_wry: "Darkly Comic", voicedesc_horror_wry: "Gallows humor, ironic detachment",
+    // Themes
+    theme_redemption: "Redemption", theme_power: "Power & Corruption", theme_identity: "Identity",
+    theme_freedom: "Freedom", theme_sacrifice: "Sacrifice", theme_legacy: "Legacy",
+    theme_drama_power: "Power", theme_betrayal: "Betrayal", theme_justice: "Justice",
+    theme_obsession: "Obsession", theme_truth: "Truth & Deception",
+    theme_survival: "Survival", theme_evolution: "Evolution", theme_connection: "Connection",
+    theme_friendship: "Friendship", theme_courage: "Courage", theme_kindness: "Kindness",
+    theme_belonging: "Belonging", theme_curiosity: "Curiosity", theme_growing_up: "Growing Up",
+    theme_isolation: "Isolation", theme_guilt: "Guilt", theme_forbidden: "Forbidden Knowledge",
+    // Protagonists
+    protag_reluctant_hero: "Reluctant Hero", protag_outsider: "Outsider", protag_scholar: "Scholar",
+    protag_wanderer: "Wanderer", protag_ruler: "Ruler", protag_outcast: "Outcast",
+    protag_patriarch: "Patriarch / Matriarch", protag_whistleblower: "Whistleblower",
+    protag_rebel: "Rebel", protag_fallen: "Fallen Figure", protag_stranger: "Stranger in Town",
+    protag_detective: "Detective", protag_anti_hero: "Anti-Hero", protag_journalist: "Journalist",
+    protag_witness: "Witness", protag_suspect: "Suspect",
+    protag_scientist: "Scientist", protag_android: "Artificial Being", protag_pilot: "Pilot",
+    protag_survivor: "Last Survivor",
+    protag_child: "Curious Child", protag_animal: "Brave Animal", protag_tiny_creature: "Tiny Creature",
+    protag_lost_toy: "Lost Toy", protag_sibling: "Big Sibling", protag_magical_friend: "Magical Friend",
+    protag_horror_child: "Child", protag_skeptic: "Skeptic", protag_caretaker: "Caretaker",
+    protag_inheritor: "Inheritor",
+    // Conflicts
+    conflict_vs_nature: "Person vs Nature", conflict_vs_self: "Person vs Self",
+    conflict_vs_person: "Person vs Person", conflict_fate: "Fate / Prophecy",
+    conflict_vs_power: "Person vs Power", conflict_quest: "The Quest",
+    conflict_vs_society: "Person vs Society", conflict_moral_dilemma: "Moral Dilemma",
+    conflict_secret: "Hidden Truth", conflict_downfall: "Downfall",
+    conflict_mystery: "Mystery / Secret", conflict_clock: "Race Against Time",
+    conflict_trust: "Shifting Trust",
+    conflict_vs_technology: "Person vs Technology", conflict_vs_unknown: "Person vs Unknown",
+    conflict_paradox: "Paradox",
+    conflict_getting_lost: "Getting Lost", conflict_big_fear: "Facing a Fear",
+    conflict_new_friend: "Making a Friend", conflict_wild_weather: "Wild Weather",
+    conflict_mix_up: "A Big Mix-Up", conflict_promise: "A Promise to Keep",
+    conflict_confinement: "Confinement", conflict_corruption: "Corruption",
+    // Fallback prompts
+    fallback_1: "What happened next?",
+    fallback_2: "Something unexpected appeared...",
+    fallback_3: "A sound broke the silence...",
+    fallback_4: "Someone arrived with news...",
+    fallback_5: "The weather suddenly changed...",
+  },
+  es: {
+    // App
+    app_name: "Falcor",
+    // Nav & actions
+    back: "Atrás",
+    home: "Inicio",
+    about: "Acerca de",
+    all: "Todo",
+    // Footer
+    built_by: "Creado por",
+    copyright: "Derechos de autor",
+    // New story
+    new_story: "Nueva Historia",
+    continue_btn: "Continuar",
+    skip: "Omitir",
+    start_story: "Comenzar Historia",
+    creating: "Creando...",
+    step_genre: "Género",
+    step_voice: "Voz Narrativa",
+    step_themes: "Temas",
+    step_protagonist: "Protagonista",
+    step_tension: "Tensión Narrativa",
+    optional: "(opcional)",
+    up_to_2: ", hasta 2",
+    // Story view
+    chapter: "Capítulo",
+    ch: "Cap.",
+    in_progress: "En progreso",
+    loading: "Cargando...",
+    loading_activity: "Cargando actividad...",
+    no_activity: "Sin actividad aún",
+    contributions: "contribuciones",
+    contribution: "contribución",
+    last_updated: "Última actualización",
+    select_chapter: "Selecciona un capítulo",
+    copied: "¡Copiado!",
+    copy_link: "Copiar enlace",
+    delete_btn: "Eliminar",
+    confirm_delete: "¿Confirmar eliminación?",
+    untitled: "Sin título",
+    // Interaction
+    write_answer: "Escribe tu respuesta...",
+    writing: "Escribiendo...",
+    adding: "Añadiendo...",
+    preview: "VISTA PREVIA",
+    add: "AÑADIR",
+    back_btn: "ATRÁS",
+    rewrite: "REESCRIBIR",
+    local_fallback: "IA no disponible — se usó respaldo local",
+    // Errors
+    error_generation: "Algo salió mal. Por favor intenta de nuevo.",
+    error_save: "No se pudo guardar. Por favor intenta de nuevo.",
+    error_rewrite: "La reescritura falló.",
+    // Sliders
+    slider_plot: "Trama",
+    slider_dialogue: "Diálogo",
+    slider_surprise: "Sorpresa",
+    slider_emotion: "Emoción",
+    slider_tooltip: "Controles de estilo del pasaje",
+    // Slider value labels
+    plot_labels: ["Pausado", "Detenido", "Saborear", "Suave", "Constante", "Avanzando", "Decidido", "Urgente", "Veloz", "Vertiginoso"],
+    dialogue_labels: ["Nada", "Mínimo", "Escaso", "Ligero", "Moderado", "Equilibrado", "Frecuente", "Rico", "Intenso", "Solo Diálogo"],
+    surprise_labels: ["Estable", "Calmo", "Suave", "Leve", "Moderado", "Notable", "Audaz", "Dramático", "Impactante", "Salvaje"],
+    emotion_labels: ["Estoico", "Reservado", "Sutil", "Contenido", "Moderado", "Abierto", "Cálido", "Vívido", "Intenso", "Crudo"],
+    // Location
+    geo_on: "Usando ubicación precisa",
+    geo_off: "Activar ubicación precisa",
+    // Popover
+    popover_location: "Ubicación",
+    popover_date: "Fecha",
+    popover_prompt: "Pregunta",
+    popover_answer: "Respuesta",
+    // About page
+    about_title: "Acerca de Falcor",
+    about_p1: "Falcor es un experimento de narración co-creativa. Cualquiera puede contribuir a una historia compartida. Respondes una simple pregunta sobre qué debería pasar después, y la IA lo convierte en prosa. El resultado es un artefacto vivo moldeado por desconocidos.",
+    about_why: "Por qué existe",
+    about_p2: 'Escribir es difícil. Pero responder "¿qué debería pasar después?" es fácil. Esto reduce la barrera de entrada al convertir la narración en un ida y vuelta, donde tu dirección marca el camino y la IA lo lleva adelante. Se siente como un nuevo tipo de experiencia mediática. No es escritura en sí, pero está moldeada por la participación humana.',
+    about_p3: "Todas las historias son compartidas y abiertas. Puedes ver qué escribió cada persona y desde dónde en el mundo lo hizo. Cuando desconocidos de diferentes lugares contribuyen a un resultado compartido, el mundo se siente un poco más pequeño.",
+    about_how: "Cómo funciona",
+    about_p4: "Empieza eligiendo un género. Cada género desbloquea su propio conjunto curado de voces narrativas, temas, tipos de protagonista y tensiones narrativas, todos adaptados al tipo de historia que quieras contar.",
+    about_p5: "Falcor genera un título y un pasaje inicial, luego te hace preguntas sobre qué pasa después. Tus breves respuestas se convierten en las semillas de cada nuevo pasaje. La IA considera todo lo anterior, construyendo sobre decisiones previas, siguiendo arcos narrativos, decidiendo cuándo deben terminar los capítulos y generando títulos de capítulos.",
+    about_p6: "Las historias se almacenan en la nube y se pueden compartir con un enlace directo usando el menú en cualquier página de historia. Cualquiera con el enlace puede leer y contribuir a la historia.",
+    about_credits: "Créditos",
+    about_built_by: "Creado por",
+    about_powered_by: "Impulsado por",
+    // Genres
+    genre_fantasy: "Fantasía",
+    genre_drama: "Drama",
+    genre_mystery: "Misterio",
+    genre_scifi: "Ciencia Ficción",
+    genre_bedtime: "Para Dormir",
+    genre_horror: "Terror",
+    // Voices — Fantasy
+    voice_fantasy_lyrical: "Lírica y Laberíntica", voicedesc_fantasy_lyrical: "Sinuosa, onírica, cláusulas anidadas",
+    voice_fantasy_poetic: "Poética y Dramática", voicedesc_fantasy_poetic: "Lenguaje elevado, ritmo, metáfora",
+    voice_fantasy_gothic: "Exuberante y Gótica", voicedesc_fantasy_gothic: "Atmósfera densa, descripción ornamentada",
+    voice_fantasy_cinematic: "Cinematográfica y Vívida", voicedesc_fantasy_cinematic: "Visual, veloz, sensorial",
+    voice_fantasy_mythic: "Mítica y Ancestral", voicedesc_fantasy_mythic: "Cadencia atemporal, narración de leyenda",
+    voice_fantasy_spare: "Sobria y Directa", voicedesc_fantasy_spare: "Frases cortas, sin adornos",
+    // Voices — Drama
+    voice_drama_raw: "Cruda y Sin Rodeos", voicedesc_drama_raw: "Brutalmente honesta, sin sentimentalismo",
+    voice_drama_literary: "Literaria y Profunda", voicedesc_drama_literary: "Subtexto rico, complejidad moral",
+    voice_drama_tense: "Tensa y Contenida", voicedesc_drama_tense: "Conflicto latente, prosa controlada",
+    voice_drama_passionate: "Apasionada y Audaz", voicedesc_drama_passionate: "Emociones intensas, momentos dramáticos",
+    voice_drama_spare: "Sobria y Directa", voicedesc_drama_spare: "Sobria, emocionalmente directa",
+    voice_drama_cinematic: "Cinematográfica y Vívida", voicedesc_drama_cinematic: "Visual, veloz, sensorial",
+    // Voices — Mystery
+    voice_mystery_spare: "Sobria y Directa", voicedesc_mystery_spare: "Frases cortas, sin adornos",
+    voice_mystery_noir: "Noir y Dura", voicedesc_mystery_noir: "Voz cínica, callejera, sombría",
+    voice_mystery_wry: "Irónica y Observadora", voicedesc_mystery_wry: "Humor seco, observación aguda",
+    voice_mystery_atmospheric: "Atmosférica y Tensa", voicedesc_mystery_atmospheric: "Temor lento, detalle en capas",
+    voice_mystery_clinical: "Clínica y Precisa", voicedesc_mystery_clinical: "Ojo forense, metódica, distante",
+    voice_mystery_cinematic: "Cinematográfica y Vívida", voicedesc_mystery_cinematic: "Visual, veloz, sensorial",
+    // Voices — Sci-Fi
+    voice_scifi_spare: "Sobria y Directa", voicedesc_scifi_spare: "Frases cortas, sin adornos",
+    voice_scifi_cinematic: "Cinematográfica y Vívida", voicedesc_scifi_cinematic: "Visual, veloz, sensorial",
+    voice_scifi_cerebral: "Cerebral y Fría", voicedesc_scifi_cerebral: "Impulsada por ideas, distante, filosófica",
+    voice_scifi_lyrical: "Lírica y Extraña", voicedesc_scifi_lyrical: "Belleza alienígena, imágenes oníricas",
+    voice_scifi_wry: "Irónica y Observadora", voicedesc_scifi_wry: "Humor seco, observación aguda",
+    voice_scifi_clinical: "Clínica y Precisa", voicedesc_scifi_clinical: "Distante, técnica, objetiva",
+    // Voices — Bedtime
+    voice_bedtime_warm: "Cálida y Tierna", voicedesc_bedtime_warm: "Suave, reconfortante, tranquilizadora",
+    voice_bedtime_playful: "Juguetona y Divertida", voicedesc_bedtime_playful: "Voces graciosas, risitas, sorpresas",
+    voice_bedtime_whimsical: "Fantástica y Mágica", voicedesc_bedtime_whimsical: "Asombro de cuento de hadas, detalles encantadores",
+    voice_bedtime_rhyming: "Rítmica y Cantarina", voicedesc_bedtime_rhyming: "Cadencia musical, casi-rimas",
+    voice_bedtime_adventurous: "Aventurera y Valiente", voicedesc_bedtime_adventurous: "Viajes emocionantes, espíritu emprendedor",
+    voice_bedtime_cozy: "Acogedora y Cómoda", voicedesc_bedtime_cozy: "Narración suave como una manta, segura y tranquila",
+    // Voices — Horror
+    voice_horror_gothic: "Exuberante y Gótica", voicedesc_horror_gothic: "Atmósfera densa, descripción ornamentada",
+    voice_horror_spare: "Sobria y Ominosa", voicedesc_horror_spare: "Austera, despojada, inquietante",
+    voice_horror_atmospheric: "Sigilosa y Lenta", voicedesc_horror_atmospheric: "Inquietud creciente, detalle persistente",
+    voice_horror_clinical: "Clínica e Incorrecta", voicedesc_horror_clinical: "Tono distante que lo empeora todo",
+    voice_horror_feverish: "Febril y Desquiciada", voicedesc_horror_feverish: "Frenética, poco confiable, en espiral",
+    voice_horror_wry: "Humor Negro", voicedesc_horror_wry: "Humor de horca, distanciamiento irónico",
+    // Themes
+    theme_redemption: "Redención", theme_power: "Poder y Corrupción", theme_identity: "Identidad",
+    theme_freedom: "Libertad", theme_sacrifice: "Sacrificio", theme_legacy: "Legado",
+    theme_drama_power: "Poder", theme_betrayal: "Traición", theme_justice: "Justicia",
+    theme_obsession: "Obsesión", theme_truth: "Verdad y Engaño",
+    theme_survival: "Supervivencia", theme_evolution: "Evolución", theme_connection: "Conexión",
+    theme_friendship: "Amistad", theme_courage: "Valentía", theme_kindness: "Bondad",
+    theme_belonging: "Pertenencia", theme_curiosity: "Curiosidad", theme_growing_up: "Crecimiento",
+    theme_isolation: "Aislamiento", theme_guilt: "Culpa", theme_forbidden: "Conocimiento Prohibido",
+    // Protagonists
+    protag_reluctant_hero: "Héroe Reluctante", protag_outsider: "Forastero/a", protag_scholar: "Erudito/a",
+    protag_wanderer: "Vagabundo/a", protag_ruler: "Gobernante", protag_outcast: "Marginado/a",
+    protag_patriarch: "Patriarca / Matriarca", protag_whistleblower: "Denunciante",
+    protag_rebel: "Rebelde", protag_fallen: "Figura Caída", protag_stranger: "Extraño/a en el Pueblo",
+    protag_detective: "Detective", protag_anti_hero: "Antihéroe", protag_journalist: "Periodista",
+    protag_witness: "Testigo", protag_suspect: "Sospechoso/a",
+    protag_scientist: "Científico/a", protag_android: "Ser Artificial", protag_pilot: "Piloto",
+    protag_survivor: "Último/a Sobreviviente",
+    protag_child: "Niño/a Curioso/a", protag_animal: "Animal Valiente", protag_tiny_creature: "Criatura Diminuta",
+    protag_lost_toy: "Juguete Perdido", protag_sibling: "Hermano/a Mayor", protag_magical_friend: "Amigo/a Mágico/a",
+    protag_horror_child: "Niño/a", protag_skeptic: "Escéptico/a", protag_caretaker: "Cuidador/a",
+    protag_inheritor: "Heredero/a",
+    // Conflicts
+    conflict_vs_nature: "Persona vs Naturaleza", conflict_vs_self: "Persona vs Sí Mismo",
+    conflict_vs_person: "Persona vs Persona", conflict_fate: "Destino / Profecía",
+    conflict_vs_power: "Persona vs Poder", conflict_quest: "La Búsqueda",
+    conflict_vs_society: "Persona vs Sociedad", conflict_moral_dilemma: "Dilema Moral",
+    conflict_secret: "Verdad Oculta", conflict_downfall: "Caída",
+    conflict_mystery: "Misterio / Secreto", conflict_clock: "Contra el Tiempo",
+    conflict_trust: "Confianza Cambiante",
+    conflict_vs_technology: "Persona vs Tecnología", conflict_vs_unknown: "Persona vs lo Desconocido",
+    conflict_paradox: "Paradoja",
+    conflict_getting_lost: "Perderse", conflict_big_fear: "Enfrentar un Miedo",
+    conflict_new_friend: "Hacer un Amigo", conflict_wild_weather: "Clima Salvaje",
+    conflict_mix_up: "Un Gran Malentendido", conflict_promise: "Una Promesa que Cumplir",
+    conflict_confinement: "Encierro", conflict_corruption: "Corrupción",
+    // Fallback prompts
+    fallback_1: "¿Qué pasó después?",
+    fallback_2: "Algo inesperado apareció...",
+    fallback_3: "Un sonido rompió el silencio...",
+    fallback_4: "Alguien llegó con noticias...",
+    fallback_5: "El clima cambió de repente...",
+  },
+};
+
 function getStoryContext(meta) {
   const g = GENRES.find((x) => x.id === meta.genre);
   const v = ALL_VOICES.find((x) => x.id === meta.writingStyle);
@@ -345,7 +706,7 @@ async function deleteStoryData(id) {
    AI Prompt Generation
    ──────────────────────────────────────────── */
 
-async function generatePrompt(existingStory, chapter = 1, isNewChapter = false, genreVoiceCtx = "", plotPace = 5) {
+async function generatePrompt(existingStory, chapter = 1, isNewChapter = false, genreVoiceCtx = "", plotPace = 5, lang = "en") {
   const storyContext = existingStory.length > 0
     ? existingStory.slice(-3).map((e) => e.text).join("\n\n")
     : "";
@@ -369,7 +730,7 @@ Bad examples (DO NOT do these):
 - "A mysterious light appeared in the sky." (this is a story sentence)
 - "Continue the story about..." (this is an instruction)
 
-Output ONLY the question. No quotes. Under 12 words.`;
+Output ONLY the question. No quotes. Under 12 words.${lang === "es" ? "\n\nIMPORTANT: Generate the question in Spanish." : ""}`;
 
   let userMessage;
   if (existingStory.length === 0) {
@@ -387,13 +748,8 @@ Output ONLY the question. No quotes. Under 12 words.`;
     console.warn("Prompt generation failed:", err.message);
   }
 
-  const fallbacks = [
-    "What happened next?",
-    "Something unexpected appeared...",
-    "A sound broke the silence...",
-    "Someone arrived with news...",
-    "The weather suddenly changed...",
-  ];
+  const fb = TRANSLATIONS[lang] || TRANSLATIONS.en;
+  const fallbacks = [fb.fallback_1, fb.fallback_2, fb.fallback_3, fb.fallback_4, fb.fallback_5];
   return fallbacks[Math.floor(Math.random() * fallbacks.length)];
 }
 
@@ -471,7 +827,7 @@ async function shouldEndChapter(story, currentChapter) {
   }
 }
 
-async function generateChapterTitle(story, chapter) {
+async function generateChapterTitle(story, chapter, lang = "en") {
   const chapterText = story
     .filter((e) => e.chapter === chapter)
     .map((e) => e.text)
@@ -479,7 +835,7 @@ async function generateChapterTitle(story, chapter) {
 
   try {
     const title = await callClaude(
-      `You are a literary editor. Given the text of a story chapter, produce a short, evocative chapter title. Output ONLY the title — no quotes, no "Chapter N:", no punctuation unless it's part of the title. 2-5 words.`,
+      `You are a literary editor. Given the text of a story chapter, produce a short, evocative chapter title. Output ONLY the title — no quotes, no "Chapter N:", no punctuation unless it's part of the title. 2-5 words.${lang === "es" ? " Write the title in Spanish." : ""}`,
       `Here is Chapter ${chapter}:\n\n${chapterText}\n\nWhat should this chapter be titled?`,
       30
     );
@@ -491,7 +847,7 @@ async function generateChapterTitle(story, chapter) {
   }
 }
 
-async function callClaudeAPI(existingStory, prompt, userAnswer, styleSettings, chapter = 1, genreVoiceCtx = "") {
+async function callClaudeAPI(existingStory, prompt, userAnswer, styleSettings, chapter = 1, genreVoiceCtx = "", lang = "en") {
   const storyContext =
     existingStory.length > 0
       ? (() => {
@@ -517,7 +873,7 @@ CRITICAL RULES:
 YOU MUST STRICTLY FOLLOW THESE STYLE SETTINGS — they are the most important constraint:
 ${styleInstructions}
 
-These style settings override any other instinct you have. If the style says "spare", write bare-bones prose. If it says "ornate", write elaborate prose. If it says "1 sentence", write exactly 1 sentence. If dialogue is "none", include zero dialogue. Follow the settings literally.`;
+These style settings override any other instinct you have. If the style says "spare", write bare-bones prose. If it says "ornate", write elaborate prose. If it says "1 sentence", write exactly 1 sentence. If dialogue is "none", include zero dialogue. Follow the settings literally.${lang === "es" ? "\n\nIMPORTANT: Write the entire story passage in Spanish." : ""}`;
 
   const userMessage =
     existingStory.length > 0
@@ -541,7 +897,7 @@ These style settings override any other instinct you have. If the style says "sp
    AI Story Opener (title + first paragraph)
    ──────────────────────────────────────────── */
 
-async function generateStoryOpener(meta) {
+async function generateStoryOpener(meta, lang = "en") {
   const genreObj = GENRES.find((g) => g.id === meta.genre);
   const voiceObj = ALL_VOICES.find((v) => v.id === meta.writingStyle);
   if (!genreObj || !voiceObj) return null;
@@ -577,7 +933,7 @@ Respond in EXACTLY this format (no extra text):
 TITLE: <a short evocative title, 2-5 words>
 PARAGRAPH: <the opening paragraph>
 
-The opening paragraph must read like page one of a published novel — establish a character, setting, or atmosphere. Ground the reader in a specific scene. Follow the style constraints literally.`,
+The opening paragraph must read like page one of a published novel — establish a character, setting, or atmosphere. Ground the reader in a specific scene. Follow the style constraints literally.${lang === "es" ? "\n\nIMPORTANT: Write both the title and paragraph in Spanish." : ""}`,
       "Write the title and opening paragraph.",
       600
     );
@@ -688,9 +1044,9 @@ function requestBrowserLocation() {
   });
 }
 
-async function generateStoryPassage(existingStory, prompt, userAnswer, styleSettings, chapter = 1, genreVoiceCtx = "") {
+async function generateStoryPassage(existingStory, prompt, userAnswer, styleSettings, chapter = 1, genreVoiceCtx = "", lang = "en") {
   try {
-    const aiText = await callClaudeAPI(existingStory, prompt, userAnswer, styleSettings, chapter, genreVoiceCtx);
+    const aiText = await callClaudeAPI(existingStory, prompt, userAnswer, styleSettings, chapter, genreVoiceCtx, lang);
     return { text: aiText, source: "ai" };
   } catch (err) {
     console.warn("AI generation failed, using local expansion:", err.message);
@@ -864,7 +1220,7 @@ function StoryLine({ entry, onHover, onLeave, narrow, onShowDialog, onPinPopover
   );
 }
 
-function StoryPopover({ entry, onClose }) {
+function StoryPopover({ entry, onClose, t }) {
   if (!entry) return null;
   return (
     <div style={{
@@ -897,25 +1253,25 @@ function StoryPopover({ entry, onClose }) {
       )}
       {entry.location && (
         <div>
-          <div style={{ color: "rgba(255,255,255,0.45)", fontSize: "10px", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Location</div>
+          <div style={{ color: "rgba(255,255,255,0.45)", fontSize: "10px", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px" }}>{t ? t("popover_location") : "Location"}</div>
           <div style={{ color: "rgba(255,255,255,0.5)" }}>{entry.location}</div>
         </div>
       )}
       {entry.time && (
         <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "8px" }}>
-          <div style={{ color: "rgba(255,255,255,0.45)", fontSize: "10px", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Date</div>
+          <div style={{ color: "rgba(255,255,255,0.45)", fontSize: "10px", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px" }}>{t ? t("popover_date") : "Date"}</div>
           <div style={{ color: "rgba(255,255,255,0.5)" }}>{entry.time}</div>
         </div>
       )}
       {entry.prompt && (
         <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "8px" }}>
-          <div style={{ color: "rgba(255,255,255,0.45)", fontSize: "10px", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Prompt</div>
+          <div style={{ color: "rgba(255,255,255,0.45)", fontSize: "10px", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px" }}>{t ? t("popover_prompt") : "Prompt"}</div>
           <div style={{ color: "rgba(255,255,255,0.5)" }}>{entry.prompt}</div>
         </div>
       )}
       {entry.originalAnswer && (
         <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "8px" }}>
-          <div style={{ color: "rgba(255,255,255,0.45)", fontSize: "10px", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Answer</div>
+          <div style={{ color: "rgba(255,255,255,0.45)", fontSize: "10px", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px" }}>{t ? t("popover_answer") : "Answer"}</div>
           <div style={{ color: "rgba(255,255,255,0.5)" }}>{entry.originalAnswer}</div>
         </div>
       )}
@@ -963,7 +1319,7 @@ function BookTitle({ children, style, ...rest }) {
    Home Screen — Grid of Books
    ──────────────────────────────────────────── */
 
-function StoryRow({ title, stories, onSelectStory, isTouch, genreId, fontIndexMap }) {
+function StoryRow({ title, stories, onSelectStory, isTouch, genreId, fontIndexMap, t, lang }) {
   const scrollRef = useRef(null);
 
   return (
@@ -1053,7 +1409,7 @@ function StoryRow({ title, stories, onSelectStory, isTouch, genreId, fontIndexMa
                   fontFamily: storyFontForId(genreId, s.id, fontIndexMap).family, fontSize: `${Math.round(20 * (storyFontForId(genreId, s.id, fontIndexMap).scale || 1))}px`, fontWeight: storyFontForId(genreId, s.id, fontIndexMap).weight || 600,
                   color: "#fff", lineHeight: 1.3, padding: "0 2px", maxWidth: "100%",
                 }}>
-                  {s.title || "Untitled"}
+                  {s.title || t("untitled")}
                 </BookTitle>
               </div>
               <span style={{
@@ -1061,7 +1417,7 @@ function StoryRow({ title, stories, onSelectStory, isTouch, genreId, fontIndexMa
                 color: "rgba(255,255,255,0.45)",
                 textAlign: "center",
               }}>
-                {s.updatedAt ? new Date(s.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : ""}
+                {s.updatedAt ? new Date(s.updatedAt).toLocaleDateString(lang === "es" ? "es-ES" : "en-US", { month: "short", day: "numeric", year: "numeric" }) : ""}
               </span>
             </div>
           ))}
@@ -1071,7 +1427,7 @@ function StoryRow({ title, stories, onSelectStory, isTouch, genreId, fontIndexMa
   );
 }
 
-function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, setHomeLayout, fontIndexMap }) {
+function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, setHomeLayout, fontIndexMap, lang, setLang, t }) {
   const isTouch = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
   const carouselRef = useRef(null);
   const [carouselFilter, setCarouselFilter] = useState("all");
@@ -1104,7 +1460,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, s
               entries.push({
                 ...entry,
                 storyId: s.id,
-                storyTitle: s.title || "Untitled",
+                storyTitle: s.title || t("untitled"),
                 storyGenre: s.genre,
                 passageIndex: idx,
               });
@@ -1214,11 +1570,11 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, s
             fontFamily: TYPEWRITER, fontSize: isTouch ? "18px" : "20px", fontWeight: 400,
             color: "#e8ddd0", margin: 0, flexShrink: 0,
           }}>
-            Falcor
+            {t("app_name")}
           </h1>
           {homeLayout === "carousel" && wideEnough && (
             <div className="story-hscroll" style={{ display: "flex", gap: "6px", marginLeft: "12px", overflowX: "auto", scrollbarWidth: "none", msOverflowStyle: "none" }}>
-              {[{ id: "all", label: "All" }, ...GENRES].map((g) => {
+              {[{ id: "all", label: t("all") }, ...GENRES].map((g) => {
                 const active = carouselFilter === g.id;
                 return (
                   <button
@@ -1235,7 +1591,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, s
                       transition: "all 0.15s",
                     }}
                   >
-                    {g.label}
+                    {g.id === "all" ? g.label : t("genre_" + g.id)}
                   </button>
                 );
               })}
@@ -1294,12 +1650,14 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, s
         {homeLayout === "rows" && genreRows.map((r) => (
           <StoryRow
             key={r.genre.id}
-            title={r.genre.label}
+            title={t("genre_" + r.genre.id)}
             stories={r.stories}
             onSelectStory={onSelectStory}
             isTouch={isTouch}
             genreId={r.genre.id}
             fontIndexMap={fontIndexMap}
+            t={t}
+            lang={lang}
           />
         ))}
 
@@ -1326,7 +1684,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, s
                 padding: "0 24px",
                 scrollbarWidth: "none", msOverflowStyle: "none",
               }}>
-                {[{ id: "all", label: "All" }, ...GENRES].map((g) => {
+                {[{ id: "all", label: t("all") }, ...GENRES].map((g) => {
                   const active = carouselFilter === g.id;
                   return (
                     <button
@@ -1343,7 +1701,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, s
                         transition: "all 0.15s",
                       }}
                     >
-                      {g.label}
+                      {g.id === "all" ? g.label : t("genre_" + g.id)}
                     </button>
                   );
                 })}
@@ -1423,7 +1781,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, s
                           fontFamily: MONO, fontSize: "9px", color: "rgba(255,255,255,0.5)",
                           textTransform: "uppercase", letterSpacing: "0.5px", textAlign: "center",
                         }}>
-                          {genre?.label}
+                          {genre ? t("genre_" + genre.id) : ""}
                         </div>
                         <div style={{
                           flex: 1, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", width: "100%", minWidth: 0,
@@ -1432,7 +1790,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, s
                             fontFamily: storyFontForId(s.genre, s.id, fontIndexMap).family, fontSize: `${Math.round(24 * (storyFontForId(s.genre, s.id, fontIndexMap).scale || 1))}px`, fontWeight: storyFontForId(s.genre, s.id, fontIndexMap).weight || 600,
                             color: "#fff", lineHeight: 1.3, padding: "0 2px", maxWidth: "100%",
                           }}>
-                            {s.title || "Untitled"}
+                            {s.title || t("untitled")}
                           </BookTitle>
                         </div>
                         <span style={{
@@ -1440,7 +1798,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, s
                           color: "rgba(255,255,255,0.45)",
                           textAlign: "center",
                         }}>
-                          {s.updatedAt ? new Date(s.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : ""}
+                          {s.updatedAt ? new Date(s.updatedAt).toLocaleDateString(lang === "es" ? "es-ES" : "en-US", { month: "short", day: "numeric", year: "numeric" }) : ""}
                         </span>
                       </div>
                     );
@@ -1456,12 +1814,12 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, s
             {activityLoading ? (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, minHeight: "60vh" }}>
                 <p style={{ fontFamily: MONO, fontSize: "12px", color: "rgba(255,255,255,0.5)", textAlign: "center" }}>
-                  Loading activity...
+                  {t("loading_activity")}
                 </p>
               </div>
             ) : activityFeed.length === 0 ? (
               <p style={{ fontFamily: MONO, fontSize: "12px", color: "rgba(255,255,255,0.5)", textAlign: "center" }}>
-                No activity yet
+                {t("no_activity")}
               </p>
             ) : (
               (() => {
@@ -1520,7 +1878,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, s
                         <div key={`${entry.passageIndex}-${ei}`} style={{ marginBottom: ei < group.entries.length - 1 ? "20px" : 0 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
                             <span style={{ fontFamily: MONO, fontSize: "11px", color: "rgba(255,255,255,0.45)", whiteSpace: "nowrap" }}>
-                              {entry.ts ? new Date(entry.ts).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : entry.time || ""}
+                              {entry.ts ? new Date(entry.ts).toLocaleDateString(lang === "es" ? "es-ES" : "en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : entry.time || ""}
                             </span>
                             </div>
                           {entry.prompt && (
@@ -1559,7 +1917,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, s
       }}>
         <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
           <span>
-            Built by{" "}
+            {t("built_by")}{" "}
             <a
               href="https://gabrielvaldivia.com"
               target="_blank"
@@ -1579,11 +1937,23 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, s
             onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}
             onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
           >
-            About
+            {t("about")}
           </a>
+          <span style={{ color: "rgba(255,255,255,0.1)" }}>|</span>
+          <span style={{ display: "flex", gap: "4px" }}>
+            <span
+              onClick={() => setLang("en")}
+              style={{ cursor: "pointer", color: lang === "en" ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.3)", fontWeight: lang === "en" ? 600 : 400 }}
+            >EN</span>
+            <span style={{ color: "rgba(255,255,255,0.2)" }}>/</span>
+            <span
+              onClick={() => setLang("es")}
+              style={{ cursor: "pointer", color: lang === "es" ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.3)", fontWeight: lang === "es" ? 600 : 400 }}
+            >ES</span>
+          </span>
         </div>
         {!isTouch && <span style={{ color: "rgba(255,255,255,0.1)" }}>|</span>}
-        <span>&copy; Copyright {new Date().getFullYear()}</span>
+        <span>&copy; {t("copyright")} {new Date().getFullYear()}</span>
       </footer>
 
     </div>
@@ -1594,7 +1964,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, s
    About Screen
    ──────────────────────────────────────────── */
 
-function AboutScreen({ onBack, narrow }) {
+function AboutScreen({ onBack, narrow, t }) {
   return (
     <>
       {narrow ? (
@@ -1622,7 +1992,7 @@ function AboutScreen({ onBack, narrow }) {
             flex: 1, textAlign: "center",
             marginRight: "16px",
           }}>
-            About
+            {t("about")}
           </span>
         </div>
       ) : (
@@ -1641,7 +2011,7 @@ function AboutScreen({ onBack, narrow }) {
             onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}
             onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
           >
-            <GoArrowLeft size={14} style={{ marginRight: "6px", verticalAlign: "middle" }} />Back
+            <GoArrowLeft size={14} style={{ marginRight: "6px", verticalAlign: "middle" }} />{t("back")}
           </button>
         </div>
       )}
@@ -1699,7 +2069,7 @@ function AboutScreen({ onBack, narrow }) {
           fontFamily: SERIF, fontSize: "28px", fontWeight: 600,
           color: "#e8ddd0", marginBottom: "32px",
         }}>
-          About Falcor
+          {t("about_title")}
         </h1>
 
         <div style={{
@@ -1708,66 +2078,47 @@ function AboutScreen({ onBack, narrow }) {
           display: "flex", flexDirection: "column", gap: "20px",
         }}>
           <p>
-            Falcor is an experiment in co-creative storytelling. Anyone can
-            contribute to a shared story. You answer a simple question about
-            what should happen next, and AI turns it into prose. The result
-            is a living artifact shaped by strangers.
+            {t("about_p1")}
           </p>
           <h2 style={{
             fontFamily: MONO, fontSize: "12px", fontWeight: 400,
             color: "rgba(255,255,255,0.5)", letterSpacing: "0.5px",
             textTransform: "uppercase", marginTop: "8px",
           }}>
-            Why this exists
+            {t("about_why")}
           </h2>
           <p>
-            Writing is hard. But answering "what should happen next?" is
-            easy. This lowers the barrier to entry by turning storytelling 
-            into a back-and-forth, where your direction sets the path 
-            and AI carries it forward. This feels like a new kind of media 
-            experience. It isn't writing per se, 
-            but it is shaped by human input.
-          </ p>
+            {t("about_p2")}
+          </p>
 
           <p>
-            All stories are shared and open. You can see what
-            each person wrote and where in the world they wrote it from.
-            When strangers from different places contribute
-            to a shared output, the world feels a little smaller.
+            {t("about_p3")}
           </p>
           <h2 style={{
             fontFamily: MONO, fontSize: "12px", fontWeight: 400,
             color: "rgba(255,255,255,0.5)", letterSpacing: "0.5px",
             textTransform: "uppercase", marginTop: "8px",
           }}>
-            How it works
+            {t("about_how")}
           </h2>
           <p>
-            Start by choosing a genre. Each genre unlocks its own curated set
-            of writing voices, themes, protagonist types, and narrative tensions,
-            all tailored to fit the kind of story you want to tell.
+            {t("about_p4")}
           </p>
           <p>
-            Falcor generates a title and opening passage, then asks you
-            questions about what happens next. Your brief answers become the
-            seeds for each new passage. The AI considers everything that came
-            before, building on earlier choices, tracking narrative arcs,
-            deciding when chapters should end, and generating chapter titles.
+            {t("about_p5")}
           </p>
           <p>
-            Stories are stored in the cloud and can be shared with a direct
-            link using the menu on any story page. Anyone with the link can
-            read along and contribute to the story.
+            {t("about_p6")}
           </p>
           <h2 style={{
             fontFamily: MONO, fontSize: "12px", fontWeight: 400,
             color: "rgba(255,255,255,0.5)", letterSpacing: "0.5px",
             textTransform: "uppercase", marginTop: "8px",
           }}>
-            Credits
+            {t("about_credits")}
           </h2>
           <p>
-            Built by{" "}
+            {t("about_built_by")}{" "}
             <a
               href="https://gabrielvaldivia.com"
               target="_blank"
@@ -1778,7 +2129,7 @@ function AboutScreen({ onBack, narrow }) {
             >
               Gabriel Valdivia
             </a>
-            . Powered by{" "}
+            {". "}{t("about_powered_by")}{" "}
             <a
               href="https://claude.ai"
               target="_blank"
@@ -1800,7 +2151,7 @@ function AboutScreen({ onBack, narrow }) {
    New Story Screen — Genre + Voice Selection
    ──────────────────────────────────────────── */
 
-function NewStoryScreen({ onCancel, onCreate, narrow }) {
+function NewStoryScreen({ onCancel, onCreate, narrow, t, lang }) {
   const [selectedGenre, setSelectedGenre] = useState(null);
   const [selectedVoice, setSelectedVoice] = useState(null);
   const [selectedThemes, setSelectedThemes] = useState([]);
@@ -1839,34 +2190,43 @@ function NewStoryScreen({ onCancel, onCreate, narrow }) {
   };
 
   const steps = [
-    { key: "genre", label: "Genre", optional: false },
-    { key: "voice", label: "Writing Voice", optional: false },
-    { key: "themes", label: "Themes", optional: true },
-    { key: "protagonist", label: "Protagonist", optional: true },
-    { key: "tension", label: "Narrative Tension", optional: true },
+    { key: "genre", label: t("step_genre"), optional: false },
+    { key: "voice", label: t("step_voice"), optional: false },
+    { key: "themes", label: t("step_themes"), optional: true },
+    { key: "protagonist", label: t("step_protagonist"), optional: true },
+    { key: "tension", label: t("step_tension"), optional: true },
   ];
 
   const getStepAnswer = (key) => {
     switch (key) {
       case "genre": {
         const g = GENRES.find((x) => x.id === selectedGenre);
-        return g ? g.label : null;
+        return g ? t("genre_" + g.id) : null;
       }
       case "voice": {
         const v = ALL_VOICES.find((x) => x.id === selectedVoice);
-        return v ? v.label : null;
+        return v ? (t("voice_" + selectedGenre + "_" + v.id) || v.label) : null;
       }
       case "themes": {
         if (selectedThemes.length === 0) return null;
-        return selectedThemes.map((id) => ALL_THEMES.find((t) => t.id === id)?.label).filter(Boolean).join(", ");
+        return selectedThemes.map((id) => {
+          const th = ALL_THEMES.find((x) => x.id === id);
+          if (!th) return null;
+          const k = th.id.replace(/-/g, "_");
+          return TRANSLATIONS[lang]?.["theme_" + selectedGenre + "_" + k] || TRANSLATIONS[lang]?.["theme_" + k] || th.label;
+        }).filter(Boolean).join(", ");
       }
       case "protagonist": {
         const p = ALL_PROTAGONISTS.find((x) => x.id === selectedProtagonist);
-        return p ? p.label : null;
+        if (!p) return null;
+        const k = p.id.replace(/-/g, "_");
+        return TRANSLATIONS[lang]?.["protag_" + selectedGenre + "_" + k] || TRANSLATIONS[lang]?.["protag_" + k] || p.label;
       }
       case "tension": {
-        const t = ALL_TENSIONS.find((x) => x.id === selectedTension);
-        return t ? t.label : null;
+        const tn = ALL_TENSIONS.find((x) => x.id === selectedTension);
+        if (!tn) return null;
+        const k = tn.id.replace(/-/g, "_");
+        return TRANSLATIONS[lang]?.["conflict_" + selectedGenre + "_" + k] || TRANSLATIONS[lang]?.["conflict_" + k] || tn.label;
       }
       default: return null;
     }
@@ -1950,7 +2310,7 @@ function NewStoryScreen({ onCancel, onCreate, narrow }) {
     );
   };
 
-  const renderOptionGrid = (items, selectedId, onSelect, multi = false) => (
+  const renderOptionGrid = (items, selectedId, onSelect, multi = false, labelFn = null) => (
     <div style={{
       display: "grid",
       gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
@@ -1991,7 +2351,7 @@ function NewStoryScreen({ onCancel, onCreate, narrow }) {
               color: isSelected ? "#e8ddd0" : "rgba(255,255,255,0.5)",
               transition: "color 0.15s",
             }}>
-              {item.label}
+              {labelFn ? labelFn(item) : item.label}
             </div>
           </button>
         );
@@ -2019,7 +2379,7 @@ function NewStoryScreen({ onCancel, onCreate, narrow }) {
             color: "rgba(255,255,255,0.5)", letterSpacing: "0.5px",
             textTransform: "uppercase", margin: 0,
           }}>
-            {step.label}{isOptional && <span style={{ textTransform: "none", color: "rgba(255,255,255,0.45)" }}> (optional{step.key === "themes" ? ", up to 2" : ""})</span>}
+            {step.label}{isOptional && <span style={{ textTransform: "none", color: "rgba(255,255,255,0.45)" }}> {t("optional")}{step.key === "themes" ? t("up_to_2") : ""}</span>}
           </h2>
           <button
             onClick={() => collapseStep(step.key)}
@@ -2036,14 +2396,22 @@ function NewStoryScreen({ onCancel, onCreate, narrow }) {
             <GoDash size={16} />
           </button>
         </div>
-        {step.key === "genre" && renderOptionGrid(GENRES, selectedGenre, handleSelectGenre)}
-        {step.key === "voice" && renderOptionGrid(getVoicesForGenre(selectedGenre), selectedVoice, handleSelectVoice)}
-        {step.key === "themes" && renderOptionGrid(getThemesForGenre(selectedGenre), selectedThemes, toggleTheme, true)}
+        {step.key === "genre" && renderOptionGrid(GENRES, selectedGenre, handleSelectGenre, false, (g) => t("genre_" + g.id))}
+        {step.key === "voice" && renderOptionGrid(getVoicesForGenre(selectedGenre), selectedVoice, handleSelectVoice, false, (v) => t("voice_" + selectedGenre + "_" + v.id) || v.label)}
+        {step.key === "themes" && renderOptionGrid(getThemesForGenre(selectedGenre), selectedThemes, toggleTheme, true, (item) => {
+          const k = item.id.replace(/-/g, "_");
+          const genreKey = "theme_" + selectedGenre + "_" + k;
+          const baseKey = "theme_" + k;
+          return TRANSLATIONS[lang]?.[genreKey] || TRANSLATIONS[lang]?.[baseKey] || item.label;
+        })}
         {step.key === "protagonist" && (
           <>
             {renderOptionGrid(getProtagonistsForGenre(selectedGenre), selectedProtagonist, (id) => {
               setSelectedProtagonist(selectedProtagonist === id ? null : id);
               if (selectedProtagonist !== id) setTimeout(() => advanceFrom("protagonist"), 150);
+            }, false, (item) => {
+              const k = item.id.replace(/-/g, "_");
+              return TRANSLATIONS[lang]?.["protag_" + selectedGenre + "_" + k] || TRANSLATIONS[lang]?.["protag_" + k] || item.label;
             })}
             <div style={{ marginTop: "16px", display: "flex", justifyContent: "flex-end" }}>
               <button
@@ -2056,7 +2424,7 @@ function NewStoryScreen({ onCancel, onCreate, narrow }) {
                 onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.7)"}
                 onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
               >
-                {selectedProtagonist ? "Continue" : "Skip"}
+                {selectedProtagonist ? t("continue_btn") : t("skip")}
               </button>
             </div>
           </>
@@ -2064,6 +2432,9 @@ function NewStoryScreen({ onCancel, onCreate, narrow }) {
         {step.key === "tension" && renderOptionGrid(getTensionsForGenre(selectedGenre), selectedTension, (id) => {
           setSelectedTension(selectedTension === id ? null : id);
           if (selectedTension !== id) setTimeout(() => setActiveStep(null), 150);
+        }, false, (item) => {
+          const k = item.id.replace(/-/g, "_");
+          return TRANSLATIONS[lang]?.["conflict_" + selectedGenre + "_" + k] || TRANSLATIONS[lang]?.["conflict_" + k] || item.label;
         })}
       </div>
     );
@@ -2096,7 +2467,7 @@ function NewStoryScreen({ onCancel, onCreate, narrow }) {
             flex: 1, textAlign: "center",
             marginRight: "16px",
           }}>
-            New Story
+            {t("new_story")}
           </span>
         </div>
       ) : (
@@ -2115,7 +2486,7 @@ function NewStoryScreen({ onCancel, onCreate, narrow }) {
             onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}
             onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
           >
-            <GoArrowLeft size={14} style={{ marginRight: "6px", verticalAlign: "middle" }} />Back
+            <GoArrowLeft size={14} style={{ marginRight: "6px", verticalAlign: "middle" }} />{t("back")}
           </button>
         </div>
       )}
@@ -2127,7 +2498,7 @@ function NewStoryScreen({ onCancel, onCreate, narrow }) {
           color: "#e8ddd0", textAlign: "center",
           marginBottom: "48px",
         }}>
-          New Story
+          {t("new_story")}
         </h1>
       )}
 
@@ -2170,7 +2541,7 @@ function NewStoryScreen({ onCancel, onCreate, narrow }) {
           animation: creating ? "pulse 1.5s ease-in-out infinite" : "none",
         }}
       >
-        {creating ? "Creating..." : "Start Story"}
+        {creating ? t("creating") : t("start_story")}
       </button>
     </div>
     </>
@@ -2293,6 +2664,11 @@ export default function CollaborativeStoryApp() {
     setHomeLayout(layout);
     history.replaceState(null, "", "/" + (LAYOUT_TO_HASH[layout] || "#rows"));
   }, []);
+  const [lang, setLang] = useState(() => localStorage.getItem("falcor_lang") || "en");
+  const t = useCallback((key) => TRANSLATIONS[lang]?.[key] ?? TRANSLATIONS.en[key] ?? key, [lang]);
+  useEffect(() => { localStorage.setItem("falcor_lang", lang); }, [lang]);
+  const dateLocale = lang === "es" ? "es-ES" : "en-US";
+
   const [activeStoryId, setActiveStoryId] = useState(null);
   const [storiesIndex, setStoriesIndex] = useState([]);
 
@@ -2359,7 +2735,7 @@ export default function CollaborativeStoryApp() {
       setPromptLoading(true);
       try {
         const ctx = getGenreVoiceCtx();
-        const newPrompt = await generatePrompt(story, currentChapter, false, ctx, sliderPlot);
+        const newPrompt = await generatePrompt(story, currentChapter, false, ctx, sliderPlot, lang);
         setCurrentPrompt(newPrompt);
       } catch (err) {
         console.warn("Plot slider prompt regeneration failed:", err.message);
@@ -2431,13 +2807,13 @@ export default function CollaborativeStoryApp() {
         if (completedWithoutTitle.length > 0) {
           const backfilled = { ...loadedTitles };
           await Promise.all(completedWithoutTitle.map(async (ch) => {
-            const title = await generateChapterTitle(loadedStory, ch);
+            const title = await generateChapterTitle(loadedStory, ch, lang);
             if (title) backfilled[ch] = title;
           }));
           setChapterTitles(backfilled);
           await window.storage.set(storyKey(id, "titles-v1"), JSON.stringify(backfilled), true);
         }
-        const prompt = await generatePrompt(loadedStory, loadedChapter, false, ctx, sliderPlot);
+        const prompt = await generatePrompt(loadedStory, loadedChapter, false, ctx, sliderPlot, lang);
         setCurrentPrompt(prompt);
         await window.storage.set(storyKey(id, "prompt-v1"), prompt, true);
       }
@@ -2582,14 +2958,14 @@ export default function CollaborativeStoryApp() {
     try {
       const result = await generateStoryPassage(
         story, currentPrompt, userAnswer,
-        getActiveStyleSettings(), currentChapter, getGenreVoiceCtx()
+        getActiveStyleSettings(), currentChapter, getGenreVoiceCtx(), lang
       );
       setGeneratedText(result.text);
       setGenerationSource(result.source);
       setPhase("reveal");
     } catch (e) {
       console.error("All generation failed:", e);
-      setError("Something went wrong. Please try again.");
+      setError(t("error_generation"));
       setPhase("input");
     }
   };
@@ -2614,7 +2990,7 @@ export default function CollaborativeStoryApp() {
       setTimeout(() => storyEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
     } catch (e) {
       console.error("All generation failed:", e);
-      setError("Something went wrong. Please try again.");
+      setError(t("error_generation"));
       setPhase("input");
     }
   };
@@ -2633,7 +3009,7 @@ export default function CollaborativeStoryApp() {
   const handleConfirmWith = async (text, originalAnswer) => {
     const newCount = contributorCount + 1;
     const now = new Date();
-    const timeStr = now.toLocaleString("en-US", {
+    const timeStr = now.toLocaleString(dateLocale, {
       month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
     });
     const location = await fetchLocation();
@@ -2661,14 +3037,14 @@ export default function CollaborativeStoryApp() {
       if (chapterEnded) {
         nextChapter = currentChapter + 1;
         isNewChapter = true;
-        const title = await generateChapterTitle(updatedStory, currentChapter);
+        const title = await generateChapterTitle(updatedStory, currentChapter, lang);
         if (title) {
           updatedTitles = { ...chapterTitles, [currentChapter]: title };
           await window.storage.set(storyKey(activeStoryId, "titles-v1"), JSON.stringify(updatedTitles), true);
         }
       }
 
-      const nextPrompt = await generatePrompt(updatedStory, nextChapter, isNewChapter, getGenreVoiceCtx(), sliderPlot);
+      const nextPrompt = await generatePrompt(updatedStory, nextChapter, isNewChapter, getGenreVoiceCtx(), sliderPlot, lang);
       await window.storage.set(storyKey(activeStoryId, "data-v1"), JSON.stringify(updatedStory), true);
       await window.storage.set(storyKey(activeStoryId, "prompt-v1"), nextPrompt, true);
       await window.storage.set(storyKey(activeStoryId, "count-v1"), String(newCount), true);
@@ -2705,7 +3081,7 @@ export default function CollaborativeStoryApp() {
       setPhase("input");
     } catch (e) {
       console.error("Storage error:", e);
-      setError("Failed to save. Please try again.");
+      setError(t("error_save"));
       setPhase("reveal");
     }
   };
@@ -2716,13 +3092,13 @@ export default function CollaborativeStoryApp() {
     try {
       const result = await generateStoryPassage(
         story, currentPrompt, answer.trim(),
-        getActiveStyleSettings(), currentChapter, getGenreVoiceCtx()
+        getActiveStyleSettings(), currentChapter, getGenreVoiceCtx(), lang
       );
       setGeneratedText(result.text);
       setGenerationSource(result.source);
       setPhase("reveal");
     } catch (e) {
-      setError("Rewrite failed.");
+      setError(t("error_rewrite"));
       setPhase("reveal");
     }
   };
@@ -2752,7 +3128,7 @@ export default function CollaborativeStoryApp() {
 
   const handleCreateStory = async (meta) => {
     // Generate opener BEFORE saving to index — prevents zombie entries on failure
-    const opener = await generateStoryOpener(meta);
+    const opener = await generateStoryOpener(meta, lang);
 
     // Reset local state
     setActiveStoryId(meta.id);
@@ -2768,7 +3144,7 @@ export default function CollaborativeStoryApp() {
 
     if (opener) {
       const now = new Date();
-      const timeStr = now.toLocaleString("en-US", {
+      const timeStr = now.toLocaleString(dateLocale, {
         month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
       });
       const location = await fetchLocation();
@@ -2799,7 +3175,7 @@ export default function CollaborativeStoryApp() {
 
       // Generate the first prompt for user input
       const ctx = getStoryContext(meta);
-      const prompt = await generatePrompt(newStory, 1, false, ctx);
+      const prompt = await generatePrompt(newStory, 1, false, ctx, 5, lang);
       setCurrentPrompt(prompt);
       await window.storage.set(storyKey(meta.id, "prompt-v1"), prompt, true);
 
@@ -2811,7 +3187,7 @@ export default function CollaborativeStoryApp() {
       setStoriesIndex(updatedIndex);
 
       const ctx = getStoryContext(meta);
-      const prompt = await generatePrompt([], 1, false, ctx);
+      const prompt = await generatePrompt([], 1, false, ctx, 5, lang);
       setCurrentPrompt(prompt);
       await window.storage.set(storyKey(meta.id, "prompt-v1"), prompt, true);
       history.replaceState(null, "", "#story/" + meta.id);
@@ -2908,10 +3284,10 @@ export default function CollaborativeStoryApp() {
                         >
                           <span>
                             {visibleChapter === 0
-                              ? (hasMultiple ? "Select a chapter" : "")
+                              ? (hasMultiple ? t("select_chapter") : "")
                               : chapterTitles[visibleChapter]
-                              ? `Ch. ${visibleChapter} — ${chapterTitles[visibleChapter]}`
-                              : `Chapter ${visibleChapter}`}
+                              ? `${t("ch")} ${visibleChapter} — ${chapterTitles[visibleChapter]}`
+                              : `${t("chapter")} ${visibleChapter}`}
                           </span>
                           {hasMultiple && <GoChevronDown size={12} />}
                         </button>
@@ -2953,7 +3329,7 @@ export default function CollaborativeStoryApp() {
                                     }}
                                   >
                                     <span style={{ marginRight: "8px" }}>{ch}.</span>
-                                    {ch === currentChapter ? "In progress" : (chapterTitles[ch] || `Chapter ${ch}`)}
+                                    {ch === currentChapter ? t("in_progress") : (chapterTitles[ch] || `${t("chapter")} ${ch}`)}
                                   </button>
                                 );
                               })}
@@ -3008,7 +3384,7 @@ export default function CollaborativeStoryApp() {
                             textAlign: "left",
                           }}
                         >
-                          {linkCopied ? "Copied!" : "Copy Link"}
+                          {linkCopied ? t("copied") : t("copy_link")}
                         </button>
                         <button
                           onClick={() => {
@@ -3029,7 +3405,7 @@ export default function CollaborativeStoryApp() {
                             textAlign: "left",
                           }}
                         >
-                          {confirmDeleteMenu ? "Confirm delete?" : "Delete"}
+                          {confirmDeleteMenu ? t("confirm_delete") : t("delete_btn")}
                         </button>
                       </div>
                     </>
@@ -3053,6 +3429,9 @@ export default function CollaborativeStoryApp() {
             homeLayout={homeLayout}
             setHomeLayout={updateHomeLayout}
             fontIndexMap={fontIndexMap}
+            lang={lang}
+            setLang={setLang}
+            t={t}
           />
         )}
 
@@ -3062,12 +3441,14 @@ export default function CollaborativeStoryApp() {
             onCancel={() => { history.pushState(null, "", "/" + (LAYOUT_TO_HASH[homeLayout] || "#rows")); setView("home"); }}
             onCreate={handleCreateStory}
             narrow={narrowViewport}
+            t={t}
+            lang={lang}
           />
         )}
 
         {/* ── About View ── */}
         {view === "about" && (
-          <AboutScreen onBack={() => { history.pushState(null, "", "/" + (LAYOUT_TO_HASH[homeLayout] || "#rows")); setView("home"); }} narrow={narrowViewport} />
+          <AboutScreen onBack={() => { history.pushState(null, "", "/" + (LAYOUT_TO_HASH[homeLayout] || "#rows")); setView("home"); }} narrow={narrowViewport} t={t} />
         )}
 
         {/* ── Story View ── */}
@@ -3096,7 +3477,7 @@ export default function CollaborativeStoryApp() {
                     onMouseLeave={(e) => e.currentTarget.style.color = visibleChapter === 0 ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.3)"}
                   >
                     <GoArrowLeft size={14} style={{ flexShrink: 0, width: "16px" }} />
-                    <span>{activeStoryMeta?.title || "Home"}</span>
+                    <span>{activeStoryMeta?.title || t("home")}</span>
                   </button>
                   {(() => {
                     const chapters = [...new Set(story.map((e) => e.chapter || 1))].sort((a, b) => a - b);
@@ -3125,7 +3506,7 @@ export default function CollaborativeStoryApp() {
                               onMouseLeave={(e) => e.currentTarget.style.color = isActive ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.25)"}
                             >
                               <span style={{ width: "16px", textAlign: "center", flexShrink: 0 }}>{ch}</span>
-                              <span>{ch === currentChapter ? "In progress" : (chapterTitles[ch] || "")}</span>
+                              <span>{ch === currentChapter ? t("in_progress") : (chapterTitles[ch] || "")}</span>
                             </button>
                           );
                         })}
@@ -3183,7 +3564,7 @@ export default function CollaborativeStoryApp() {
                           onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
                           onMouseLeave={(e) => e.currentTarget.style.background = "none"}
                         >
-                          {linkCopied ? "Copied!" : "Copy Link"}
+                          {linkCopied ? t("copied") : t("copy_link")}
                         </button>
                         <button
                           onClick={() => {
@@ -3206,7 +3587,7 @@ export default function CollaborativeStoryApp() {
                           onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
                           onMouseLeave={(e) => e.currentTarget.style.background = "none"}
                         >
-                          {confirmDeleteMenu ? "Confirm delete?" : "Delete"}
+                          {confirmDeleteMenu ? t("confirm_delete") : t("delete_btn")}
                         </button>
                       </div>
                     </>
@@ -3253,11 +3634,11 @@ export default function CollaborativeStoryApp() {
                     color: "rgba(255,255,255,0.45)",
                     textAlign: "center", marginTop: narrowViewport ? "0px" : "12px",
                   }}>
-                    {story.length === 0 ? "Loading..." : (
+                    {story.length === 0 ? t("loading") : (
                       <>
-                        {story.length} contribution{story.length !== 1 ? "s" : ""}
+                        {story.length} {story.length !== 1 ? t("contributions") : t("contribution")}
                         {activeStoryMeta.updatedAt && (
-                          <> · Last updated: {new Date(activeStoryMeta.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</>
+                          <> · {t("last_updated")}: {new Date(activeStoryMeta.updatedAt).toLocaleDateString(dateLocale, { month: "short", day: "numeric", year: "numeric" })}</>
                         )}
                       </>
                     )}
@@ -3293,7 +3674,7 @@ export default function CollaborativeStoryApp() {
                                 letterSpacing: "0.5px",
                                 textTransform: "uppercase",
                               }}>
-                                Chapter {entry.chapter || 1}
+                                {t("chapter")} {entry.chapter || 1}
                               </div>
                               {chapterTitles[entry.chapter || 1] && (
                                 <div style={{
@@ -3339,7 +3720,7 @@ export default function CollaborativeStoryApp() {
                                   position: "sticky",
                                   top: "24px",
                                 }}>
-                                  <StoryPopover entry={pinnedEntry} onClose={() => setPinnedEntry(null)} />
+                                  <StoryPopover entry={pinnedEntry} onClose={() => setPinnedEntry(null)} t={t} />
                                 </div>
                               </div>
                             )}
@@ -3384,7 +3765,7 @@ export default function CollaborativeStoryApp() {
                       onKeyDown={(e) => {
                         if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit();
                       }}
-                      placeholder="Write your answer..."
+                      placeholder={t("write_answer")}
                       rows={3}
                       disabled={phase === "generating"}
                       style={{
@@ -3408,10 +3789,10 @@ export default function CollaborativeStoryApp() {
                         padding: "12px 0 0",
                       }}>
                         {[
-                          { label: "Plot", value: sliderPlot, set: setSliderPlot, labels: ["Linger", "Dwell", "Savor", "Gentle", "Steady", "Moving", "Driven", "Urgent", "Racing", "Leaping"] },
-                          { label: "Dialogue", value: sliderDialogue, set: setSliderDialogue, labels: ["None", "Minimal", "Sparse", "Light", "Moderate", "Balanced", "Frequent", "Rich", "Heavy", "All Talk"] },
-                          { label: "Surprise", value: sliderSurprise, set: setSliderSurprise, labels: ["Steady", "Calm", "Gentle", "Mild", "Moderate", "Notable", "Bold", "Dramatic", "Shocking", "Wild"] },
-                          { label: "Emotion", value: sliderEmotion, set: setSliderEmotion, labels: ["Stoic", "Reserved", "Subtle", "Restrained", "Moderate", "Open", "Warm", "Vivid", "Intense", "Raw"] },
+                          { label: t("slider_plot"), value: sliderPlot, set: setSliderPlot, labels: t("plot_labels") },
+                          { label: t("slider_dialogue"), value: sliderDialogue, set: setSliderDialogue, labels: t("dialogue_labels") },
+                          { label: t("slider_surprise"), value: sliderSurprise, set: setSliderSurprise, labels: t("surprise_labels") },
+                          { label: t("slider_emotion"), value: sliderEmotion, set: setSliderEmotion, labels: t("emotion_labels") },
                         ].map(({ label, value, set, labels }) => (
                           <div key={label}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "4px" }}>
@@ -3448,7 +3829,7 @@ export default function CollaborativeStoryApp() {
                               cursor: "pointer", padding: 0,
                               display: "flex", alignItems: "center",
                             }}
-                            title="Passage style sliders"
+                            title={t("slider_tooltip")}
                           >
                             <BsSliders2Vertical size={14} />
                           </button>
@@ -3478,7 +3859,7 @@ export default function CollaborativeStoryApp() {
                               cursor: "pointer", padding: 0,
                               display: "flex", alignItems: "center",
                             }}
-                            title={geoEnabled ? "Using precise location" : "Enable precise location"}
+                            title={geoEnabled ? t("geo_on") : t("geo_off")}
                           >
                             <GoLocation size={14} />
                             {geoEnabled && geoLabel && (
@@ -3494,7 +3875,7 @@ export default function CollaborativeStoryApp() {
                           fontFamily: MONO, fontSize: "13px",
                           color: "#999",
                         }}>
-                          Writing...
+                          {t("writing")}
                         </span>
                       ) : (
                         <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
@@ -3509,7 +3890,7 @@ export default function CollaborativeStoryApp() {
                               padding: 0,
                             }}
                           >
-                            PREVIEW
+                            {t("preview")}
                           </button>
                           <button
                             onClick={handleQuickAdd}
@@ -3525,7 +3906,7 @@ export default function CollaborativeStoryApp() {
                               transition: "all 0.15s",
                             }}
                           >
-                            ADD
+                            {t("add")}
                           </button>
                         </div>
                       )}
@@ -3544,7 +3925,7 @@ export default function CollaborativeStoryApp() {
                           color: "#999", cursor: "pointer", padding: 0,
                         }}
                       >
-                        <GoArrowLeft size={14} style={{ marginRight: "6px", verticalAlign: "middle" }} />BACK
+                        <GoArrowLeft size={14} style={{ marginRight: "6px", verticalAlign: "middle" }} />{t("back_btn")}
                       </button>
                     </div>
                     <div style={{ marginBottom: "24px", flex: 1 }}>
@@ -3555,7 +3936,7 @@ export default function CollaborativeStoryApp() {
                         fontFamily: MONO, fontSize: "11px",
                         color: "rgba(255,255,255,0.45)", marginBottom: "16px",
                       }}>
-                        AI unavailable — used local fallback
+                        {t("local_fallback")}
                       </p>
                     )}
 
@@ -3565,7 +3946,7 @@ export default function CollaborativeStoryApp() {
                           fontFamily: MONO, fontSize: "13px",
                           color: "#999",
                         }}>
-                          Adding...
+                          {t("adding")}
                         </span>
                       ) : (
                         <>
@@ -3577,7 +3958,7 @@ export default function CollaborativeStoryApp() {
                               color: "#999", cursor: "pointer", padding: 0,
                             }}
                           >
-                            REWRITE
+                            {t("rewrite")}
                           </button>
                           <button
                             onClick={handleConfirm}
@@ -3587,7 +3968,7 @@ export default function CollaborativeStoryApp() {
                               color: "#e8ddd0", cursor: "pointer", padding: 0,
                             }}
                           >
-                            ADD
+                            {t("add")}
                           </button>
                         </>
                       )}
@@ -3610,7 +3991,7 @@ export default function CollaborativeStoryApp() {
                 }}
               >
                 <div onClick={(e) => e.stopPropagation()}>
-                  <StoryPopover entry={dialogEntry} onClose={() => setDialogEntry(null)} />
+                  <StoryPopover entry={dialogEntry} onClose={() => setDialogEntry(null)} t={t} />
                 </div>
               </div>
             )}
