@@ -13,7 +13,7 @@ const GENRES = [
   { id: "drama", label: "Drama", mood: 5, dialogue: 6, prompt: "conflict, moral dilemmas, human struggle, high stakes" },
   { id: "mystery", label: "Mystery", mood: 3, prompt: "clues, suspicion, hidden truths, tension" },
   { id: "scifi", label: "Sci-Fi", mood: 5, prompt: "technology, alien worlds, future societies" },
-  { id: "bedtime", label: "Bedtime", mood: 7, prompt: "wonder, imagination, gentle lessons, playful adventures" },
+  { id: "bedtime", label: "Children", mood: 7, prompt: "wonder, imagination, gentle lessons, playful adventures" },
   { id: "horror", label: "Horror", mood: 1, prompt: "dread, the uncanny, creeping fear" },
 ];
 
@@ -347,7 +347,7 @@ const TRANSLATIONS = {
     genre_drama: "Drama",
     genre_mystery: "Mystery",
     genre_scifi: "Sci-Fi",
-    genre_bedtime: "Bedtime",
+    genre_bedtime: "Children",
     genre_horror: "Horror",
     // Voices — Fantasy
     voice_fantasy_lyrical: "Lyrical & Labyrinthine", voicedesc_fantasy_lyrical: "Winding, dreamlike, nested clauses",
@@ -524,7 +524,7 @@ const TRANSLATIONS = {
     genre_drama: "Drama",
     genre_mystery: "Misterio",
     genre_scifi: "Ciencia Ficción",
-    genre_bedtime: "Para Dormir",
+    genre_bedtime: "Infantil",
     genre_horror: "Terror",
     // Voices — Fantasy
     voice_fantasy_lyrical: "Lírica y Laberíntica", voicedesc_fantasy_lyrical: "Sinuosa, onírica, cláusulas anidadas",
@@ -1360,8 +1360,8 @@ function StoryRow({ title, stories, onSelectStory, isTouch, genreId, fontIndexMa
           position: "absolute", top: 0, bottom: 0, left: 0, right: 0,
           pointerEvents: "none", zIndex: 1,
           background: isTouch
-            ? "linear-gradient(to right, #0e0d0b 0%, transparent 20px, transparent calc(100% - 20px), #0e0d0b 100%)"
-            : "linear-gradient(to right, #0e0d0b 0%, transparent 32px, transparent calc(100% - 32px), #0e0d0b 100%)",
+            ? "linear-gradient(to right, #0f0e0c 0%, transparent 20px, transparent calc(100% - 20px), #0f0e0c 100%)"
+            : "linear-gradient(to right, #0f0e0c 0%, transparent 32px, transparent calc(100% - 32px), #0f0e0c 100%)",
         }} />
         <div
           ref={scrollRef}
@@ -1429,7 +1429,7 @@ function StoryRow({ title, stories, onSelectStory, isTouch, genreId, fontIndexMa
                 flex: 1, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", width: "100%", minWidth: 0,
               }}>
                 <BookTitle style={{
-                  fontFamily: storyFontForId(genreId, s.id, fontIndexMap).family, fontSize: `${Math.round(20 * (storyFontForId(genreId, s.id, fontIndexMap).scale || 1))}px`, fontWeight: storyFontForId(genreId, s.id, fontIndexMap).weight || 600,
+                  fontFamily: storyFontForId(genreId, s.id, fontIndexMap).family, fontSize: `${Math.round(17 * (storyFontForId(genreId, s.id, fontIndexMap).scale || 1))}px`, fontWeight: storyFontForId(genreId, s.id, fontIndexMap).weight || 600,
                   color: "#fff", lineHeight: 1.3, padding: "0 2px", maxWidth: "100%",
                 }}>
                   {s[`title_${lang}`] || translatedTitles[s.id] || s.title || t("untitled")}
@@ -1657,7 +1657,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, s
         display: "flex", justifyContent: "space-between", alignItems: "center",
         padding: isTouch ? "16px 20px" : "20px 32px",
         maxWidth: "1200px", margin: "0 auto",
-        background: "linear-gradient(to bottom, #0e0d0b 60%, transparent)",
+        background: "linear-gradient(to bottom, #0f0e0c 60%, transparent)",
         paddingBottom: isTouch ? "32px" : "40px",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0, flex: 1 }}>
@@ -1725,7 +1725,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, s
             }}
             style={{
               padding: isTouch ? "6px 16px" : "8px 20px", borderRadius: "28px",
-              background: "#e8ddd0", border: "none", color: "#0e0d0b",
+              background: "#e8ddd0", border: "none", color: "#0f0e0c",
               cursor: "pointer",
               boxShadow: "0 2px 12px rgba(0,0,0,0.4)",
               display: "flex", alignItems: "center", gap: "8px",
@@ -1772,7 +1772,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, s
                 <div style={{
                   position: "absolute", top: 0, bottom: 0, left: 0, right: 0,
                   pointerEvents: "none", zIndex: 1,
-                  background: "linear-gradient(to right, #0e0d0b 0%, transparent 24px, transparent calc(100% - 24px), #0e0d0b 100%)",
+                  background: "linear-gradient(to right, #0f0e0c 0%, transparent 24px, transparent calc(100% - 24px), #0f0e0c 100%)",
                 }} />
               <div className="story-hscroll" style={{
                 display: "flex", gap: "8px",
@@ -1808,7 +1808,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, s
                 <div style={{
                   position: "absolute", top: 0, bottom: 0, left: 0, right: 0,
                   pointerEvents: "none", zIndex: 1,
-                  background: "linear-gradient(to right, #0e0d0b 0%, transparent 48px, transparent calc(100% - 48px), #0e0d0b 100%)",
+                  background: "linear-gradient(to right, #0f0e0c 0%, transparent 48px, transparent calc(100% - 48px), #0f0e0c 100%)",
                 }} />
                 <div
                   ref={carouselRef}
@@ -1883,7 +1883,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, s
                           flex: 1, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", width: "100%", minWidth: 0,
                         }}>
                           <BookTitle style={{
-                            fontFamily: storyFontForId(s.genre, s.id, fontIndexMap).family, fontSize: `${Math.round(24 * (storyFontForId(s.genre, s.id, fontIndexMap).scale || 1))}px`, fontWeight: storyFontForId(s.genre, s.id, fontIndexMap).weight || 600,
+                            fontFamily: storyFontForId(s.genre, s.id, fontIndexMap).family, fontSize: `${Math.round(20 * (storyFontForId(s.genre, s.id, fontIndexMap).scale || 1))}px`, fontWeight: storyFontForId(s.genre, s.id, fontIndexMap).weight || 600,
                             color: "#fff", lineHeight: 1.3, padding: "0 2px", maxWidth: "100%",
                           }}>
                             {s[`title_${lang}`] || translatedTitles[s.id] || s.title || t("untitled")}
@@ -4135,7 +4135,7 @@ export default function CollaborativeStoryApp() {
                               border: "none",
                               borderRadius: "20px",
                               fontFamily: MONO, fontSize: "12px",
-                              color: answer.trim() ? "#0e0d0b" : "rgba(255,255,255,0.2)",
+                              color: answer.trim() ? "#0f0e0c" : "rgba(255,255,255,0.2)",
                               cursor: answer.trim() ? "pointer" : "default",
                               padding: "6px 16px",
                               transition: "all 0.15s",
