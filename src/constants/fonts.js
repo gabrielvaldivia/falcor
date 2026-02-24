@@ -20,7 +20,6 @@ export const GENRE_FONTS = {
   mystery: [
     { family: "'Anton', sans-serif" },
     { family: "'Archivo Black', sans-serif" },
-    { family: "'Plaster', cursive" },
     { family: "'Special Elite', cursive" },
   ],
   bedtime: [
