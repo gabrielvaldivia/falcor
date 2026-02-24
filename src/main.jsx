@@ -2,7 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore'
 import { db } from './firebase.js'
-import CollaborativeStoryApp from '../storytelling-app.jsx'
+import CollaborativeStoryApp from './CollaborativeStoryApp.jsx'
 
 // Storage shim using Firestore (replaces localStorage version)
 window.storage = {
