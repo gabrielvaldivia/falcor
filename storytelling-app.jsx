@@ -259,7 +259,7 @@ function getStyleForStory(genre, voice) {
 const TRANSLATIONS = {
   en: {
     // App
-    app_name: "Falcor",
+    app_name: "Falkor",
     // Nav & actions
     back: "Back",
     home: "Home",
@@ -330,14 +330,14 @@ const TRANSLATIONS = {
     popover_prompt: "Prompt",
     popover_answer: "Answer",
     // About page
-    about_title: "About Falcor",
-    about_p1: "Falcor is an experiment in co-creative storytelling. Anyone can contribute to a shared story. You answer a simple question about what should happen next, and AI turns it into prose. The result is a living artifact shaped by strangers.",
+    about_title: "About Falkor",
+    about_p1: "Falkor is an experiment in co-creative storytelling. Anyone can contribute to a shared story. You answer a simple question about what should happen next, and AI turns it into prose. The result is a living artifact shaped by strangers.",
     about_why: "Why this exists",
     about_p2: 'Writing is hard. But answering "what should happen next?" is easy. This lowers the barrier to entry by turning storytelling into a back-and-forth, where your direction sets the path and AI carries it forward. This feels like a new kind of media experience. It isn\'t writing per se, but it is shaped by human input.',
     about_p3: "All stories are shared and open. You can see what each person wrote and where in the world they wrote it from. When strangers from different places contribute to a shared output, the world feels a little smaller.",
     about_how: "How it works",
     about_p4: "Start by choosing a genre. Each genre unlocks its own curated set of writing voices, themes, protagonist types, and narrative tensions, all tailored to fit the kind of story you want to tell.",
-    about_p5: "Falcor generates a title and opening passage, then asks you questions about what happens next. Your brief answers become the seeds for each new passage. The AI considers everything that came before, building on earlier choices, tracking narrative arcs, deciding when chapters should end, and generating chapter titles.",
+    about_p5: "Falkor generates a title and opening passage, then asks you questions about what happens next. Your brief answers become the seeds for each new passage. The AI considers everything that came before, building on earlier choices, tracking narrative arcs, deciding when chapters should end, and generating chapter titles.",
     about_p6: "Stories are stored in the cloud and can be shared with a direct link using the menu on any story page. Anyone with the link can read along and contribute to the story.",
     about_credits: "Credits",
     about_built_by: "Built by",
@@ -436,11 +436,11 @@ const TRANSLATIONS = {
   },
   es: {
     // App
-    app_name: "Falcor",
+    app_name: "Falkor",
     // Nav & actions
     back: "Atrás",
     home: "Inicio",
-    about: "Acerca de",
+    about: "Acerca",
     all: "Todo",
     // Footer
     built_by: "Creado por",
@@ -507,14 +507,14 @@ const TRANSLATIONS = {
     popover_prompt: "Pregunta",
     popover_answer: "Respuesta",
     // About page
-    about_title: "Acerca de Falcor",
-    about_p1: "Falcor es un experimento de narración co-creativa. Cualquiera puede contribuir a una historia compartida. Respondes una simple pregunta sobre qué debería pasar después, y la IA lo convierte en prosa. El resultado es un artefacto vivo moldeado por desconocidos.",
+    about_title: "Acerca de Falkor",
+    about_p1: "Falkor es un experimento de narración co-creativa. Cualquiera puede contribuir a una historia compartida. Respondes una simple pregunta sobre qué debería pasar después, y la IA lo convierte en prosa. El resultado es un artefacto vivo moldeado por desconocidos.",
     about_why: "Por qué existe",
     about_p2: 'Escribir es difícil. Pero responder "¿qué debería pasar después?" es fácil. Esto reduce la barrera de entrada al convertir la narración en un ida y vuelta, donde tu dirección marca el camino y la IA lo lleva adelante. Se siente como un nuevo tipo de experiencia mediática. No es escritura en sí, pero está moldeada por la participación humana.',
     about_p3: "Todas las historias son compartidas y abiertas. Puedes ver qué escribió cada persona y desde dónde en el mundo lo hizo. Cuando desconocidos de diferentes lugares contribuyen a un resultado compartido, el mundo se siente un poco más pequeño.",
     about_how: "Cómo funciona",
     about_p4: "Empieza eligiendo un género. Cada género desbloquea su propio conjunto curado de voces narrativas, temas, tipos de protagonista y tensiones narrativas, todos adaptados al tipo de historia que quieras contar.",
-    about_p5: "Falcor genera un título y un pasaje inicial, luego te hace preguntas sobre qué pasa después. Tus breves respuestas se convierten en las semillas de cada nuevo pasaje. La IA considera todo lo anterior, construyendo sobre decisiones previas, siguiendo arcos narrativos, decidiendo cuándo deben terminar los capítulos y generando títulos de capítulos.",
+    about_p5: "Falkor genera un título y un pasaje inicial, luego te hace preguntas sobre qué pasa después. Tus breves respuestas se convierten en las semillas de cada nuevo pasaje. La IA considera todo lo anterior, construyendo sobre decisiones previas, siguiendo arcos narrativos, decidiendo cuándo deben terminar los capítulos y generando títulos de capítulos.",
     about_p6: "Las historias se almacenan en la nube y se pueden compartir con un enlace directo usando el menú en cualquier página de historia. Cualquiera con el enlace puede leer y contribuir a la historia.",
     about_credits: "Créditos",
     about_built_by: "Creado por",
@@ -699,7 +699,7 @@ async function callClaude(system, userMessage, maxTokens = 100) {
 const translationCache = new Map();
 
 async function translateText(text, targetLang) {
-  if (!text || targetLang === "en") return text;
+  if (!text) return text;
   const cacheKey = `${targetLang}:${text}`;
   if (translationCache.has(cacheKey)) return translationCache.get(cacheKey);
   try {
@@ -719,7 +719,7 @@ async function translateText(text, targetLang) {
 }
 
 async function deleteStoryData(id) {
-  const suffixes = ["data-v1", "prompt-v1", "count-v1", "chapter-v1", "titles-v1"];
+  const suffixes = ["data-v1", "prompt-v1", "prompt-en-v1", "prompt-es-v1", "count-v1", "chapter-v1", "titles-v1"];
   for (const s of suffixes) {
     await window.storage.delete(storyKey(id, s), true).catch(() => {});
   }
@@ -1178,7 +1178,7 @@ function TypewriterReveal({ text, narrow, onComplete }) {
    Story Entry (minimal)
    ──────────────────────────────────────────── */
 
-function StoryLine({ entry, onHover, onLeave, narrow, onShowDialog, onPinPopover, hideIcon, isChapterStart, translatedText }) {
+function StoryLine({ entry, onHover, onLeave, narrow, onShowDialog, onPinPopover, hideIcon, isChapterStart, translatedText, lang }) {
   const ref = useRef(null);
   const [hovered, setHovered] = useState(false);
   const isTouch = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
@@ -1212,7 +1212,7 @@ function StoryLine({ entry, onHover, onLeave, narrow, onShowDialog, onPinPopover
         overflowWrap: "break-word", maxWidth: "65ch",
         display: "flex", flexDirection: "column", gap: "12px",
       }}>
-        {splitIntoParagraphs(translatedText || entry.text).map((para, i) => (
+        {splitIntoParagraphs(entry[`text_${lang}`] || translatedText || entry.text).map((para, i) => (
           <p key={i} className={isChapterStart && i === 0 ? "drop-cap" : undefined} style={{ margin: 0 }}>{para.charAt(0).toUpperCase() + para.slice(1)}</p>
         ))}
       </div>
@@ -1432,7 +1432,7 @@ function StoryRow({ title, stories, onSelectStory, isTouch, genreId, fontIndexMa
                   fontFamily: storyFontForId(genreId, s.id, fontIndexMap).family, fontSize: `${Math.round(20 * (storyFontForId(genreId, s.id, fontIndexMap).scale || 1))}px`, fontWeight: storyFontForId(genreId, s.id, fontIndexMap).weight || 600,
                   color: "#fff", lineHeight: 1.3, padding: "0 2px", maxWidth: "100%",
                 }}>
-                  {translatedTitles[s.id] || s.title || t("untitled")}
+                  {s[`title_${lang}`] || translatedTitles[s.id] || s.title || t("untitled")}
                 </BookTitle>
               </div>
               <span style={{
@@ -1450,11 +1450,12 @@ function StoryRow({ title, stories, onSelectStory, isTouch, genreId, fontIndexMa
   );
 }
 
-function AppFooter({ t, lang, setLang, onAbout }) {
+function AppFooter({ t, lang, setLang, onAbout, style: extraStyle }) {
   const isTouch = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
   return (
     <footer style={{
       padding: isTouch ? "12px 24px 24px" : "24px 24px 0",
+      ...extraStyle,
       display: "flex", flexDirection: isTouch ? "column" : "row", alignItems: "center", justifyContent: "center", gap: isTouch ? "8px" : "16px",
       fontFamily: MONO, fontSize: "11px",
       color: "rgba(255,255,255,0.45)",
@@ -1516,7 +1517,8 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, s
     if (lang === "en") { setTranslatedTitles({}); return; }
     let cancelled = false;
     stories.forEach((s) => {
-      if (s.title) {
+      // Only runtime-translate if no stored translation exists
+      if (s.title && !s[`title_${lang}`]) {
         translateText(s.title, lang).then((tr) => {
           if (!cancelled) setTranslatedTitles((prev) => ({ ...prev, [s.id]: tr }));
         });
@@ -1553,7 +1555,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, s
               entries.push({
                 ...entry,
                 storyId: s.id,
-                storyTitle: translatedTitles[s.id] || s.title || t("untitled"),
+                storyTitle: s[`title_${lang}`] || translatedTitles[s.id] || s.title || t("untitled"),
                 storyGenre: s.genre,
                 passageIndex: idx,
               });
@@ -1884,7 +1886,7 @@ function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, s
                             fontFamily: storyFontForId(s.genre, s.id, fontIndexMap).family, fontSize: `${Math.round(24 * (storyFontForId(s.genre, s.id, fontIndexMap).scale || 1))}px`, fontWeight: storyFontForId(s.genre, s.id, fontIndexMap).weight || 600,
                             color: "#fff", lineHeight: 1.3, padding: "0 2px", maxWidth: "100%",
                           }}>
-                            {translatedTitles[s.id] || s.title || t("untitled")}
+                            {s[`title_${lang}`] || translatedTitles[s.id] || s.title || t("untitled")}
                           </BookTitle>
                         </div>
                         <span style={{
@@ -2201,7 +2203,7 @@ function AboutScreen({ onBack, narrow, t, lang, setLang }) {
    New Story Screen — Genre + Voice Selection
    ──────────────────────────────────────────── */
 
-function NewStoryScreen({ onCancel, onCreate, narrow, t, lang, setLang }) {
+function NewStoryScreen({ onCancel, onCreate, narrow, t, lang, setLang, onAbout }) {
   const [selectedGenre, setSelectedGenre] = useState(null);
   const [selectedVoice, setSelectedVoice] = useState(null);
   const [selectedThemes, setSelectedThemes] = useState([]);
@@ -2594,7 +2596,7 @@ function NewStoryScreen({ onCancel, onCreate, narrow, t, lang, setLang }) {
         {creating ? t("creating") : t("start_story")}
       </button>
     </div>
-    <AppFooter t={t} lang={lang} setLang={setLang} />
+    <AppFooter t={t} lang={lang} setLang={setLang} onAbout={onAbout} />
     </>
   );
 }
@@ -2711,14 +2713,44 @@ export default function CollaborativeStoryApp() {
   const [homeLayout, setHomeLayout] = useState(() => {
     return HASH_TO_LAYOUT[window.location.hash] || "rows";
   }); // "rows" | "carousel" | "activity"
+  const [lang, setLang] = useState(() => {
+    const urlLang = new URLSearchParams(window.location.search).get("lang");
+    if (urlLang === "en" || urlLang === "es") return urlLang;
+    return localStorage.getItem("falcor_lang") || "en";
+  });
+  const t = useCallback((key) => TRANSLATIONS[lang]?.[key] ?? TRANSLATIONS.en[key] ?? key, [lang]);
+  useEffect(() => {
+    localStorage.setItem("falcor_lang", lang);
+    // Keep ?lang= query param in sync
+    const url = new URL(window.location);
+    if (lang !== "en") {
+      url.searchParams.set("lang", lang);
+    } else {
+      url.searchParams.delete("lang");
+    }
+    if (url.toString() !== window.location.href) {
+      history.replaceState(history.state, "", url.toString());
+    }
+  }, [lang]);
+  // Helper: append ?lang= to any relative URL path when lang !== "en"
+  const withLang = useCallback((path) => {
+    if (lang === "en") return path;
+    // If path has a hash, insert ?lang= before the hash
+    const hashIdx = path.indexOf("#");
+    if (hashIdx !== -1) {
+      const before = path.slice(0, hashIdx);
+      const hash = path.slice(hashIdx);
+      const sep = before.includes("?") ? "&" : "?";
+      return before + sep + "lang=" + lang + hash;
+    }
+    const sep = path.includes("?") ? "&" : "?";
+    return path + sep + "lang=" + lang;
+  }, [lang]);
+  const dateLocale = lang === "es" ? "es-ES" : "en-US";
   const updateHomeLayout = useCallback((layout) => {
     setHomeLayout(layout);
-    history.replaceState(null, "", "/" + (LAYOUT_TO_HASH[layout] || "#rows"));
-  }, []);
-  const [lang, setLang] = useState(() => localStorage.getItem("falcor_lang") || "en");
-  const t = useCallback((key) => TRANSLATIONS[lang]?.[key] ?? TRANSLATIONS.en[key] ?? key, [lang]);
-  useEffect(() => { localStorage.setItem("falcor_lang", lang); }, [lang]);
-  const dateLocale = lang === "es" ? "es-ES" : "en-US";
+    history.replaceState(null, "", withLang("/" + (LAYOUT_TO_HASH[layout] || "#rows")));
+  }, [withLang]);
 
   const [activeStoryId, setActiveStoryId] = useState(null);
   const [storiesIndex, setStoriesIndex] = useState([]);
@@ -2780,7 +2812,7 @@ export default function CollaborativeStoryApp() {
     return { ...base, plot: sliderPlot, dialogue: sliderDialogue, surprise: sliderSurprise, emotion: sliderEmotion };
   }, [activeStoryMeta, sliderPlot, sliderDialogue, sliderSurprise, sliderEmotion]);
 
-  // Translate story content when language changes
+  // Translate story content when language changes (legacy fallback for old stories without stored translations)
   useEffect(() => {
     if (lang === "en") {
       setTranslatedTitle(null);
@@ -2789,24 +2821,37 @@ export default function CollaborativeStoryApp() {
       return;
     }
     let cancelled = false;
-    if (activeStoryMeta?.title) {
+    // Only runtime-translate title if no stored translation exists
+    if (activeStoryMeta?.title && !activeStoryMeta[`title_${lang}`]) {
       translateText(activeStoryMeta.title, lang).then((tr) => {
         if (!cancelled) setTranslatedTitle(tr);
       });
     }
+    // Only runtime-translate passages that lack stored translations
     if (story.length > 0) {
       story.forEach((entry, i) => {
-        translateText(entry.text, lang).then((tr) => {
-          if (!cancelled) setTranslatedTexts((prev) => ({ ...prev, [i]: tr }));
-        });
+        if (!entry[`text_${lang}`]) {
+          translateText(entry.text, lang).then((tr) => {
+            if (!cancelled) setTranslatedTexts((prev) => ({ ...prev, [i]: tr }));
+          });
+        }
       });
     }
+    // Only runtime-translate chapter titles that lack stored translations
     if (chapterTitles && Object.keys(chapterTitles).length > 0) {
       Object.entries(chapterTitles).forEach(([ch, title]) => {
-        translateText(title, lang).then((tr) => {
-          if (!cancelled) setTranslatedChapterTitles((prev) => ({ ...prev, [ch]: tr }));
-        });
+        if (!ch.includes("_") && !chapterTitles[`${ch}_${lang}`]) {
+          translateText(title, lang).then((tr) => {
+            if (!cancelled) setTranslatedChapterTitles((prev) => ({ ...prev, [ch]: tr }));
+          });
+        }
       });
+    }
+    // Load stored prompt for the switched-to language
+    if (activeStoryId) {
+      window.storage.get(storyKey(activeStoryId, `prompt-${lang}-v1`), true).then((result) => {
+        if (!cancelled && result?.value) setCurrentPrompt(result.value);
+      }).catch(() => {});
     }
     return () => { cancelled = true; };
   }, [lang, activeStoryMeta?.title, story, chapterTitles]);
@@ -2858,7 +2903,7 @@ export default function CollaborativeStoryApp() {
           openStory(found.id);
         }
       } else if (!hash || hash === "#") {
-        history.replaceState(null, "", "/#rows");
+        history.replaceState(null, "", withLang("/#rows"));
       }
     })();
   }, []);
@@ -2893,14 +2938,46 @@ export default function CollaborativeStoryApp() {
           const backfilled = { ...loadedTitles };
           await Promise.all(completedWithoutTitle.map(async (ch) => {
             const title = await generateChapterTitle(loadedStory, ch, lang);
-            if (title) backfilled[ch] = title;
+            if (title) { backfilled[ch] = title; backfilled[`${ch}_${lang}`] = title; }
           }));
           setChapterTitles(backfilled);
           await window.storage.set(storyKey(id, "titles-v1"), JSON.stringify(backfilled), true);
+
+          // Fire-and-forget: translate backfilled chapter titles to other language
+          const otherLangBf = lang === "en" ? "es" : "en";
+          Promise.all(completedWithoutTitle.map(async (ch) => {
+            if (!backfilled[ch]) return;
+            const tr = await translateText(backfilled[ch], otherLangBf);
+            if (tr) return { ch, tr };
+          })).then(async (results) => {
+            const patched = { ...backfilled };
+            let changed = false;
+            for (const r of results) {
+              if (r) { patched[`${r.ch}_${otherLangBf}`] = r.tr; patched[`${r.ch}_${lang}`] = backfilled[r.ch]; changed = true; }
+            }
+            if (changed) {
+              await window.storage.set(storyKey(id, "titles-v1"), JSON.stringify(patched), true).catch(() => {});
+              setChapterTitles(patched);
+            }
+          }).catch(() => {});
         }
-        const prompt = await generatePrompt(loadedStory, loadedChapter, false, ctx, sliderPlot, lang);
-        setCurrentPrompt(prompt);
-        await window.storage.set(storyKey(id, "prompt-v1"), prompt, true);
+
+        // Try to load stored prompt for current language first
+        const storedPrompt = await window.storage.get(storyKey(id, `prompt-${lang}-v1`), true).catch(() => null);
+        if (storedPrompt?.value) {
+          setCurrentPrompt(storedPrompt.value);
+        } else {
+          const prompt = await generatePrompt(loadedStory, loadedChapter, false, ctx, sliderPlot, lang);
+          setCurrentPrompt(prompt);
+          await window.storage.set(storyKey(id, "prompt-v1"), prompt, true);
+          await window.storage.set(storyKey(id, `prompt-${lang}-v1`), prompt, true);
+
+          // Fire-and-forget: translate prompt to other language
+          const otherLangP = lang === "en" ? "es" : "en";
+          translateText(prompt, otherLangP).then(async (tr) => {
+            if (tr) await window.storage.set(storyKey(id, `prompt-${otherLangP}-v1`), tr, true).catch(() => {});
+          }).catch(() => {});
+        }
       }
     } catch (e) { /* first run */ }
   }, []);
@@ -2935,7 +3012,7 @@ export default function CollaborativeStoryApp() {
     if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
     setView("story");
     const storySlug = meta?.slug || id;
-    history.pushState({ story: storySlug }, "", "/api/story/" + storySlug);
+    history.pushState({ story: storySlug }, "", withLang("/api/story/" + storySlug));
 
     await loadStoryData(id, true);
 
@@ -3101,8 +3178,10 @@ export default function CollaborativeStoryApp() {
 
     const newEntry = {
       text: text,
+      [`text_${lang}`]: text,
       originalAnswer: originalAnswer,
       prompt: currentPrompt,
+      [`prompt_${lang}`]: currentPrompt,
       author: newCount,
       location: location,
       time: timeStr,
@@ -3124,7 +3203,7 @@ export default function CollaborativeStoryApp() {
         isNewChapter = true;
         const title = await generateChapterTitle(updatedStory, currentChapter, lang);
         if (title) {
-          updatedTitles = { ...chapterTitles, [currentChapter]: title };
+          updatedTitles = { ...chapterTitles, [currentChapter]: title, [`${currentChapter}_${lang}`]: title };
           await window.storage.set(storyKey(activeStoryId, "titles-v1"), JSON.stringify(updatedTitles), true);
         }
       }
@@ -3132,6 +3211,7 @@ export default function CollaborativeStoryApp() {
       const nextPrompt = await generatePrompt(updatedStory, nextChapter, isNewChapter, getGenreVoiceCtx(), sliderPlot, lang);
       await window.storage.set(storyKey(activeStoryId, "data-v1"), JSON.stringify(updatedStory), true);
       await window.storage.set(storyKey(activeStoryId, "prompt-v1"), nextPrompt, true);
+      await window.storage.set(storyKey(activeStoryId, `prompt-${lang}-v1`), nextPrompt, true);
       await window.storage.set(storyKey(activeStoryId, "count-v1"), String(newCount), true);
       await window.storage.set(storyKey(activeStoryId, "chapter-v1"), String(nextChapter), true);
 
@@ -3145,6 +3225,35 @@ export default function CollaborativeStoryApp() {
       );
       await saveStoriesIndex(updatedIndex);
       setStoriesIndex(updatedIndex);
+
+      // Fire-and-forget: translate new passage, prompt, and chapter title to other language
+      const otherLang = lang === "en" ? "es" : "en";
+      const toTranslate = [
+        translateText(text, otherLang),
+        translateText(nextPrompt, otherLang),
+        chapterEnded && updatedTitles[currentChapter] ? translateText(updatedTitles[currentChapter], otherLang) : Promise.resolve(null),
+      ];
+      Promise.all(toTranslate).then(async ([trText, trPrompt, trChTitle]) => {
+        // Patch the new entry with bilingual text
+        if (trText) {
+          const lastIdx = updatedStory.length - 1;
+          const patchedStory = updatedStory.map((e, i) =>
+            i === lastIdx ? { ...e, [`text_${otherLang}`]: trText, [`text_${lang}`]: e.text } : e
+          );
+          await window.storage.set(storyKey(activeStoryId, "data-v1"), JSON.stringify(patchedStory), true).catch(() => {});
+          setStory(patchedStory);
+        }
+        // Save translated prompt
+        if (trPrompt) {
+          await window.storage.set(storyKey(activeStoryId, `prompt-${otherLang}-v1`), trPrompt, true).catch(() => {});
+        }
+        // Save translated chapter title
+        if (trChTitle) {
+          const patchedTitles = { ...updatedTitles, [`${currentChapter}_${otherLang}`]: trChTitle, [`${currentChapter}_${lang}`]: updatedTitles[currentChapter] };
+          await window.storage.set(storyKey(activeStoryId, "titles-v1"), JSON.stringify(patchedTitles), true).catch(() => {});
+          setChapterTitles(patchedTitles);
+        }
+      }).catch(() => {});
 
       setStory(updatedStory);
       setCurrentPrompt(nextPrompt);
@@ -3235,6 +3344,7 @@ export default function CollaborativeStoryApp() {
       const location = await fetchLocation();
       const firstEntry = {
         text: opener.paragraph,
+        [`text_${lang}`]: opener.paragraph,
         originalAnswer: "",
         prompt: "",
         author: 1,
@@ -3245,7 +3355,7 @@ export default function CollaborativeStoryApp() {
       };
       const newStory = [firstEntry];
       const slug = slugify(opener.title) || String(meta.id);
-      const savedMeta = { ...meta, title: opener.title, slug, passageCount: 1, updatedAt: new Date().toISOString() };
+      const savedMeta = { ...meta, title: opener.title, [`title_${lang}`]: opener.title, slug, passageCount: 1, updatedAt: new Date().toISOString() };
 
       // Save everything at once — index + story data
       const updatedIndex = [...storiesIndex, savedMeta];
@@ -3263,8 +3373,36 @@ export default function CollaborativeStoryApp() {
       const prompt = await generatePrompt(newStory, 1, false, ctx, 5, lang);
       setCurrentPrompt(prompt);
       await window.storage.set(storyKey(meta.id, "prompt-v1"), prompt, true);
+      await window.storage.set(storyKey(meta.id, `prompt-${lang}-v1`), prompt, true);
 
-      history.replaceState(null, "", "#story/" + slug);
+      // Fire-and-forget: translate opener title, paragraph, and prompt to other language
+      const otherLang = lang === "en" ? "es" : "en";
+      Promise.all([
+        translateText(opener.title, otherLang),
+        translateText(opener.paragraph, otherLang),
+        translateText(prompt, otherLang),
+      ]).then(async ([trTitle, trParagraph, trPrompt]) => {
+        // Patch story entry with bilingual fields
+        if (trParagraph) {
+          const patched = [{ ...firstEntry, [`text_${otherLang}`]: trParagraph, [`text_${lang}`]: firstEntry.text }];
+          await window.storage.set(storyKey(meta.id, "data-v1"), JSON.stringify(patched), true).catch(() => {});
+          setStory(patched);
+        }
+        // Patch index with bilingual title
+        if (trTitle) {
+          const patchedIndex = storiesIndex.concat(savedMeta).map((s) =>
+            s.id === meta.id ? { ...s, [`title_${otherLang}`]: trTitle, [`title_${lang}`]: opener.title } : s
+          );
+          await saveStoriesIndex(patchedIndex).catch(() => {});
+          setStoriesIndex(patchedIndex);
+        }
+        // Save translated prompt
+        if (trPrompt) {
+          await window.storage.set(storyKey(meta.id, `prompt-${otherLang}-v1`), trPrompt, true).catch(() => {});
+        }
+      }).catch(() => {});
+
+      history.replaceState(null, "", withLang("#story/" + slug));
     } else {
       // Opener failed — still save to index so user isn't stuck, but with no story data
       const updatedIndex = [...storiesIndex, meta];
@@ -3275,7 +3413,15 @@ export default function CollaborativeStoryApp() {
       const prompt = await generatePrompt([], 1, false, ctx, 5, lang);
       setCurrentPrompt(prompt);
       await window.storage.set(storyKey(meta.id, "prompt-v1"), prompt, true);
-      history.replaceState(null, "", "#story/" + meta.id);
+      await window.storage.set(storyKey(meta.id, `prompt-${lang}-v1`), prompt, true);
+
+      // Fire-and-forget: translate prompt to other language
+      const otherLang2 = lang === "en" ? "es" : "en";
+      translateText(prompt, otherLang2).then(async (trPrompt) => {
+        if (trPrompt) await window.storage.set(storyKey(meta.id, `prompt-${otherLang2}-v1`), trPrompt, true).catch(() => {});
+      }).catch(() => {});
+
+      history.replaceState(null, "", withLang("#story/" + meta.id));
     }
 
     // Everything is ready — navigate directly to the story
@@ -3293,7 +3439,7 @@ export default function CollaborativeStoryApp() {
     setView("home");
     setActiveStoryId(null);
     setShowStoryMenu(false);
-    history.pushState(null, "", "/" + (LAYOUT_TO_HASH[homeLayout] || "#rows"));
+    history.pushState(null, "", withLang("/" + (LAYOUT_TO_HASH[homeLayout] || "#rows")));
   };
 
   return (
@@ -3371,7 +3517,7 @@ export default function CollaborativeStoryApp() {
                             {visibleChapter === 0
                               ? (hasMultiple ? t("select_chapter") : "")
                               : chapterTitles[visibleChapter]
-                              ? `${t("ch")} ${visibleChapter} — ${translatedChapterTitles[visibleChapter] || chapterTitles[visibleChapter]}`
+                              ? `${t("ch")} ${visibleChapter} — ${chapterTitles[`${visibleChapter}_${lang}`] || translatedChapterTitles[visibleChapter] || chapterTitles[visibleChapter]}`
                               : `${t("chapter")} ${visibleChapter}`}
                           </span>
                           {hasMultiple && <GoChevronDown size={12} />}
@@ -3414,7 +3560,7 @@ export default function CollaborativeStoryApp() {
                                     }}
                                   >
                                     <span style={{ marginRight: "8px" }}>{ch}.</span>
-                                    {ch === currentChapter ? t("in_progress") : (translatedChapterTitles[ch] || chapterTitles[ch] || `${t("chapter")} ${ch}`)}
+                                    {ch === currentChapter ? t("in_progress") : (chapterTitles[`${ch}_${lang}`] || translatedChapterTitles[ch] || chapterTitles[ch] || `${t("chapter")} ${ch}`)}
                                   </button>
                                 );
                               })}
@@ -3510,7 +3656,7 @@ export default function CollaborativeStoryApp() {
             stories={storiesIndex}
             onSelectStory={openStory}
             onNewStory={() => { window.scrollTo(0, 0); setView("new"); }}
-            onAbout={() => { window.scrollTo(0, 0); history.pushState(null, "", "/#about"); setView("about"); }}
+            onAbout={() => { window.scrollTo(0, 0); history.pushState(null, "", withLang("/#about")); setView("about"); }}
             homeLayout={homeLayout}
             setHomeLayout={updateHomeLayout}
             fontIndexMap={fontIndexMap}
@@ -3523,18 +3669,19 @@ export default function CollaborativeStoryApp() {
         {/* ── New Story View ── */}
         {view === "new" && (
           <NewStoryScreen
-            onCancel={() => { history.pushState(null, "", "/" + (LAYOUT_TO_HASH[homeLayout] || "#rows")); setView("home"); }}
+            onCancel={() => { history.pushState(null, "", withLang("/" + (LAYOUT_TO_HASH[homeLayout] || "#rows"))); setView("home"); }}
             onCreate={handleCreateStory}
             narrow={narrowViewport}
             t={t}
             lang={lang}
             setLang={setLang}
+            onAbout={() => { window.scrollTo(0, 0); history.pushState(null, "", withLang("/#about")); setView("about"); }}
           />
         )}
 
         {/* ── About View ── */}
         {view === "about" && (
-          <AboutScreen onBack={() => { history.pushState(null, "", "/" + (LAYOUT_TO_HASH[homeLayout] || "#rows")); setView("home"); }} narrow={narrowViewport} t={t} lang={lang} setLang={setLang} />
+          <AboutScreen onBack={() => { history.pushState(null, "", withLang("/" + (LAYOUT_TO_HASH[homeLayout] || "#rows"))); setView("home"); }} narrow={narrowViewport} t={t} lang={lang} setLang={setLang} />
         )}
 
         {/* ── Story View ── */}
@@ -3563,7 +3710,7 @@ export default function CollaborativeStoryApp() {
                     onMouseLeave={(e) => e.currentTarget.style.color = visibleChapter === 0 ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.3)"}
                   >
                     <GoArrowLeft size={14} style={{ flexShrink: 0, width: "16px" }} />
-                    <span>{translatedTitle || activeStoryMeta?.title || t("home")}</span>
+                    <span>{activeStoryMeta?.[`title_${lang}`] || translatedTitle || activeStoryMeta?.title || t("home")}</span>
                   </button>
                   {(() => {
                     const chapters = [...new Set(story.map((e) => e.chapter || 1))].sort((a, b) => a - b);
@@ -3592,7 +3739,7 @@ export default function CollaborativeStoryApp() {
                               onMouseLeave={(e) => e.currentTarget.style.color = isActive ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.25)"}
                             >
                               <span style={{ width: "16px", textAlign: "center", flexShrink: 0 }}>{ch}</span>
-                              <span>{ch === currentChapter ? t("in_progress") : (translatedChapterTitles[ch] || chapterTitles[ch] || "")}</span>
+                              <span>{ch === currentChapter ? t("in_progress") : (chapterTitles[`${ch}_${lang}`] || translatedChapterTitles[ch] || chapterTitles[ch] || "")}</span>
                             </button>
                           );
                         })}
@@ -3713,7 +3860,7 @@ export default function CollaborativeStoryApp() {
                     textAlign: "center",
                     textWrap: "balance",
                   }}>
-                    {translatedTitle || activeStoryMeta.title}
+                    {activeStoryMeta[`title_${lang}`] || translatedTitle || activeStoryMeta.title}
                   </h1>
                   <p style={{
                     fontFamily: SERIF, fontSize: "15px", fontStyle: "italic",
@@ -3769,7 +3916,7 @@ export default function CollaborativeStoryApp() {
                                   fontWeight: activeStoryFont.weight || 700,
                                   marginTop: "8px",
                                 }}>
-                                  {translatedChapterTitles[entry.chapter || 1] || chapterTitles[entry.chapter || 1]}
+                                  {chapterTitles[`${entry.chapter || 1}_${lang}`] || translatedChapterTitles[entry.chapter || 1] || chapterTitles[entry.chapter || 1]}
                                 </div>
                               )}
                             </div>
@@ -3782,6 +3929,7 @@ export default function CollaborativeStoryApp() {
                             <StoryLine
                               entry={entry}
                               translatedText={translatedTexts[i]}
+                              lang={lang}
                               narrow={narrowViewport}
                               isChapterStart={showChapterHeading}
                               onHover={(e) => {
@@ -4082,10 +4230,10 @@ export default function CollaborativeStoryApp() {
                 </div>
               </div>
             )}
+            <AppFooter t={t} lang={lang} setLang={setLang} onAbout={() => { window.scrollTo(0, 0); history.pushState(null, "", withLang("/#about")); setView("about"); }} style={{ padding: "48px 24px" }} />
           </>
         )}
       </div>
-      <AppFooter t={t} lang={lang} setLang={setLang} />
     </>
   );
 }
