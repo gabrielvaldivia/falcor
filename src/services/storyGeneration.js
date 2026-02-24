@@ -214,6 +214,9 @@ export async function generateStoryOpener(meta, lang = "en") {
     const t = ALL_TENSIONS.find((x) => x.id === meta.tension);
     if (t) extraContext += `\nCentral tension: ${t.label} — ${t.prompt}`;
   }
+  if (meta.customInstructions) {
+    extraContext += `\nCustom instructions from the author: ${meta.customInstructions}`;
+  }
 
   try {
     const text = await callClaude(

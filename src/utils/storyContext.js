@@ -17,6 +17,9 @@ export function getStoryContext(meta) {
     const t = ALL_TENSIONS.find((x) => x.id === meta.tension);
     if (t) ctx += ` Central tension: ${t.prompt}.`;
   }
+  if (meta.customInstructions) {
+    ctx += ` Author's custom instructions: ${meta.customInstructions}`;
+  }
   return ctx;
 }
 

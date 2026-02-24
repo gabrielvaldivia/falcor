@@ -11,6 +11,7 @@ export default function NewStoryScreen({ onCancel, onCreate, narrow, t, lang, se
   const [selectedThemes, setSelectedThemes] = useState([]);
   const [selectedProtagonist, setSelectedProtagonist] = useState(null);
   const [selectedTension, setSelectedTension] = useState(null);
+  const [customInstructions, setCustomInstructions] = useState("");
   const [activeStep, setActiveStep] = useState("genre");
   const [creating, setCreating] = useState(false);
 
@@ -36,6 +37,7 @@ export default function NewStoryScreen({ onCancel, onCreate, narrow, t, lang, se
       themes: selectedThemes.length > 0 ? selectedThemes : [],
       protagonist: selectedProtagonist || null,
       tension: selectedTension || null,
+      customInstructions: customInstructions.trim() || null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       passageCount: 0,
@@ -371,6 +373,35 @@ export default function NewStoryScreen({ onCancel, onCreate, narrow, t, lang, se
         }
         return null;
       })}
+
+      {/* Custom Instructions */}
+      {canCreate && (
+        <div style={{ marginTop: "8px", borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: "20px" }}>
+          <label style={{
+            fontFamily: MONO, fontSize: "12px", fontWeight: 400,
+            color: "rgba(255,255,255,0.5)", letterSpacing: "0.5px",
+            textTransform: "uppercase",
+            display: "block", padding: "20px 0 12px",
+          }}>
+            {t("custom_instructions")}<span style={{ textTransform: "none", color: "rgba(255,255,255,0.45)" }}> {t("optional")}</span>
+          </label>
+          <textarea
+            value={customInstructions}
+            onChange={(e) => setCustomInstructions(e.target.value)}
+            placeholder={t("custom_instructions_placeholder")}
+            rows={3}
+            style={{
+              width: "100%", background: "rgba(255,255,255,0.02)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              borderRadius: "6px",
+              padding: "12px 14px", fontFamily: TYPEWRITER,
+              fontSize: "14px", lineHeight: 1.6,
+              color: "#e8ddd0",
+              resize: "vertical", minHeight: "60px",
+            }}
+          />
+        </div>
+      )}
 
       {/* Start Story Button */}
       <button
