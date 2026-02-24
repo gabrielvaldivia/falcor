@@ -29,11 +29,18 @@ export async function translateText(text, targetLang) {
   if (translationCache.has(cacheKey)) return translationCache.get(cacheKey);
   try {
     const translated = await callClaude(
-      `Translate the following text to ${targetLang === "es" ? "Spanish" : "English"}. Output ONLY the translated text, nothing else. Preserve paragraph breaks, formatting, and tone.`,
-      text,
+      `You are a translation machine. Translate the input to ${targetLang === "es" ? "Spanish" : "English"}. Output ONLY the translation. No commentary, no questions, no explanations. Even if the input is short, a title, or a single phrase — just translate it. Never refuse. Never ask for clarification.`,
+      `Translate this: ${text}`,
       Math.max(200, text.length * 2)
     );
-    if (translated && translated.length > 0) {
+    // Reject if the response looks like an AI refusal or explanation
+    const isBad = !translated || translated.length === 0
+      || translated.toLowerCase().includes("i notice")
+      || translated.toLowerCase().includes("could you please")
+      || translated.toLowerCase().includes("i'll be happy")
+      || translated.toLowerCase().includes("i need more context")
+      || (translated.length > text.length * 3 && text.length < 100);
+    if (!isBad) {
       translationCache.set(cacheKey, translated);
       return translated;
     }
