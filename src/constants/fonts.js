@@ -7,6 +7,8 @@ export const GENRE_FONTS = {
     { family: "'Playfair Display', serif" },
     { family: "'Libre Baskerville', serif" },
     { family: "'Cormorant Garamond', serif" },
+    { family: "'Castoro Titling', serif", scale: 0.8 },
+    { family: "'Gloock', serif" },
   ],
   scifi: [
     { family: "'Tektur', sans-serif" },
@@ -16,10 +18,10 @@ export const GENRE_FONTS = {
     { family: "'Jersey 20', sans-serif", scale: 1.2 },
   ],
   mystery: [
-    { family: "'Gloock', serif" },
     { family: "'Anton', sans-serif" },
     { family: "'Archivo Black', sans-serif" },
-    { family: "'Castoro Titling', serif", scale: 0.8 },
+    { family: "'Plaster', cursive" },
+    { family: "'Special Elite', cursive" },
   ],
   bedtime: [
     { family: "'Borel', cursive" },
@@ -36,7 +38,6 @@ export const GENRE_FONTS = {
   fantasy: [
     { family: "'Cormorant Unicase', serif", weight: 600 },
     { family: "'Alegreya SC', serif" },
-    { family: "'Romanesco', cursive" },
     { family: "'Cinzel Decorative', cursive" },
     { family: "'Uncial Antiqua', serif" },
   ],

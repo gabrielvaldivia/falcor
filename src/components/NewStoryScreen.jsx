@@ -51,6 +51,7 @@ export default function NewStoryScreen({ onCancel, onCreate, narrow, t, lang, se
     { key: "themes", label: t("step_themes"), optional: true },
     { key: "protagonist", label: t("step_protagonist"), optional: true },
     { key: "tension", label: t("step_tension"), optional: true },
+    { key: "custom", label: t("custom_instructions"), optional: true },
   ];
 
   const getStepAnswer = (key) => {
@@ -84,6 +85,8 @@ export default function NewStoryScreen({ onCancel, onCreate, narrow, t, lang, se
         const k = tn.id.replace(/-/g, "_");
         return TRANSLATIONS[lang]?.["conflict_" + selectedGenre + "_" + k] || TRANSLATIONS[lang]?.["conflict_" + k] || tn.label;
       }
+      case "custom":
+        return customInstructions.trim() || null;
       default: return null;
     }
   };
@@ -284,11 +287,30 @@ export default function NewStoryScreen({ onCancel, onCreate, narrow, t, lang, se
         )}
         {step.key === "tension" && renderOptionGrid(getTensionsForGenre(selectedGenre), selectedTension, (id) => {
           setSelectedTension(selectedTension === id ? null : id);
-          if (selectedTension !== id) setTimeout(() => setActiveStep(null), 150);
+          if (selectedTension !== id) setTimeout(() => advanceFrom("tension"), 150);
         }, false, (item) => {
           const k = item.id.replace(/-/g, "_");
           return TRANSLATIONS[lang]?.["conflict_" + selectedGenre + "_" + k] || TRANSLATIONS[lang]?.["conflict_" + k] || item.label;
         })}
+        {step.key === "custom" && (
+          <>
+            <textarea
+              value={customInstructions}
+              onChange={(e) => setCustomInstructions(e.target.value)}
+              placeholder={t("custom_instructions_placeholder")}
+              rows={3}
+              style={{
+                width: "100%", background: "rgba(255,255,255,0.02)",
+                border: "1px solid rgba(255,255,255,0.06)",
+                borderRadius: "6px",
+                padding: "12px 14px", fontFamily: TYPEWRITER,
+                fontSize: "14px", lineHeight: 1.6,
+                color: "#e8ddd0",
+                resize: "vertical", minHeight: "60px",
+              }}
+            />
+          </>
+        )}
       </div>
     );
   };
@@ -373,35 +395,6 @@ export default function NewStoryScreen({ onCancel, onCreate, narrow, t, lang, se
         }
         return null;
       })}
-
-      {/* Custom Instructions */}
-      {canCreate && (
-        <div style={{ marginTop: "8px", borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: "20px" }}>
-          <label style={{
-            fontFamily: MONO, fontSize: "12px", fontWeight: 400,
-            color: "rgba(255,255,255,0.5)", letterSpacing: "0.5px",
-            textTransform: "uppercase",
-            display: "block", padding: "20px 0 12px",
-          }}>
-            {t("custom_instructions")}<span style={{ textTransform: "none", color: "rgba(255,255,255,0.45)" }}> {t("optional")}</span>
-          </label>
-          <textarea
-            value={customInstructions}
-            onChange={(e) => setCustomInstructions(e.target.value)}
-            placeholder={t("custom_instructions_placeholder")}
-            rows={3}
-            style={{
-              width: "100%", background: "rgba(255,255,255,0.02)",
-              border: "1px solid rgba(255,255,255,0.06)",
-              borderRadius: "6px",
-              padding: "12px 14px", fontFamily: TYPEWRITER,
-              fontSize: "14px", lineHeight: 1.6,
-              color: "#e8ddd0",
-              resize: "vertical", minHeight: "60px",
-            }}
-          />
-        </div>
-      )}
 
       {/* Start Story Button */}
       <button

@@ -25,6 +25,7 @@ export default function CollaborativeStoryApp() {
   const LAYOUT_TO_HASH = { rows: "#rows", carousel: "#slideshow", activity: "#activity" };
   const [view, setView] = useState(() => {
     if (window.location.hash === "#about") return "about";
+    if (window.location.hash === "#new") return "new";
     if (window.location.hash.match(/^#story\//) || window.location.pathname.match(/^\/api\/story\//)) return "story";
     return "home";
   }); // "home" | "new" | "story" | "about"
@@ -400,6 +401,7 @@ export default function CollaborativeStoryApp() {
       const hash = window.location.hash;
       const path = window.location.pathname;
       if (hash === "#about") { setView("about"); return; }
+      if (hash === "#new") { setView("new"); return; }
       const slugMatch = hash.match(/^#story\/(.+)$/) || path.match(/^\/api\/story\/(.+)$/);
       if (slugMatch) {
         const slug = slugMatch[1];
@@ -1055,7 +1057,7 @@ export default function CollaborativeStoryApp() {
           <HomeScreen
             stories={storiesIndex}
             onSelectStory={openStory}
-            onNewStory={() => { window.scrollTo(0, 0); setView("new"); }}
+            onNewStory={() => { window.scrollTo(0, 0); history.pushState(null, "", withLang("/#new")); setView("new"); }}
             onAbout={() => { window.scrollTo(0, 0); history.pushState(null, "", withLang("/#about")); setView("about"); }}
             homeLayout={homeLayout}
             setHomeLayout={updateHomeLayout}
