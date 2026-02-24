@@ -148,7 +148,7 @@ TITLE RULES — CRITICAL:
   }
 }
 
-export async function callClaudeAPI(existingStory, prompt, userAnswer, styleSettings, chapter = 1, genreVoiceCtx = "", lang = "en") {
+export async function callClaudeAPI(existingStory, prompt, userAnswer, styleSettings, chapter = 1, genreVoiceCtx = "", lang = "en", usedNames = []) {
   const storyContext =
     existingStory.length > 0
       ? (() => {
@@ -161,6 +161,10 @@ export async function callClaudeAPI(existingStory, prompt, userAnswer, styleSett
 
   const styleInstructions = getStyleInstructions(styleSettings);
 
+  const nameAvoidance = usedNames.length > 0
+    ? `\n- NEVER reuse these protagonist/character names from other stories: ${usedNames.join(", ")}. Invent completely different names.`
+    : "";
+
   const systemPrompt = `You are a collaborative storyteller writing Chapter ${chapter} of an evolving collaborative story. You take a user's brief answer to a creative writing prompt and transform it into prose that continues the story.
 ${genreVoiceCtx ? `\n${genreVoiceCtx}\n` : ""}
 CRITICAL RULES:
@@ -168,7 +172,7 @@ CRITICAL RULES:
 - Write in third person, past tense.
 - Seamlessly continue from the existing story if provided.
 - The output must be substantially different and richer than the user's raw input.
-- Build toward a satisfying narrative arc within this chapter.
+- Build toward a satisfying narrative arc within this chapter.${nameAvoidance}
 
 YOU MUST STRICTLY FOLLOW THESE STYLE SETTINGS — they are the most important constraint:
 ${styleInstructions}
@@ -193,7 +197,7 @@ These style settings override any other instinct you have. If the style says "sp
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-export async function generateStoryOpener(meta, lang = "en") {
+export async function generateStoryOpener(meta, lang = "en", usedNames = []) {
   const genreObj = GENRES.find((g) => g.id === meta.genre);
   const voiceObj = ALL_VOICES.find((v) => v.id === meta.writingStyle);
   if (!genreObj || !voiceObj) return null;
@@ -240,7 +244,7 @@ TITLE RULES — CRITICAL:
 - Bad examples: "The Whispering Shadows", "The Hidden Truth", "The Lost Horizon", "The Forgotten Memory"
 - 1-6 words. Be bold. Be specific. Be surprising.
 
-The opening paragraph must read like page one of a published novel — establish a character, setting, or atmosphere. Ground the reader in a specific scene. Follow the style constraints literally.${lang === "es" ? "\n\nIMPORTANT: Write both the title and paragraph in Spanish." : ""}`,
+The opening paragraph must read like page one of a published novel — establish a character, setting, or atmosphere. Ground the reader in a specific scene. Follow the style constraints literally.${usedNames.length > 0 ? `\n\nCRITICAL: Do NOT reuse any of these character names from other stories: ${usedNames.join(", ")}. Invent completely different, original names.` : ""}${lang === "es" ? "\n\nIMPORTANT: Write both the title and paragraph in Spanish." : ""}`,
       "Write the title and opening paragraph.",
       600
     );
@@ -293,6 +297,22 @@ TITLE RULES — CRITICAL:
   }
 }
 
+export async function extractCharacterNames(storyTexts) {
+  if (storyTexts.length === 0) return [];
+  try {
+    const excerpts = storyTexts.map((t, i) => `Story ${i + 1}: ${t}`).join("\n\n");
+    const result = await callClaude(
+      `Extract all character names (first names only) from these story excerpts. Output ONLY a comma-separated list of names. If no names are found, output "none".`,
+      excerpts,
+      200
+    );
+    if (!result || result.toLowerCase().includes("none")) return [];
+    return result.split(",").map((n) => n.trim()).filter((n) => n.length > 1 && n.length < 30);
+  } catch {
+    return [];
+  }
+}
+
 export const SCENE_OPENERS = [
   "It was the kind of moment that made the air feel heavier.",
   "The town had seen many strange things, but nothing quite like this.",
@@ -334,9 +354,9 @@ export function expandLocally(existingStory, userAnswer) {
   }
 }
 
-export async function generateStoryPassage(existingStory, prompt, userAnswer, styleSettings, chapter = 1, genreVoiceCtx = "", lang = "en") {
+export async function generateStoryPassage(existingStory, prompt, userAnswer, styleSettings, chapter = 1, genreVoiceCtx = "", lang = "en", usedNames = []) {
   try {
-    const aiText = await callClaudeAPI(existingStory, prompt, userAnswer, styleSettings, chapter, genreVoiceCtx, lang);
+    const aiText = await callClaudeAPI(existingStory, prompt, userAnswer, styleSettings, chapter, genreVoiceCtx, lang, usedNames);
     return { text: aiText, source: "ai" };
   } catch (err) {
     console.warn("AI generation failed, using local expansion:", err.message);

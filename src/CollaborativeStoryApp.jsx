@@ -5,10 +5,11 @@ import { BsSliders2Vertical } from "react-icons/bs";
 import { TRANSLATIONS } from "./constants/translations.js";
 import { MONO, TYPEWRITER, SERIF, storyFontForId, buildFontIndexMap, bookColor } from "./constants/fonts.js";
 import { getStoryContext, getStyleForStory } from "./utils/storyContext.js";
+import { splitIntoParagraphs } from "./utils/text.js";
 import { translateText } from "./services/api.js";
 import { storyKey, slugify, findStoryBySlug, loadStoriesIndex, saveStoriesIndex, deleteStoryData } from "./services/storage.js";
 import { requestBrowserLocation, fetchLocation } from "./services/location.js";
-import { generatePrompt, shouldEndChapter, generateChapterTitle, generateStoryOpener, generateStoryPassage, retitleStory } from "./services/storyGeneration.js";
+import { generatePrompt, shouldEndChapter, generateChapterTitle, generateStoryOpener, generateStoryPassage, retitleStory, extractCharacterNames } from "./services/storyGeneration.js";
 
 import TypewriterReveal from "./components/TypewriterReveal.jsx";
 import StoryLine from "./components/StoryLine.jsx";
@@ -683,8 +684,22 @@ export default function CollaborativeStoryApp() {
   };
 
   const handleCreateStory = async (meta) => {
+    // Collect character names from existing stories to avoid reuse
+    let usedNames = [];
+    try {
+      const firstPassages = [];
+      for (const s of storiesIndex) {
+        const result = await window.storage.get(storyKey(s.id, "data-v1"), true);
+        if (result) {
+          const data = JSON.parse(result.value);
+          if (data.length > 0) firstPassages.push(data[0].text);
+        }
+      }
+      usedNames = await extractCharacterNames(firstPassages);
+    } catch { /* proceed without names */ }
+
     // Generate opener BEFORE saving to index — prevents zombie entries on failure
-    const opener = await generateStoryOpener(meta, lang);
+    const opener = await generateStoryOpener(meta, lang, usedNames);
 
     // Reset local state
     setActiveStoryId(meta.id);
@@ -1325,13 +1340,31 @@ export default function CollaborativeStoryApp() {
                         </div>
                       );
                     })}
-                    {(phase === "streaming" || phase === "adding") && generatedText && (
+                    {phase === "streaming" && generatedText && (
                       <div style={{ position: "relative" }}>
                         <TypewriterReveal
                           text={generatedText}
                           narrow={narrowViewport}
                           onComplete={handleStreamingComplete}
                         />
+                      </div>
+                    )}
+                    {phase === "adding" && generatedText && (
+                      <div style={{
+                        fontFamily: "'Faustina', serif", fontSize: "19px", fontWeight: 300,
+                        lineHeight: 1.8, color: "#e8ddd0", margin: 0,
+                        textRendering: "optimizeLegibility", fontOpticalSizing: "auto",
+                        fontFeatureSettings: '"kern", "liga", "calt"',
+                        hangingPunctuation: "first last",
+                        textWrap: narrowViewport ? "auto" : "pretty",
+                        hyphens: narrowViewport ? "auto" : "manual",
+                        overflowWrap: "break-word", maxWidth: "65ch",
+                        display: "flex", flexDirection: "column", gap: "12px",
+                        opacity: 0.5,
+                      }}>
+                        {splitIntoParagraphs(generatedText).map((para, i) => (
+                          <p key={i} style={{ margin: 0 }}>{para}</p>
+                        ))}
                       </div>
                     )}
                     <div ref={storyEndRef} />

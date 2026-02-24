@@ -6,6 +6,9 @@ export default function TypewriterReveal({ text, narrow, onComplete }) {
   const idx = useRef(0);
   const paragraphs = useRef([]);
 
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
+
   useEffect(() => {
     paragraphs.current = splitIntoParagraphs(text);
     idx.current = 0;
@@ -16,11 +19,11 @@ export default function TypewriterReveal({ text, narrow, onComplete }) {
         setCharCount(idx.current);
       } else {
         clearInterval(interval);
-        if (onComplete) onComplete();
+        if (onCompleteRef.current) onCompleteRef.current();
       }
     }, 18);
     return () => clearInterval(interval);
-  }, [text, onComplete]);
+  }, [text]);
 
   const fullParagraphs = paragraphs.current;
   const visibleParagraphs = [];
