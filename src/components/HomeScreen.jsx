@@ -29,14 +29,26 @@ export default function HomeScreen({ stories, onSelectStory, onNewStory, onAbout
     });
     return () => { cancelled = true; };
   }, [lang, stories]);
-  const [wideEnough, setWideEnough] = useState(() => typeof window !== "undefined" && window.innerWidth >= 900);
+  const pillsRef = useRef(null);
+  const [pillsOverflow, setPillsOverflow] = useState(false);
+  const [pillsScrollLeft, setPillsScrollLeft] = useState(false);
+  const [pillsScrollRight, setPillsScrollRight] = useState(false);
 
   useEffect(() => {
-    const mq = window.matchMedia("(min-width: 900px)");
-    const handler = (e) => setWideEnough(e.matches);
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  }, []);
+    const el = pillsRef.current;
+    if (!el) return;
+    const check = () => {
+      const overflows = el.scrollWidth > el.clientWidth + 1;
+      setPillsOverflow(overflows);
+      setPillsScrollLeft(el.scrollLeft > 2);
+      setPillsScrollRight(overflows && el.scrollLeft < el.scrollWidth - el.clientWidth - 2);
+    };
+    check();
+    el.addEventListener("scroll", check);
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    return () => { ro.disconnect(); el.removeEventListener("scroll", check); };
+  }, [homeLayout, carouselFilter]);
   const [activityFeed, setActivityFeed] = useState([]);
   const [activityLoading, setActivityLoading] = useState(false);
   const sorted = [...stories].sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
@@ -144,6 +156,62 @@ export default function HomeScreen({ stories, onSelectStory, onNewStory, onAbout
     .map((g) => ({ genre: g, stories: sorted.filter((s) => s.genre === g.id) }))
     .filter((r) => r.stories.length > 0);
 
+  const renderFilterPills = () => {
+    const hPad = isTouch ? "20px" : "32px";
+    return (
+      <div style={{ position: "relative", marginTop: isTouch ? "20px" : "12px", marginLeft: isTouch ? `-${hPad}` : 0, marginRight: isTouch ? `-${hPad}` : 0 }}>
+        <div
+          ref={pillsRef}
+          className="story-hscroll"
+          style={{
+            display: "flex", gap: "6px",
+            overflowX: "auto", scrollbarWidth: "none", msOverflowStyle: "none",
+            justifyContent: pillsOverflow ? "flex-start" : "center",
+            paddingLeft: isTouch ? hPad : 0, paddingRight: isTouch ? hPad : 0,
+          }}
+        >
+          {[{ id: "all", label: t("all") }, ...GENRES].map((g) => {
+            const active = carouselFilter === g.id;
+            return (
+              <button
+                key={g.id}
+                onClick={() => setCarouselFilter(g.id)}
+                style={{
+                  fontFamily: MONO, fontSize: isTouch ? "10px" : "12px", textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  padding: isTouch ? "4px 12px" : "6px 16px", borderRadius: "20px",
+                  border: active ? "1px solid rgba(255,255,255,0.4)" : "1px solid rgba(255,255,255,0.1)",
+                  background: active ? "rgba(255,255,255,0.08)" : "transparent",
+                  color: active ? "#e8ddd0" : "rgba(255,255,255,0.3)",
+                  cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={(e) => { if (!active) { e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)"; e.currentTarget.style.color = "rgba(255,255,255,0.5)"; e.currentTarget.style.background = "rgba(255,255,255,0.04)"; }}}
+                onMouseLeave={(e) => { if (!active) { e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; e.currentTarget.style.color = "rgba(255,255,255,0.3)"; e.currentTarget.style.background = "transparent"; }}}
+              >
+                {g.id === "all" ? g.label : t("genre_" + g.id)}
+              </button>
+            );
+          })}
+        </div>
+        {pillsScrollLeft && (
+          <div style={{
+            position: "absolute", top: 0, left: 0, bottom: 0, width: "48px",
+            background: "linear-gradient(to left, transparent, #0f0e0c)",
+            pointerEvents: "none",
+          }} />
+        )}
+        {pillsScrollRight && (
+          <div style={{
+            position: "absolute", top: 0, right: 0, bottom: 0, width: "48px",
+            background: "linear-gradient(to right, transparent, #0f0e0c)",
+            pointerEvents: "none",
+          }} />
+        )}
+      </div>
+    );
+  };
+
   return (
     <div style={{
       display: "flex", flexDirection: "column",
@@ -152,93 +220,76 @@ export default function HomeScreen({ stories, onSelectStory, onNewStory, onAbout
     }}>
       <div style={{
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 10,
-        display: "flex", justifyContent: "space-between", alignItems: "center",
         padding: isTouch ? "16px 20px" : "20px 32px",
         maxWidth: "1200px", margin: "0 auto",
         background: "linear-gradient(to bottom, #0f0e0c 60%, transparent)",
         paddingBottom: isTouch ? "32px" : "40px",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0, flex: 1 }}>
-          <h1 style={{
-            fontFamily: TYPEWRITER, fontSize: isTouch ? "18px" : "20px", fontWeight: 400,
-            color: "#e8ddd0", margin: 0, flexShrink: 0,
-          }}>
-            {t("app_name")}
-          </h1>
-          {homeLayout === "carousel" && wideEnough && (
-            <div className="story-hscroll" style={{ display: "flex", gap: "6px", marginLeft: "12px", overflowX: "auto", scrollbarWidth: "none", msOverflowStyle: "none" }}>
-              {[{ id: "all", label: t("all") }, ...GENRES].map((g) => {
-                const active = carouselFilter === g.id;
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: "12px", minWidth: 0 }}>
+            <h1 style={{
+              fontFamily: TYPEWRITER, fontSize: isTouch ? "18px" : "20px", fontWeight: 400,
+              color: "#e8ddd0", margin: 0, flexShrink: 0,
+            }}>
+              {t("app_name")}
+            </h1>
+            {!isTouch && <span style={{
+              fontFamily: "'Faustina', serif", fontSize: "13px",
+              fontStyle: "italic",
+              color: "rgba(255,255,255,0.3)",
+              whiteSpace: "nowrap",
+            }}>
+              {t("tagline")}
+            </span>}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 }}>
+            <div style={{ display: "flex", gap: "2px", background: "rgba(255,255,255,0.05)", borderRadius: "20px", padding: "2px" }}>
+              {[{ id: "rows", icon: TbLayoutListFilled, iconOff: TbLayoutList }, { id: "carousel", icon: MdOutlineViewCarousel, iconOff: MdOutlineViewCarousel }, { id: "activity", icon: GoPulse, iconOff: GoPulse }].map((tab) => {
+                const active = homeLayout === tab.id;
+                const Icon = active ? tab.icon : tab.iconOff;
                 return (
-                  <button
-                    key={g.id}
-                    onClick={() => setCarouselFilter(g.id)}
-                    style={{
-                      fontFamily: MONO, fontSize: "10px", textTransform: "uppercase",
-                      letterSpacing: "0.5px",
-                      padding: "4px 12px", borderRadius: "20px",
-                      border: active ? "1px solid rgba(255,255,255,0.4)" : "1px solid rgba(255,255,255,0.1)",
-                      background: active ? "rgba(255,255,255,0.08)" : "transparent",
-                      color: active ? "#e8ddd0" : "rgba(255,255,255,0.3)",
-                      cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
-                      transition: "all 0.15s",
-                    }}
-                    onMouseEnter={(e) => { if (!active) { e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)"; e.currentTarget.style.color = "rgba(255,255,255,0.5)"; e.currentTarget.style.background = "rgba(255,255,255,0.04)"; }}}
-                    onMouseLeave={(e) => { if (!active) { e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; e.currentTarget.style.color = "rgba(255,255,255,0.3)"; e.currentTarget.style.background = "transparent"; }}}
-                  >
-                    {g.id === "all" ? g.label : t("genre_" + g.id)}
-                  </button>
+                <button
+                  key={tab.id}
+                  onClick={() => setHomeLayout(tab.id)}
+                  style={{
+                    background: active ? "rgba(255,255,255,0.12)" : "transparent",
+                    border: "none", borderRadius: "18px",
+                    padding: "6px 10px",
+                    color: active ? "#e8ddd0" : "rgba(255,255,255,0.35)",
+                    cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    transition: "background 0.15s, color 0.15s",
+                  }}
+                >
+                  <Icon size={14} />
+                </button>
                 );
               })}
             </div>
-          )}
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 }}>
-          <div style={{ display: "flex", gap: "2px", background: "rgba(255,255,255,0.05)", borderRadius: "20px", padding: "2px" }}>
-            {[{ id: "rows", icon: TbLayoutListFilled, iconOff: TbLayoutList }, { id: "carousel", icon: MdOutlineViewCarousel, iconOff: MdOutlineViewCarousel }, { id: "activity", icon: GoPulse, iconOff: GoPulse }].map((tab) => {
-              const active = homeLayout === tab.id;
-              const Icon = active ? tab.icon : tab.iconOff;
-              return (
-              <button
-                key={tab.id}
-                onClick={() => setHomeLayout(tab.id)}
-                style={{
-                  background: active ? "rgba(255,255,255,0.12)" : "transparent",
-                  border: "none", borderRadius: "18px",
-                  padding: "6px 10px",
-                  color: active ? "#e8ddd0" : "rgba(255,255,255,0.35)",
-                  cursor: "pointer",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  transition: "background 0.15s, color 0.15s",
-                }}
-              >
-                <Icon size={14} />
-              </button>
-              );
-            })}
+            <button
+              onClick={(e) => {
+                e.currentTarget.style.transform = "scale(1.05)";
+                e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.5)";
+                setTimeout(() => onNewStory(), 150);
+              }}
+              style={{
+                padding: isTouch ? "6px 16px" : "8px 20px", borderRadius: "28px",
+                background: "#e8ddd0", border: "none", color: "#0f0e0c",
+                cursor: "pointer",
+                boxShadow: "0 2px 12px rgba(0,0,0,0.4)",
+                display: "flex", alignItems: "center", gap: "8px",
+                transition: "transform 0.15s, box-shadow 0.15s",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.05)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.5)"; }}
+              onMouseDown={(e) => { e.currentTarget.style.transform = "scale(0.95)"; e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.3)"; }}
+              onMouseUp={(e) => { e.currentTarget.style.transform = "scale(1.05)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.5)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = "0 2px 12px rgba(0,0,0,0.4)"; }}
+            >
+              <span style={{ fontSize: isTouch ? "14px" : "16px", lineHeight: 1 }}>+</span>
+            </button>
           </div>
-          <button
-            onClick={(e) => {
-              e.currentTarget.style.transform = "scale(1.05)";
-              e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.5)";
-              setTimeout(() => onNewStory(), 150);
-            }}
-            style={{
-              padding: isTouch ? "6px 16px" : "8px 20px", borderRadius: "28px",
-              background: "#e8ddd0", border: "none", color: "#0f0e0c",
-              cursor: "pointer",
-              boxShadow: "0 2px 12px rgba(0,0,0,0.4)",
-              display: "flex", alignItems: "center", gap: "8px",
-              transition: "transform 0.15s, box-shadow 0.15s",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.05)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.5)"; }}
-            onMouseDown={(e) => { e.currentTarget.style.transform = "scale(0.95)"; e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.3)"; }}
-            onMouseUp={(e) => { e.currentTarget.style.transform = "scale(1.05)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.5)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = "0 2px 12px rgba(0,0,0,0.4)"; }}
-          >
-            <span style={{ fontSize: isTouch ? "14px" : "16px", lineHeight: 1 }}>+</span>
-          </button>
         </div>
+        {homeLayout === "carousel" && isTouch && renderFilterPills()}
       </div>
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", paddingTop: homeLayout === "rows" ? (isTouch ? "16px" : "24px") : 0 }}>
@@ -266,47 +317,13 @@ export default function HomeScreen({ stories, onSelectStory, onNewStory, onAbout
             ? [...carouselBase, ...carouselBase, ...carouselBase]
             : carouselBase;
           return (
-            <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
-              {!wideEnough && (
-              <div style={{ position: "relative", marginBottom: "16px", marginTop: isTouch ? "16px" : 0 }}>
-                <div style={{
-                  position: "absolute", top: 0, bottom: 0, left: 0, right: 0,
-                  pointerEvents: "none", zIndex: 1,
-                  background: "linear-gradient(to right, #0f0e0c 0%, transparent 24px, transparent calc(100% - 24px), #0f0e0c 100%)",
-                }} />
-              <div className="story-hscroll" style={{
-                display: "flex", gap: "8px",
-                overflowX: "auto", WebkitOverflowScrolling: "touch",
-                padding: "0 24px",
-                scrollbarWidth: "none", msOverflowStyle: "none",
-              }}>
-                {[{ id: "all", label: t("all") }, ...GENRES].map((g) => {
-                  const active = carouselFilter === g.id;
-                  return (
-                    <button
-                      key={g.id}
-                      onClick={() => setCarouselFilter(g.id)}
-                      style={{
-                        fontFamily: MONO, fontSize: "11px", textTransform: "uppercase",
-                        letterSpacing: "0.5px",
-                        padding: "6px 14px", borderRadius: "20px",
-                        border: active ? "1px solid rgba(255,255,255,0.4)" : "1px solid rgba(255,255,255,0.1)",
-                        background: active ? "rgba(255,255,255,0.08)" : "transparent",
-                        color: active ? "#e8ddd0" : "rgba(255,255,255,0.3)",
-                        cursor: "pointer", flexShrink: 0,
-                        transition: "all 0.15s",
-                      }}
-                      onMouseEnter={(e) => { if (!active) { e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)"; e.currentTarget.style.color = "rgba(255,255,255,0.5)"; e.currentTarget.style.background = "rgba(255,255,255,0.04)"; }}}
-                      onMouseLeave={(e) => { if (!active) { e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; e.currentTarget.style.color = "rgba(255,255,255,0.3)"; e.currentTarget.style.background = "transparent"; }}}
-                    >
-                      {g.id === "all" ? g.label : t("genre_" + g.id)}
-                    </button>
-                  );
-                })}
-              </div>
-              </div>
+            <div style={{ display: "flex", flexDirection: "column", flex: 1, justifyContent: "center" }}>
+              {!isTouch && (
+                <div style={{ padding: "0 32px", marginBottom: "24px" }}>
+                  {renderFilterPills()}
+                </div>
               )}
-              <div style={{ position: "relative", overflow: "hidden", display: "flex", alignItems: "center", flex: 1 }}>
+              <div style={{ position: "relative", overflow: "hidden", display: "flex", alignItems: "center" }}>
                 <div style={{
                   position: "absolute", top: 0, bottom: 0, left: 0, right: 0,
                   pointerEvents: "none", zIndex: 1,
@@ -320,7 +337,7 @@ export default function HomeScreen({ stories, onSelectStory, onNewStory, onAbout
                     overflowX: "auto", WebkitOverflowScrolling: "touch",
                     padding: isTouch ? "20px calc(50% - 100px)" : "30px 32px",
                     scrollbarWidth: "none", msOverflowStyle: "none",
-                    perspective: isTouch ? "none" : "800px",
+                    perspective: "none",
                     width: "100%",
                     ...(!needsLoop && !isTouch ? { justifyContent: "center" } : {}),
                     ...(isTouch ? { scrollSnapType: "x mandatory" } : {}),
@@ -356,7 +373,7 @@ export default function HomeScreen({ stories, onSelectStory, onNewStory, onAbout
                             const rect = e.currentTarget.getBoundingClientRect();
                             const x = (e.clientX - rect.left) / rect.width - 0.5;
                             const y = (e.clientY - rect.top) / rect.height - 0.5;
-                            e.currentTarget.style.transform = `scale(1.08) rotateY(${x * 14}deg) rotateX(${-y * 14}deg)`;
+                            e.currentTarget.style.transform = `perspective(800px) scale(1.08) rotateY(${x * 14}deg) rotateX(${-y * 14}deg)`;
                             e.currentTarget.style.boxShadow = `${-x * 14}px ${y * 14}px 25px rgba(0,0,0,0.35)`;
                             e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)";
                           },

@@ -2,6 +2,7 @@ export const TRANSLATIONS = {
   en: {
     // App
     app_name: "Falkor",
+    tagline: "Collaborative storytelling with AI",
     // Nav & actions
     back: "Back",
     home: "Home",
@@ -181,6 +182,7 @@ export const TRANSLATIONS = {
   es: {
     // App
     app_name: "Falkor",
+    tagline: "Narrativa colaborativa con IA",
     // Nav & actions
     back: "Atrás",
     home: "Inicio",
