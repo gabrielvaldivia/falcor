@@ -100,6 +100,8 @@ export default function CollaborativeStoryApp() {
   const [topBarScrolled, setTopBarScrolled] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [confirmDeleteMenu, setConfirmDeleteMenu] = useState(false);
+  const [editingField, setEditingField] = useState(null); // null | "title" | "instructions"
+  const [editFieldValue, setEditFieldValue] = useState("");
   const [showSliders, setShowSliders] = useState(false);
   const [promptLoading, setPromptLoading] = useState(false);
   const prevPlotRef = useRef(5);
@@ -708,6 +710,45 @@ export default function CollaborativeStoryApp() {
     setStoriesIndex(updatedIndex);
   };
 
+  const handleSaveTitle = async () => {
+    if (!activeStoryId || !editFieldValue.trim()) return;
+    const newTitle = editFieldValue.trim();
+    const newSlug = slugify(newTitle) || String(activeStoryId);
+    const updatedIndex = storiesIndex.map((s) =>
+      s.id === activeStoryId
+        ? { ...s, title: newTitle, [`title_${lang}`]: newTitle, slug: newSlug }
+        : s
+    );
+    await saveStoriesIndex(updatedIndex);
+    setStoriesIndex(updatedIndex);
+    setEditingField(null);
+    // Update URL with new slug
+    history.replaceState(null, "", withLang("/api/story/" + newSlug));
+    // Fire-and-forget: translate title to other language
+    const otherLang = lang === "en" ? "es" : "en";
+    translateText(newTitle, otherLang).then(async (tr) => {
+      if (tr) {
+        const patchedIndex = updatedIndex.map((s) =>
+          s.id === activeStoryId ? { ...s, [`title_${otherLang}`]: tr } : s
+        );
+        await saveStoriesIndex(patchedIndex).catch(() => {});
+        setStoriesIndex(patchedIndex);
+      }
+    }).catch(() => {});
+  };
+
+  const handleSaveInstructions = async () => {
+    if (!activeStoryId) return;
+    const updatedIndex = storiesIndex.map((s) =>
+      s.id === activeStoryId
+        ? { ...s, customInstructions: editFieldValue }
+        : s
+    );
+    await saveStoriesIndex(updatedIndex);
+    setStoriesIndex(updatedIndex);
+    setEditingField(null);
+  };
+
   const handleCreateStory = async (meta) => {
     // Collect character names from existing stories to avoid reuse
     let usedNames = [];
@@ -1021,6 +1062,40 @@ export default function CollaborativeStoryApp() {
                         </button>
                         <button
                           onClick={() => {
+                            setEditFieldValue(activeStoryMeta?.title || "");
+                            setEditingField("title");
+                            setShowStoryMenu(false);
+                          }}
+                          style={{
+                            display: "block", width: "100%",
+                            background: "none", border: "none",
+                            fontFamily: MONO, fontSize: "12px",
+                            color: "rgba(255,255,255,0.5)",
+                            cursor: "pointer", padding: "8px 14px",
+                            textAlign: "left",
+                          }}
+                        >
+                          {t("edit_title")}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEditFieldValue(activeStoryMeta?.customInstructions || "");
+                            setEditingField("instructions");
+                            setShowStoryMenu(false);
+                          }}
+                          style={{
+                            display: "block", width: "100%",
+                            background: "none", border: "none",
+                            fontFamily: MONO, fontSize: "12px",
+                            color: "rgba(255,255,255,0.5)",
+                            cursor: "pointer", padding: "8px 14px",
+                            textAlign: "left",
+                          }}
+                        >
+                          {t("edit_instructions")}
+                        </button>
+                        <button
+                          onClick={() => {
                             if (confirmDeleteMenu) {
                               setShowStoryMenu(false);
                               setConfirmDeleteMenu(false);
@@ -1201,6 +1276,44 @@ export default function CollaborativeStoryApp() {
                           onMouseLeave={(e) => e.currentTarget.style.background = "none"}
                         >
                           {linkCopied ? t("copied") : t("copy_link")}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEditFieldValue(activeStoryMeta?.title || "");
+                            setEditingField("title");
+                            setShowStoryMenu(false);
+                          }}
+                          style={{
+                            display: "block", width: "100%",
+                            background: "none", border: "none",
+                            fontFamily: MONO, fontSize: "12px",
+                            color: "rgba(255,255,255,0.5)",
+                            cursor: "pointer", padding: "8px 14px",
+                            textAlign: "left",
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                          onMouseLeave={(e) => e.currentTarget.style.background = "none"}
+                        >
+                          {t("edit_title")}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEditFieldValue(activeStoryMeta?.customInstructions || "");
+                            setEditingField("instructions");
+                            setShowStoryMenu(false);
+                          }}
+                          style={{
+                            display: "block", width: "100%",
+                            background: "none", border: "none",
+                            fontFamily: MONO, fontSize: "12px",
+                            color: "rgba(255,255,255,0.5)",
+                            cursor: "pointer", padding: "8px 14px",
+                            textAlign: "left",
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                          onMouseLeave={(e) => e.currentTarget.style.background = "none"}
+                        >
+                          {t("edit_instructions")}
                         </button>
                         <button
                           onClick={() => {
@@ -1648,6 +1761,105 @@ export default function CollaborativeStoryApp() {
               >
                 <div onClick={(e) => e.stopPropagation()}>
                   <StoryPopover entry={dialogEntry} onClose={() => setDialogEntry(null)} t={t} />
+                </div>
+              </div>
+            )}
+            {/* ── Edit Title / Instructions Modal ── */}
+            {editingField && (
+              <div
+                onClick={() => setEditingField(null)}
+                style={{
+                  position: "fixed", inset: 0,
+                  background: "rgba(0,0,0,0.6)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  zIndex: 100,
+                }}
+              >
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    background: "#1a1917",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: "8px",
+                    padding: "24px",
+                    width: "90%",
+                    maxWidth: "400px",
+                  }}
+                >
+                  <div style={{
+                    fontFamily: MONO, fontSize: "12px",
+                    color: "rgba(255,255,255,0.5)",
+                    marginBottom: "12px",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                  }}>
+                    {editingField === "title" ? t("edit_title") : t("edit_instructions")}
+                  </div>
+                  {editingField === "title" ? (
+                    <input
+                      type="text"
+                      value={editFieldValue}
+                      onChange={(e) => setEditFieldValue(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") handleSaveTitle(); }}
+                      autoFocus
+                      style={{
+                        width: "100%",
+                        background: "rgba(255,255,255,0.05)",
+                        border: "1px solid rgba(255,255,255,0.1)",
+                        borderRadius: "4px",
+                        padding: "10px 12px",
+                        fontFamily: MONO, fontSize: "14px",
+                        color: "#e8ddd0",
+                        outline: "none",
+                      }}
+                    />
+                  ) : (
+                    <textarea
+                      value={editFieldValue}
+                      onChange={(e) => setEditFieldValue(e.target.value)}
+                      autoFocus
+                      rows={4}
+                      style={{
+                        width: "100%",
+                        background: "rgba(255,255,255,0.05)",
+                        border: "1px solid rgba(255,255,255,0.1)",
+                        borderRadius: "4px",
+                        padding: "10px 12px",
+                        fontFamily: MONO, fontSize: "14px",
+                        color: "#e8ddd0",
+                        outline: "none",
+                        resize: "vertical",
+                      }}
+                    />
+                  )}
+                  <div style={{
+                    display: "flex", justifyContent: "flex-end", gap: "12px",
+                    marginTop: "16px",
+                  }}>
+                    <button
+                      onClick={() => setEditingField(null)}
+                      style={{
+                        background: "none", border: "none",
+                        fontFamily: MONO, fontSize: "12px",
+                        color: "rgba(255,255,255,0.4)",
+                        cursor: "pointer", padding: "6px 12px",
+                      }}
+                    >
+                      {t("back")}
+                    </button>
+                    <button
+                      onClick={editingField === "title" ? handleSaveTitle : handleSaveInstructions}
+                      style={{
+                        background: "#e8ddd0", border: "none",
+                        borderRadius: "20px",
+                        fontFamily: MONO, fontSize: "12px",
+                        color: "#0f0e0c",
+                        cursor: "pointer", padding: "6px 16px",
+                      }}
+                    >
+                      {t("save")}
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
