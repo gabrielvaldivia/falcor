@@ -1039,6 +1039,7 @@ export default function CollaborativeStoryApp() {
             lang={lang}
             setLang={setLang}
             t={t}
+            lastViewedStoryId={activeStoryId}
           />
         )}
 

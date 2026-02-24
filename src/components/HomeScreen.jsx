@@ -11,7 +11,7 @@ import BookTitle from "./BookTitle.jsx";
 import StoryRow from "./StoryRow.jsx";
 import AppFooter from "./AppFooter.jsx";
 
-export default function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, setHomeLayout, fontIndexMap, lang, setLang, t }) {
+export default function HomeScreen({ stories, onSelectStory, onNewStory, onAbout, homeLayout, setHomeLayout, fontIndexMap, lang, setLang, t, lastViewedStoryId }) {
   const isTouch = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
   const carouselRef = useRef(null);
   const [carouselFilter, setCarouselFilter] = useState("all");
@@ -93,6 +93,19 @@ export default function HomeScreen({ stories, onSelectStory, onNewStory, onAbout
     const needsLoop = sorted.length > 2;
     if (!needsLoop) return;
     requestAnimationFrame(() => {
+      // If returning from a story, center on that story's card
+      if (lastViewedStoryId) {
+        const targetIdx = sorted.findIndex((s) => s.id === lastViewedStoryId);
+        if (targetIdx >= 0) {
+          // Cards are tripled for infinite loop; target is in the middle set
+          const cardIdx = sorted.length + targetIdx;
+          const card = el.children[cardIdx];
+          if (card) {
+            el.scrollLeft = card.offsetLeft - (el.clientWidth - card.offsetWidth) / 2;
+            return;
+          }
+        }
+      }
       const firstCard = el.children[sorted.length];
       if (firstCard) {
         el.scrollLeft = firstCard.offsetLeft - (el.clientWidth - firstCard.offsetWidth) / 2;
