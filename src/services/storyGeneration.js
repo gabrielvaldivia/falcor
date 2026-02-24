@@ -5,7 +5,7 @@ import { getStyleForStory } from "../utils/storyContext.js";
 
 export async function generatePrompt(existingStory, chapter = 1, isNewChapter = false, genreVoiceCtx = "", plotPace = 5, lang = "en") {
   const storyContext = existingStory.length > 0
-    ? existingStory.slice(-3).map((e) => e.text).join("\n\n")
+    ? existingStory.slice(-3).map((e) => e[`text_${lang}`] || e.text).join("\n\n")
     : "";
 
   const plotPaceInstruction = plotPace <= 2
@@ -155,7 +155,7 @@ export async function callClaudeAPI(existingStory, prompt, userAnswer, styleSett
           const recent = existingStory.slice(-8);
           const first = existingStory[0];
           const passages = recent.includes(first) ? recent : [first, ...recent];
-          return passages.map((e) => e.text).join("\n\n");
+          return passages.map((e) => e[`text_${lang}`] || e.text).join("\n\n");
         })()
       : "";
 

@@ -130,22 +130,21 @@ export default function CollaborativeStoryApp() {
     return { ...base, plot: sliderPlot, dialogue: sliderDialogue, surprise: sliderSurprise, emotion: sliderEmotion };
   }, [activeStoryMeta, sliderPlot, sliderDialogue, sliderSurprise, sliderEmotion]);
 
-  // Translate story content when language changes (legacy fallback for old stories without stored translations)
+  // Translate passages, titles, chapter titles when lang or story data changes
   useEffect(() => {
-    if (lang === "en") {
-      setTranslatedTitle(null);
-      setTranslatedTexts({});
-      setTranslatedChapterTitles({});
-      return;
-    }
     let cancelled = false;
-    // Only runtime-translate title if no stored translation exists
+    setTranslatedTitle(null);
+    setTranslatedTexts({});
+    setTranslatedChapterTitles({});
+
+    // Title
     if (activeStoryMeta?.title && !activeStoryMeta[`title_${lang}`]) {
       translateText(activeStoryMeta.title, lang).then((tr) => {
         if (!cancelled) setTranslatedTitle(tr);
       });
     }
-    // Only runtime-translate passages that lack stored translations
+
+    // Passages
     if (story.length > 0) {
       story.forEach((entry, i) => {
         if (!entry[`text_${lang}`]) {
@@ -155,7 +154,8 @@ export default function CollaborativeStoryApp() {
         }
       });
     }
-    // Only runtime-translate chapter titles that lack stored translations
+
+    // Chapter titles
     if (chapterTitles && Object.keys(chapterTitles).length > 0) {
       Object.entries(chapterTitles).forEach(([ch, title]) => {
         if (!ch.includes("_") && !chapterTitles[`${ch}_${lang}`]) {
@@ -165,14 +165,38 @@ export default function CollaborativeStoryApp() {
         }
       });
     }
-    // Load stored prompt for the switched-to language
-    if (activeStoryId) {
-      window.storage.get(storyKey(activeStoryId, `prompt-${lang}-v1`), true).then((result) => {
-        if (!cancelled && result?.value) setCurrentPrompt(result.value);
-      }).catch(() => {});
-    }
+
     return () => { cancelled = true; };
   }, [lang, activeStoryMeta?.title, story, chapterTitles]);
+
+  // Load/regenerate prompt when language changes
+  const promptLangRef = useRef(null);
+  useEffect(() => {
+    if (!activeStoryId || story.length === 0) return;
+    // Build a key so we only act on lang changes, not other dep changes
+    const key = `${activeStoryId}:${lang}`;
+    if (promptLangRef.current === key) return;
+    promptLangRef.current = key;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const result = await window.storage.get(storyKey(activeStoryId, `prompt-${lang}-v1`), true);
+        if (cancelled) return;
+        if (result?.value) {
+          setCurrentPrompt(result.value);
+        } else {
+          // No stored prompt for this language — regenerate it
+          const ctx = getGenreVoiceCtx();
+          const newPrompt = await generatePrompt(story, currentChapter, false, ctx, sliderPlot, lang);
+          if (cancelled) return;
+          setCurrentPrompt(newPrompt);
+          await window.storage.set(storyKey(activeStoryId, `prompt-${lang}-v1`), newPrompt, true).catch(() => {});
+        }
+      } catch { /* keep current prompt */ }
+    })();
+    return () => { cancelled = true; };
+  }, [lang, activeStoryId, story, currentChapter, sliderPlot, getGenreVoiceCtx]);
 
   // Regenerate prompt when plot slider changes (debounced)
   useEffect(() => {
@@ -492,7 +516,7 @@ export default function CollaborativeStoryApp() {
     try {
       const result = await generateStoryPassage(
         story, currentPrompt, userAnswer,
-        getActiveStyleSettings(), currentChapter, getGenreVoiceCtx()
+        getActiveStyleSettings(), currentChapter, getGenreVoiceCtx(), lang
       );
       setGeneratedText(result.text);
       setGenerationSource(result.source);
