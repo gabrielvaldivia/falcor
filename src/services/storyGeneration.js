@@ -171,7 +171,8 @@ CRITICAL RULES:
 - Write ONLY the story text. No preamble, no explanation, no quotes around it.
 - Write in third person, past tense.
 - Seamlessly continue from the existing story if provided.
-- The output must be substantially different and richer than the user's raw input.
+- The user's answer MUST appear explicitly in the prose — as dialogue, action, or narration. Do not merely allude to it or paraphrase it beyond recognition. The reader should be able to spot the user's contribution in the text.
+- Build on the user's answer with richer detail, but never replace or obscure it.
 - Build toward a satisfying narrative arc within this chapter.${nameAvoidance}
 
 YOU MUST STRICTLY FOLLOW THESE STYLE SETTINGS — they are the most important constraint:
