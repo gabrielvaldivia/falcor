@@ -26,7 +26,6 @@ export const GENRE_FONTS = {
     { family: "'Borel', cursive" },
     { family: "'Walter Turncoat', cursive" },
     { family: "'Galindo', cursive" },
-    { family: "'Ranchers', cursive" },
   ],
   horror: [
     { family: "'UnifrakturMaguntia', cursive" },
