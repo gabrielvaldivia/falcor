@@ -1325,7 +1325,7 @@ export default function CollaborativeStoryApp() {
                         </div>
                       );
                     })}
-                    {phase === "streaming" && generatedText && (
+                    {(phase === "streaming" || phase === "adding") && generatedText && (
                       <div style={{ position: "relative" }}>
                         <TypewriterReveal
                           text={generatedText}
@@ -1340,7 +1340,7 @@ export default function CollaborativeStoryApp() {
               )}
 
               {/* ── Prompt + Interaction Container ── */}
-              {phase !== "streaming" && <div style={{
+              {phase !== "streaming" && phase !== "adding" && <div style={{
                 background: "rgba(255,255,255,0.03)",
                 borderRadius: "8px",
                 padding: "24px",

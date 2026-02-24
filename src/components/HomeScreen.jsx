@@ -183,6 +183,8 @@ export default function HomeScreen({ stories, onSelectStory, onNewStory, onAbout
                       cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
                       transition: "all 0.15s",
                     }}
+                    onMouseEnter={(e) => { if (!active) { e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)"; e.currentTarget.style.color = "rgba(255,255,255,0.5)"; e.currentTarget.style.background = "rgba(255,255,255,0.04)"; }}}
+                    onMouseLeave={(e) => { if (!active) { e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; e.currentTarget.style.color = "rgba(255,255,255,0.3)"; e.currentTarget.style.background = "transparent"; }}}
                   >
                     {g.id === "all" ? g.label : t("genre_" + g.id)}
                   </button>
@@ -294,6 +296,8 @@ export default function HomeScreen({ stories, onSelectStory, onNewStory, onAbout
                         cursor: "pointer", flexShrink: 0,
                         transition: "all 0.15s",
                       }}
+                      onMouseEnter={(e) => { if (!active) { e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)"; e.currentTarget.style.color = "rgba(255,255,255,0.5)"; e.currentTarget.style.background = "rgba(255,255,255,0.04)"; }}}
+                      onMouseLeave={(e) => { if (!active) { e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; e.currentTarget.style.color = "rgba(255,255,255,0.3)"; e.currentTarget.style.background = "transparent"; }}}
                     >
                       {g.id === "all" ? g.label : t("genre_" + g.id)}
                     </button>

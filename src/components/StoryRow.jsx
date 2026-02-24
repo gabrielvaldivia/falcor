@@ -32,7 +32,6 @@ export default function StoryRow({ title, stories, onSelectStory, isTouch, genre
             overflowX: "auto", WebkitOverflowScrolling: "touch",
             padding: isTouch ? "30px 20px" : "30px 32px",
             scrollbarWidth: "none", msOverflowStyle: "none",
-            perspective: isTouch ? "none" : "800px",
           }}
         >
           {stories.map((s, si) => (
@@ -61,8 +60,8 @@ export default function StoryRow({ title, stories, onSelectStory, isTouch, genre
                   const rect = e.currentTarget.getBoundingClientRect();
                   const x = (e.clientX - rect.left) / rect.width - 0.5;
                   const y = (e.clientY - rect.top) / rect.height - 0.5;
-                  e.currentTarget.style.transform = `scale(1.08) rotateY(${x * 14}deg) rotateX(${-y * 14}deg)`;
-                  e.currentTarget.style.boxShadow = `${-x * 14}px ${y * 14}px 25px rgba(0,0,0,0.35)`;
+                  e.currentTarget.style.transform = `perspective(800px) scale(1.08) rotateY(${x * 8}deg) rotateX(${-y * 8}deg)`;
+                  e.currentTarget.style.boxShadow = `${-x * 10}px ${y * 10}px 25px rgba(0,0,0,0.35)`;
                   e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)";
                 },
                 onMouseDown: (e) => {

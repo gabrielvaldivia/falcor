@@ -35,8 +35,8 @@ export default function TypewriterReveal({ text, narrow, onComplete }) {
 
   return (
     <div style={{
-      fontFamily: "'Courier New', 'Courier', monospace", fontSize: "16px", fontWeight: 400,
-      lineHeight: 1.7, color: "#e8ddd0", fontStyle: "normal", margin: 0,
+      fontFamily: "'Faustina', serif", fontSize: "19px", fontWeight: 300,
+      lineHeight: 1.8, color: "#e8ddd0", fontStyle: "normal", margin: 0,
       textRendering: "optimizeLegibility", fontOpticalSizing: "auto",
       fontFeatureSettings: '"kern", "liga", "calt"',
       hangingPunctuation: "first last",
