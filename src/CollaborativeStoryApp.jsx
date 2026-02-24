@@ -9,7 +9,7 @@ import { splitIntoParagraphs } from "./utils/text.js";
 import { translateText } from "./services/api.js";
 import { storyKey, slugify, findStoryBySlug, loadStoriesIndex, saveStoriesIndex, deleteStoryData } from "./services/storage.js";
 import { requestBrowserLocation, fetchLocation } from "./services/location.js";
-import { generatePrompt, shouldEndChapter, generateChapterTitle, generateStoryOpener, generateStoryPassage, retitleStory, extractCharacterNames } from "./services/storyGeneration.js";
+import { generatePrompt, shouldEndChapter, generateChapterTitle, generateStoryOpener, generateStoryPassage, extractCharacterNames } from "./services/storyGeneration.js";
 
 import TypewriterReveal from "./components/TypewriterReveal.jsx";
 import StoryLine from "./components/StoryLine.jsx";
@@ -29,7 +29,7 @@ export default function CollaborativeStoryApp() {
     return "home";
   }); // "home" | "new" | "story" | "about"
   const [homeLayout, setHomeLayout] = useState(() => {
-    return HASH_TO_LAYOUT[window.location.hash] || "rows";
+    return HASH_TO_LAYOUT[window.location.hash] || "carousel";
   }); // "rows" | "carousel" | "activity"
   const [lang, setLang] = useState(() => {
     const urlLang = new URLSearchParams(window.location.search).get("lang");
@@ -226,50 +226,6 @@ export default function CollaborativeStoryApp() {
     })();
   }, []);
 
-  // One-time migration: retitle all existing stories with better titles
-  useEffect(() => {
-    const RETITLE_KEY = "falcor_retitled_v3";
-    if (localStorage.getItem(RETITLE_KEY)) return;
-    if (storiesIndex.length === 0) return;
-
-    (async () => {
-      let updated = [...storiesIndex];
-      let changed = false;
-
-      for (const meta of storiesIndex) {
-        if (!meta.title) continue;
-        try {
-          const storyResult = await window.storage.get(storyKey(meta.id, "data-v1"), true);
-          const storyData = storyResult ? JSON.parse(storyResult.value) : [];
-          if (storyData.length === 0) continue;
-
-          // Generate English title from English text
-          const enTitle = await retitleStory(storyData, meta.genre, meta.writingStyle, "en");
-          if (!enTitle) continue;
-
-          // Generate Spanish title from the same English title (translation, not regeneration)
-          const esTitle = await translateText(enTitle, "es");
-
-          const newSlug = slugify(enTitle) || meta.slug;
-          updated = updated.map((s) =>
-            s.id === meta.id
-              ? { ...s, title: enTitle, title_en: enTitle, ...(esTitle ? { title_es: esTitle } : {}), slug: newSlug }
-              : s
-          );
-          changed = true;
-        } catch (err) {
-          console.warn(`Retitle failed for story ${meta.id}:`, err.message);
-        }
-      }
-
-      if (changed) {
-        await saveStoriesIndex(updated);
-        setStoriesIndex(updated);
-      }
-      localStorage.setItem(RETITLE_KEY, "done");
-    })();
-  }, [storiesIndex.length]);
-
   // Load a specific story's data
   const loadStoryData = useCallback(async (id, isInitial) => {
     try {
@@ -286,6 +242,36 @@ export default function CollaborativeStoryApp() {
       setChapterTitles(loadedTitles);
 
       if (isInitial) {
+        // Backfill missing translations for passages
+        const otherLangBf = lang === "en" ? "es" : "en";
+        const untranslated = loadedStory
+          .map((e, i) => (!e[`text_${otherLangBf}`] && e.text) ? i : -1)
+          .filter((i) => i >= 0);
+        if (untranslated.length > 0) {
+          Promise.all(untranslated.map(async (i) => {
+            const tr = await translateText(loadedStory[i].text, otherLangBf);
+            return tr ? { i, tr } : null;
+          })).then(async (results) => {
+            try {
+              const freshResult = await window.storage.get(storyKey(id, "data-v1"), true);
+              if (!freshResult) return;
+              const freshData = JSON.parse(freshResult.value);
+              let changed = false;
+              for (const r of results) {
+                if (r && freshData[r.i]) {
+                  freshData[r.i][`text_${otherLangBf}`] = r.tr;
+                  if (!freshData[r.i][`text_${lang}`]) freshData[r.i][`text_${lang}`] = freshData[r.i].text;
+                  changed = true;
+                }
+              }
+              if (changed) {
+                await window.storage.set(storyKey(id, "data-v1"), JSON.stringify(freshData), true);
+                setStory(freshData);
+              }
+            } catch { /* ignore */ }
+          }).catch(() => {});
+        }
+
         // Load the active story meta for genre/voice context
         const idx = await loadStoriesIndex();
         const meta = idx.find((s) => s.id === id);
@@ -591,30 +577,43 @@ export default function CollaborativeStoryApp() {
 
       // Fire-and-forget: translate new passage, prompt, and chapter title to other language
       const otherLang = lang === "en" ? "es" : "en";
+      const storyId = activeStoryId;
       const toTranslate = [
         translateText(text, otherLang),
         translateText(nextPrompt, otherLang),
         chapterEnded && updatedTitles[currentChapter] ? translateText(updatedTitles[currentChapter], otherLang) : Promise.resolve(null),
       ];
       Promise.all(toTranslate).then(async ([trText, trPrompt, trChTitle]) => {
-        // Patch the new entry with bilingual text
+        // Re-read fresh from storage to avoid overwriting concurrent changes
         if (trText) {
-          const lastIdx = updatedStory.length - 1;
-          const patchedStory = updatedStory.map((e, i) =>
-            i === lastIdx ? { ...e, [`text_${otherLang}`]: trText, [`text_${lang}`]: e.text } : e
-          );
-          await window.storage.set(storyKey(activeStoryId, "data-v1"), JSON.stringify(patchedStory), true).catch(() => {});
-          setStory(patchedStory);
+          try {
+            const freshResult = await window.storage.get(storyKey(storyId, "data-v1"), true);
+            if (freshResult) {
+              const freshData = JSON.parse(freshResult.value);
+              const lastIdx = freshData.length - 1;
+              if (lastIdx >= 0) {
+                freshData[lastIdx][`text_${otherLang}`] = trText;
+                if (!freshData[lastIdx][`text_${lang}`]) freshData[lastIdx][`text_${lang}`] = freshData[lastIdx].text;
+                await window.storage.set(storyKey(storyId, "data-v1"), JSON.stringify(freshData), true);
+                setStory(freshData);
+              }
+            }
+          } catch { /* ignore */ }
         }
         // Save translated prompt
         if (trPrompt) {
-          await window.storage.set(storyKey(activeStoryId, `prompt-${otherLang}-v1`), trPrompt, true).catch(() => {});
+          await window.storage.set(storyKey(storyId, `prompt-${otherLang}-v1`), trPrompt, true).catch(() => {});
         }
         // Save translated chapter title
         if (trChTitle) {
-          const patchedTitles = { ...updatedTitles, [`${currentChapter}_${otherLang}`]: trChTitle, [`${currentChapter}_${lang}`]: updatedTitles[currentChapter] };
-          await window.storage.set(storyKey(activeStoryId, "titles-v1"), JSON.stringify(patchedTitles), true).catch(() => {});
-          setChapterTitles(patchedTitles);
+          try {
+            const freshTitlesResult = await window.storage.get(storyKey(storyId, "titles-v1"), true);
+            const freshTitles = freshTitlesResult ? JSON.parse(freshTitlesResult.value) : updatedTitles;
+            freshTitles[`${currentChapter}_${otherLang}`] = trChTitle;
+            if (!freshTitles[`${currentChapter}_${lang}`]) freshTitles[`${currentChapter}_${lang}`] = freshTitles[currentChapter];
+            await window.storage.set(storyKey(storyId, "titles-v1"), JSON.stringify(freshTitles), true);
+            setChapterTitles(freshTitles);
+          } catch { /* ignore */ }
         }
       }).catch(() => {});
 
