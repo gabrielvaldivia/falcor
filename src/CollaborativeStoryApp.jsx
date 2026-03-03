@@ -1535,6 +1535,9 @@ export default function CollaborativeStoryApp() {
                   setLinkCopied={setLinkCopied}
                   activeStoryId={activeStoryId}
                   storiesIndex={storiesIndex}
+                  handleReset={handleReset}
+                  setEditFieldValue={setEditFieldValue}
+                  setEditingField={setEditingField}
                 />
               ) : (
                 <>

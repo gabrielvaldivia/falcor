@@ -80,6 +80,7 @@ export default function BookView({
   title, storyCount, updatedAt, dateLocale,
   goHome, showStoryMenu, setShowStoryMenu, confirmDeleteMenu, setConfirmDeleteMenu,
   linkCopied, setLinkCopied, activeStoryId, storiesIndex,
+  handleReset, setEditFieldValue, setEditingField,
 }) {
   const bookRef = useRef(null);
   const [currentPage, setCurrentPage] = useState(0);
@@ -526,6 +527,61 @@ export default function BookView({
                     }}
                   >
                     {linkCopied ? t("copied") : t("copy_link")}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditFieldValue(activeStoryMeta?.title || "");
+                      setEditingField("title");
+                      setShowStoryMenu(false);
+                    }}
+                    style={{
+                      display: "block", width: "100%",
+                      background: "none", border: "none",
+                      fontFamily: MONO, fontSize: "12px",
+                      color: "rgba(255,255,255,0.5)",
+                      cursor: "pointer", padding: "8px 14px",
+                      textAlign: "left",
+                    }}
+                  >
+                    {t("edit_title")}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditFieldValue(activeStoryMeta?.customInstructions || "");
+                      setEditingField("instructions");
+                      setShowStoryMenu(false);
+                    }}
+                    style={{
+                      display: "block", width: "100%",
+                      background: "none", border: "none",
+                      fontFamily: MONO, fontSize: "12px",
+                      color: "rgba(255,255,255,0.5)",
+                      cursor: "pointer", padding: "8px 14px",
+                      textAlign: "left",
+                    }}
+                  >
+                    {t("edit_instructions")}
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (confirmDeleteMenu) {
+                        setShowStoryMenu(false);
+                        setConfirmDeleteMenu(false);
+                        handleReset();
+                      } else {
+                        setConfirmDeleteMenu(true);
+                      }
+                    }}
+                    style={{
+                      display: "block", width: "100%",
+                      background: "none", border: "none",
+                      fontFamily: MONO, fontSize: "12px",
+                      color: confirmDeleteMenu ? "#c97a7a" : "rgba(255,255,255,0.5)",
+                      cursor: "pointer", padding: "8px 14px",
+                      textAlign: "left",
+                    }}
+                  >
+                    {confirmDeleteMenu ? t("confirm_delete") : t("delete_btn")}
                   </button>
                 </div>
               </>
