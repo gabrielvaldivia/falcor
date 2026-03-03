@@ -1448,6 +1448,7 @@ export default function CollaborativeStoryApp() {
                               lang={lang}
                               narrow={narrowViewport}
                               isChapterStart={showChapterHeading}
+                              writingStyle={activeStoryMeta?.writingStyle}
                               onHover={(e) => {
                                 if (pinnedEntry) setPinnedEntry(e);
                                 setHoveredEntry(e);
@@ -1484,6 +1485,7 @@ export default function CollaborativeStoryApp() {
                         <TypewriterReveal
                           text={generatedText}
                           narrow={narrowViewport}
+                          writingStyle={activeStoryMeta?.writingStyle}
                           onComplete={handleStreamingComplete}
                         />
                       </div>
@@ -1698,7 +1700,7 @@ export default function CollaborativeStoryApp() {
                       </button>
                     </div>
                     <div style={{ marginBottom: "24px", flex: 1 }}>
-                      <TypewriterReveal text={generatedText} narrow={narrowViewport} />
+                      <TypewriterReveal text={generatedText} narrow={narrowViewport} writingStyle={activeStoryMeta?.writingStyle} />
                     </div>
                     {generationSource === "local" && (
                       <p style={{

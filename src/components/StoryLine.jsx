@@ -1,8 +1,8 @@
 import { useState, useRef } from "react";
 import { GoInfo } from "react-icons/go";
-import { splitIntoParagraphs } from "../utils/text.js";
+import { splitIntoParagraphs, splitIntoStanzas } from "../utils/text.js";
 
-export default function StoryLine({ entry, onHover, onLeave, narrow, onShowDialog, onPinPopover, hideIcon, isChapterStart, translatedText, lang }) {
+export default function StoryLine({ entry, onHover, onLeave, narrow, onShowDialog, onPinPopover, hideIcon, isChapterStart, writingStyle, translatedText, lang }) {
   const ref = useRef(null);
   const [hovered, setHovered] = useState(false);
   const isTouch = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
@@ -26,7 +26,7 @@ export default function StoryLine({ entry, onHover, onLeave, narrow, onShowDialo
       }}
     >
       <div style={{
-        fontFamily: "'Faustina', serif", fontSize: "19px", fontWeight: 300, lineHeight: 1.8,
+        fontFamily: "'Faustina', serif", fontSize: "19px", fontWeight: 300, lineHeight: writingStyle === "rhyming" ? 1.4 : 1.8,
         color: "#e8ddd0", margin: 0,
         textRendering: "optimizeLegibility", fontOpticalSizing: "auto",
         fontFeatureSettings: '"kern", "liga", "calt"',
@@ -34,11 +34,20 @@ export default function StoryLine({ entry, onHover, onLeave, narrow, onShowDialo
         textWrap: narrow ? "auto" : "pretty",
         hyphens: narrow ? "auto" : "manual",
         overflowWrap: "break-word", maxWidth: "65ch",
-        display: "flex", flexDirection: "column", gap: "12px",
+        display: "flex", flexDirection: "column", gap: writingStyle === "rhyming" ? "24px" : "12px",
       }}>
-        {splitIntoParagraphs(entry[`text_${lang}`] || translatedText || entry.text).map((para, i) => (
-          <p key={i} className={isChapterStart && i === 0 ? "drop-cap" : undefined} style={{ margin: 0 }}>{para.charAt(0).toUpperCase() + para.slice(1)}</p>
-        ))}
+        {writingStyle === "rhyming"
+          ? splitIntoStanzas(entry[`text_${lang}`] || translatedText || entry.text).map((stanza, si) => (
+              <div key={si} style={{ margin: 0 }}>
+                {stanza.map((line, li) => (
+                  <div key={li}>{line.charAt(0).toUpperCase() + line.slice(1)}</div>
+                ))}
+              </div>
+            ))
+          : splitIntoParagraphs(entry[`text_${lang}`] || translatedText || entry.text).map((para, i) => (
+              <p key={i} className={isChapterStart && i === 0 ? "drop-cap" : undefined} style={{ margin: 0 }}>{para.charAt(0).toUpperCase() + para.slice(1)}</p>
+            ))
+        }
       </div>
       {!narrow && (
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: "8px" }}>

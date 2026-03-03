@@ -1,13 +1,15 @@
 import { useState, useEffect, useRef } from "react";
-import { splitIntoParagraphs } from "../utils/text.js";
+import { splitIntoParagraphs, splitIntoStanzas } from "../utils/text.js";
 
-export default function TypewriterReveal({ text, narrow, onComplete }) {
+export default function TypewriterReveal({ text, narrow, onComplete, writingStyle }) {
   const [charCount, setCharCount] = useState(0);
   const idx = useRef(0);
   const paragraphs = useRef([]);
 
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
+
+  const isRhyming = writingStyle === "rhyming";
 
   useEffect(() => {
     paragraphs.current = splitIntoParagraphs(text);
@@ -39,14 +41,14 @@ export default function TypewriterReveal({ text, narrow, onComplete }) {
   return (
     <div style={{
       fontFamily: "'Faustina', serif", fontSize: "19px", fontWeight: 300,
-      lineHeight: 1.8, color: "#e8ddd0", fontStyle: "normal", margin: 0,
+      lineHeight: isRhyming ? 1.4 : 1.8, color: "#e8ddd0", fontStyle: "normal", margin: 0,
       textRendering: "optimizeLegibility", fontOpticalSizing: "auto",
       fontFeatureSettings: '"kern", "liga", "calt"',
       hangingPunctuation: "first last",
       textWrap: narrow ? "auto" : "pretty",
       hyphens: narrow ? "auto" : "manual",
       overflowWrap: "break-word", maxWidth: "65ch",
-      display: "flex", flexDirection: "column", gap: "12px",
+      display: "flex", flexDirection: "column", gap: isRhyming ? "24px" : "12px",
     }}>
       {visibleParagraphs.map((para, i) => (
         <p key={i} style={{ margin: 0 }}>

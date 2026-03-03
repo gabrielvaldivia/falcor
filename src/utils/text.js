@@ -1,7 +1,7 @@
 export function splitIntoParagraphs(text) {
   if (!text) return [text];
-  if (text.includes("\n\n")) {
-    return text.split(/\n\n+/).map((s) => s.trim()).filter(Boolean);
+  if (text.includes("\n")) {
+    return text.split(/\n+/).map((s) => s.trim()).filter(Boolean);
   }
   const sentences = text.match(/[^.!?]+[.!?]+[\s"]*/g);
   if (!sentences || sentences.length <= 3) return [text];
@@ -20,4 +20,14 @@ export function splitIntoParagraphs(text) {
   }
   if (current.trim()) paragraphs.push(current.trim());
   return paragraphs.length > 0 ? paragraphs : [text];
+}
+
+// Splits text into stanzas (by \n\n), each containing lines (by \n).
+// Returns array of arrays: [[line, line], [line, line], ...]
+export function splitIntoStanzas(text) {
+  if (!text) return [[text]];
+  const stanzas = text.split(/\n\n+/).map((s) => s.trim()).filter(Boolean);
+  return stanzas.map((stanza) =>
+    stanza.split(/\n/).map((l) => l.trim()).filter(Boolean)
+  );
 }

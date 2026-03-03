@@ -165,6 +165,20 @@ export async function callClaudeAPI(existingStory, prompt, userAnswer, styleSett
     ? `\n- NEVER reuse these protagonist/character names from other stories: ${usedNames.join(", ")}. Invent completely different names.`
     : "";
 
+  const isRhyming = genreVoiceCtx.toLowerCase().includes("rhyming") || genreVoiceCtx.toLowerCase().includes("singsongy");
+  const rhymingInstruction = isRhyming
+    ? `\n\nRHYMING FORMAT — CRITICAL:
+- Write in rhyming verse, like a Dr. Seuss book.
+- Each rhyming line MUST be on its own separate line. Press enter/return after each line. Do NOT run lines together in a single paragraph.
+- Every line should end with a word that rhymes with the line before or after it (rhyming couplets or AABB pattern).
+- Keep a bouncy, musical rhythm throughout.
+- Example format:
+The cat sat down upon the mat,
+And tipped his tall and stripy hat,
+He wiggled his whiskers left and right,
+And danced around from morning to night.`
+    : "";
+
   const systemPrompt = `You are a collaborative storyteller writing Chapter ${chapter} of an evolving collaborative story. You take a user's brief answer to a creative writing prompt and transform it into prose that continues the story.
 ${genreVoiceCtx ? `\n${genreVoiceCtx}\n` : ""}
 CRITICAL RULES:
@@ -178,7 +192,7 @@ CRITICAL RULES:
 YOU MUST STRICTLY FOLLOW THESE STYLE SETTINGS — they are the most important constraint:
 ${styleInstructions}
 
-These style settings override any other instinct you have. If the style says "spare", write bare-bones prose. If it says "ornate", write elaborate prose. If it says "1 sentence", write exactly 1 sentence. If dialogue is "none", include zero dialogue. Follow the settings literally.${lang === "es" ? "\n\nIMPORTANT: Write the entire story passage in Spanish." : ""}`;
+These style settings override any other instinct you have. If the style says "spare", write bare-bones prose. If it says "ornate", write elaborate prose. If it says "1 sentence", write exactly 1 sentence. If dialogue is "none", include zero dialogue. Follow the settings literally.${rhymingInstruction}${lang === "es" ? "\n\nIMPORTANT: Write the entire story passage in Spanish." : ""}`;
 
   const userMessage =
     existingStory.length > 0
@@ -245,7 +259,16 @@ TITLE RULES — CRITICAL:
 - Bad examples: "The Whispering Shadows", "The Hidden Truth", "The Lost Horizon", "The Forgotten Memory"
 - 1-6 words. Be bold. Be specific. Be surprising.
 
-The opening paragraph must read like page one of a published novel — establish a character, setting, or atmosphere. Ground the reader in a specific scene. Follow the style constraints literally.${usedNames.length > 0 ? `\n\nCRITICAL: Do NOT reuse any of these character names from other stories: ${usedNames.join(", ")}. Invent completely different, original names.` : ""}${lang === "es" ? "\n\nIMPORTANT: Write both the title and paragraph in Spanish." : ""}`,
+The opening paragraph must read like page one of a published novel — establish a character, setting, or atmosphere. Ground the reader in a specific scene. Follow the style constraints literally.${meta.writingStyle === "rhyming" ? `\n\nRHYMING FORMAT — CRITICAL:
+- Write the opening paragraph in rhyming verse, like a Dr. Seuss book.
+- Each rhyming line MUST be on its own separate line. Press enter/return after each line. Do NOT run lines together in a single paragraph.
+- Every line should end with a word that rhymes with the line before or after it (rhyming couplets or AABB pattern).
+- Keep a bouncy, musical rhythm throughout.
+- Example format:
+The cat sat down upon the mat,
+And tipped his tall and stripy hat,
+He wiggled his whiskers left and right,
+And danced around from morning to night.` : ""}${usedNames.length > 0 ? `\n\nCRITICAL: Do NOT reuse any of these character names from other stories: ${usedNames.join(", ")}. Invent completely different, original names.` : ""}${lang === "es" ? "\n\nIMPORTANT: Write both the title and paragraph in Spanish." : ""}`,
       "Write the title and opening paragraph.",
       600
     );
