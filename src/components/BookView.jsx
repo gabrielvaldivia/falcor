@@ -242,7 +242,7 @@ export default function BookView({
             </div>
           )}
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", ...(narrowViewport ? { marginTop: "auto", paddingTop: "24px" } : {}) }}>
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             {phase !== "generating" && <button onClick={() => setShowSliders((v) => !v)} style={{ background: "none", border: "none", color: showSliders ? "#e8ddd0" : "rgba(255,255,255,0.25)", cursor: "pointer", padding: 0, display: "flex", alignItems: "center" }} title={t("slider_tooltip")}><BsSliders2Vertical size={14} /></button>}
             {phase !== "generating" && (
