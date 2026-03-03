@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import HTMLFlipBook from "react-pageflip";
-import { GoArrowLeft, GoArrowRight, GoLocation } from "react-icons/go";
+import { GoArrowLeft, GoArrowRight, GoLocation, GoKebabHorizontal } from "react-icons/go";
 import { BsSliders2Vertical } from "react-icons/bs";
 import { splitIntoParagraphs, splitIntoStanzas } from "../utils/text.js";
 import TypewriterReveal from "./TypewriterReveal.jsx";
@@ -78,6 +78,8 @@ export default function BookView({
   handleStreamingComplete, generationSource, setPhase, setGeneratedText,
   loadingImages,
   title, storyCount, updatedAt, dateLocale,
+  goHome, showStoryMenu, setShowStoryMenu, confirmDeleteMenu, setConfirmDeleteMenu,
+  linkCopied, setLinkCopied, activeStoryId, storiesIndex,
 }) {
   const bookRef = useRef(null);
   const [currentPage, setCurrentPage] = useState(0);
@@ -99,7 +101,7 @@ export default function BookView({
 
   // Compute page dimensions — each page is square, book shows two side by side
   const pageWidth = narrowViewport
-    ? Math.min(containerWidth, 500)
+    ? containerWidth
     : Math.floor(Math.min(containerWidth / 2, 550));
   const pageHeight = pageWidth; // square pages
 
@@ -342,18 +344,234 @@ export default function BookView({
     }
   };
 
-  // Don't render the flip book until we have a valid size
+  // ── Mobile: build a simple card-based view ──
+  // Cards: cover, story entries (illustration + text each), continued, prompt
+  const mobileCards = [];
+  if (title) mobileCards.push({ type: "m-cover" });
+  story.forEach((entry, i) => {
+    const isChapterStart = i === 0 || entry.chapter !== story[i - 1]?.chapter;
+    const entryText = entry[`text_${lang}`] || translatedTexts[i] || entry.text;
+    mobileCards.push({ type: "m-story", entryIndex: i, text: entryText, isChapterStart, imageUrl: entry.imageUrl, imageLoading: !!loadingImages[i] });
+  });
+  if (hasVirtualSpread) {
+    mobileCards.push({ type: "m-virtual" });
+  }
+  mobileCards.push({ type: "m-prompt" });
+
+  const [mobileIndex, setMobileIndex] = useState(0);
+  const mobileDragRef = useRef(null);
+
+  const mobileTotal = mobileCards.length;
+  const mobileCanPrev = mobileIndex > 0;
+  const mobileCanNext = mobileIndex < mobileTotal - 1;
+  const mobileGoPrev = () => { if (mobileCanPrev) setMobileIndex((i) => i - 1); };
+  const mobileGoNext = () => { if (mobileCanNext) setMobileIndex((i) => i + 1); };
+
+  // Auto-advance mobile when new story arrives
+  useEffect(() => {
+    if (narrowViewport && story.length > prevStoryLen && prevStoryLen > 0) {
+      setMobileIndex((title ? 1 : 0) + story.length - 1);
+    }
+  }, [story.length, prevStoryLen, title, narrowViewport]);
+
+  useEffect(() => {
+    if (narrowViewport && hasVirtualSpread) {
+      setMobileIndex((title ? 1 : 0) + story.length);
+    }
+  }, [hasVirtualSpread, story.length, title, narrowViewport]);
+
+  // Don't render until we have a valid size
   if (!pageWidth || pageWidth < 50) {
     return <div ref={containerRef} style={{ width: "100%" }} />;
   }
 
+  // ── MOBILE RENDER ──
+  if (narrowViewport) {
+    const card = mobileCards[mobileIndex];
+    const isPromptCard = card?.type === "m-prompt";
+
+    return (
+      <div
+        ref={containerRef}
+        style={{ width: "100%", minHeight: "100vh", display: "flex", flexDirection: "column", background: "#0f0e0c" }}
+        onPointerDown={(e) => {
+          if (e.target.tagName === "TEXTAREA" || e.target.tagName === "INPUT" || e.target.tagName === "BUTTON") return;
+          mobileDragRef.current = { startX: e.clientX };
+        }}
+        onPointerUp={(e) => {
+          if (!mobileDragRef.current) return;
+          const diff = e.clientX - mobileDragRef.current.startX;
+          mobileDragRef.current = null;
+          if (diff < -50) mobileGoNext();
+          else if (diff > 50) mobileGoPrev();
+        }}
+      >
+        {/* ── Cover card ── */}
+        {card?.type === "m-cover" && (
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "32px" }}>
+            <h1 style={{ fontFamily: activeStoryFont.family, fontSize: "32px", fontWeight: activeStoryFont.weight || 700, color: "#e8ddd0", lineHeight: 1.2, margin: 0, textWrap: "balance", textAlign: "center" }}>{title}</h1>
+            <p style={{ fontFamily: SERIF, fontSize: "13px", fontStyle: "italic", color: "rgba(255,255,255,0.35)", marginTop: "16px" }}>
+              {storyCount === 0 ? t("loading") : (<>{storyCount} {storyCount !== 1 ? t("contributions") : t("contribution")}{updatedAt && (<> · {new Date(updatedAt).toLocaleDateString(dateLocale, { month: "short", day: "numeric", year: "numeric" })}</>)}</>)}
+            </p>
+          </div>
+        )}
+
+        {/* ── Story card: illustration (square) + text ── */}
+        {card?.type === "m-story" && (
+          <>
+            <div style={{ width: "100%", aspectRatio: "1 / 1", flexShrink: 0, background: "#1a1815", overflow: "hidden" }}>
+              {card.imageLoading && !card.imageUrl && <div style={{ width: "100%", height: "100%", background: "linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.03) 75%)", backgroundSize: "200% 100%", animation: "shimmer 1.5s ease-in-out infinite" }} />}
+              {card.imageUrl && <img src={card.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
+              {!card.imageUrl && !card.imageLoading && <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ fontFamily: MONO, fontSize: "14px", color: "rgba(255,255,255,0.12)" }}>&#x25A1;</span></div>}
+            </div>
+            <div style={{ flex: 1, padding: "20px 20px 80px", overflowY: "auto" }}>
+              <TextContent text={card.text} writingStyle={activeStoryMeta?.writingStyle} isChapterStart={card.isChapterStart} />
+            </div>
+          </>
+        )}
+
+        {/* ── Virtual card (streaming/generating) ── */}
+        {card?.type === "m-virtual" && (
+          <>
+            <div style={{ width: "100%", aspectRatio: "1 / 1", flexShrink: 0, background: "#1a1815", overflow: "hidden" }}>
+              <div style={{ width: "100%", height: "100%", background: "linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.03) 75%)", backgroundSize: "200% 100%", animation: "shimmer 1.5s ease-in-out infinite" }} />
+            </div>
+            <div style={{ flex: 1, padding: "20px 20px 80px", overflowY: "auto" }}>
+              {phase === "generating" && <span style={{ fontFamily: MONO, fontSize: "13px", color: "#999" }}>{t("writing")}</span>}
+              {phase === "streaming" && generatedText && <TypewriterReveal text={generatedText} narrow={true} writingStyle={activeStoryMeta?.writingStyle} onComplete={handleStreamingComplete} />}
+              {phase === "adding" && generatedText && <div style={{ fontFamily: SERIF, fontSize: "17px", fontWeight: 300, lineHeight: 1.8, color: "#e8ddd0", opacity: 0.5 }}>{splitIntoParagraphs(generatedText).map((para, i) => (<p key={i} style={{ margin: 0 }}>{para}</p>))}</div>}
+              {phase === "reveal" && generatedText && renderPromptContent()}
+            </div>
+          </>
+        )}
+
+        {/* ── Prompt card (full screen) ── */}
+        {isPromptCard && (
+          <div style={{ flex: 1, padding: "60px 20px 80px", display: "flex", flexDirection: "column" }}>
+            {renderPromptContent()}
+          </div>
+        )}
+
+        {/* ── Floating top pills: back + more ── */}
+        <div style={{
+          position: "fixed",
+          top: "12px",
+          left: "12px",
+          right: "12px",
+          display: "flex",
+          justifyContent: "space-between",
+          zIndex: 100,
+        }}>
+          <button
+            onClick={goHome}
+            style={{
+              background: "rgba(30,28,24,0.5)",
+              backdropFilter: "blur(16px)",
+              WebkitBackdropFilter: "blur(16px)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: "50%",
+              width: "36px", height: "36px",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: "#e8ddd0", cursor: "pointer",
+            }}
+          >
+            <GoArrowLeft size={16} />
+          </button>
+          <div style={{ position: "relative" }}>
+            <button
+              onClick={() => { setShowStoryMenu(!showStoryMenu); setConfirmDeleteMenu(false); setLinkCopied(false); }}
+              style={{
+                background: "rgba(30,28,24,0.5)",
+                backdropFilter: "blur(16px)",
+                WebkitBackdropFilter: "blur(16px)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                borderRadius: "50%",
+                width: "36px", height: "36px",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: "#e8ddd0", cursor: "pointer",
+              }}
+            >
+              <GoKebabHorizontal size={16} />
+            </button>
+            {showStoryMenu && (
+              <>
+                <div
+                  onClick={() => { setShowStoryMenu(false); setConfirmDeleteMenu(false); setLinkCopied(false); }}
+                  style={{ position: "fixed", inset: 0, zIndex: -1 }}
+                />
+                <div style={{
+                  position: "absolute", top: "100%", right: 0,
+                  marginTop: "4px",
+                  background: "#1a1917",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: "6px",
+                  padding: "4px 0",
+                  minWidth: "160px",
+                }}>
+                  <button
+                    onClick={() => {
+                      const activeMeta = storiesIndex.find((s) => s.id === activeStoryId);
+                      const url = window.location.origin + "/api/story/" + (activeMeta?.slug || activeStoryId);
+                      navigator.clipboard.writeText(url);
+                      setLinkCopied(true);
+                      setTimeout(() => { setLinkCopied(false); setShowStoryMenu(false); }, 2000);
+                    }}
+                    style={{
+                      display: "block", width: "100%",
+                      background: "none", border: "none",
+                      fontFamily: MONO, fontSize: "12px",
+                      color: linkCopied ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.5)",
+                      cursor: "pointer", padding: "8px 14px",
+                      textAlign: "left",
+                    }}
+                  >
+                    {linkCopied ? t("copied") : t("copy_link")}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* ── Floating nav pills ── */}
+        <div style={{
+          position: "fixed",
+          bottom: "20px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+          background: "rgba(30,28,24,0.5)",
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
+          borderRadius: "24px",
+          padding: "8px 16px",
+          zIndex: 100,
+          border: "1px solid rgba(255,255,255,0.08)",
+        }}>
+          <button onClick={mobileGoPrev} disabled={!mobileCanPrev} style={{ background: "none", border: "none", padding: "4px", color: mobileCanPrev ? "#e8ddd0" : "rgba(255,255,255,0.15)", cursor: mobileCanPrev ? "pointer" : "default", display: "flex", alignItems: "center" }}>
+            <GoArrowLeft size={16} />
+          </button>
+          <span style={{ fontFamily: MONO, fontSize: "11px", color: "rgba(255,255,255,0.4)", minWidth: "40px", textAlign: "center" }}>
+            {mobileIndex + 1} / {mobileTotal}
+          </span>
+          <button onClick={mobileGoNext} disabled={!mobileCanNext} style={{ background: "none", border: "none", padding: "4px", color: mobileCanNext ? "#e8ddd0" : "rgba(255,255,255,0.15)", cursor: mobileCanNext ? "pointer" : "default", display: "flex", alignItems: "center" }}>
+            <GoArrowRight size={16} />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── DESKTOP RENDER ──
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "24px" }}>
       <div ref={containerRef} style={{ width: "100%" }}>
         {/* Fixed-width container matching a full spread, with the flipbook and prompt overlay */}
         <div style={{
           position: "relative",
-          width: narrowViewport ? `${pageWidth}px` : `${pageWidth * 2}px`,
+          width: `${pageWidth * 2}px`,
           height: `${pageHeight}px`,
           margin: "0 auto",
         }}>
@@ -382,7 +600,7 @@ export default function BookView({
           </HTMLFlipBook>
 
           {/* Prompt panel — overlays the right half of the last spread */}
-          {showPrompt && !narrowViewport && (
+          {showPrompt && (
             <div style={{
               ...pageBase,
               position: "absolute",
@@ -399,22 +617,6 @@ export default function BookView({
             </div>
           )}
         </div>
-
-        {/* Mobile: prompt below the book */}
-        {showPrompt && narrowViewport && (
-          <div style={{
-            ...pageBase,
-            width: `${pageWidth}px`,
-            padding: "24px",
-            marginTop: "16px",
-            borderRadius: "8px",
-            boxSizing: "border-box",
-            margin: "16px auto 0",
-            minHeight: "200px",
-          }}>
-            {renderPromptContent()}
-          </div>
-        )}
       </div>
 
       {/* Navigation */}

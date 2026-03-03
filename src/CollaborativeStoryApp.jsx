@@ -985,7 +985,7 @@ export default function CollaborativeStoryApp() {
       `}</style>
 
       {/* Mobile: fixed top bar with back, chapter title, menu */}
-      {view === "story" && narrowViewport && (
+      {view === "story" && narrowViewport && !(activeStoryMeta?.illustrated || activeStoryMeta?.artStyle) && (
         <div style={{
           position: "fixed", top: 0, left: 0, right: 0,
           zIndex: 10,
@@ -1428,10 +1428,12 @@ export default function CollaborativeStoryApp() {
                 pointerEvents: "none", zIndex: 0,
               }} />
             )}
-            <div ref={contentRef} style={{ maxWidth: (activeStoryMeta?.illustrated || activeStoryMeta?.artStyle) ? "1200px" : "600px", margin: "0 auto", padding: narrowViewport ? "48px 24px 40px" : "60px 24px 40px", overflow: "visible", position: "relative", zIndex: 1 }}>
+            <div ref={contentRef} style={{ maxWidth: (activeStoryMeta?.illustrated || activeStoryMeta?.artStyle) ? "1200px" : "600px", margin: "0 auto", padding: (narrowViewport && (activeStoryMeta?.illustrated || activeStoryMeta?.artStyle)) ? "0" : narrowViewport ? "48px 24px 40px" : "60px 24px 40px", overflow: "visible", position: "relative", zIndex: 1 }}>
 
               {/* ── Spacer ── */}
-              <div style={{ marginBottom: narrowViewport ? "24px" : "48px" }} />
+              {!(narrowViewport && (activeStoryMeta?.illustrated || activeStoryMeta?.artStyle)) && (
+                <div style={{ marginBottom: narrowViewport ? "24px" : "48px" }} />
+              )}
 
               {/* ── Story Title ── */}
               {activeStoryMeta?.title && !(activeStoryMeta?.illustrated || activeStoryMeta?.artStyle) && (
@@ -1520,6 +1522,15 @@ export default function CollaborativeStoryApp() {
                   storyCount={story.length}
                   updatedAt={activeStoryMeta?.updatedAt}
                   dateLocale={dateLocale}
+                  goHome={goHome}
+                  showStoryMenu={showStoryMenu}
+                  setShowStoryMenu={setShowStoryMenu}
+                  confirmDeleteMenu={confirmDeleteMenu}
+                  setConfirmDeleteMenu={setConfirmDeleteMenu}
+                  linkCopied={linkCopied}
+                  setLinkCopied={setLinkCopied}
+                  activeStoryId={activeStoryId}
+                  storiesIndex={storiesIndex}
                 />
               ) : (
                 <>
@@ -1995,7 +2006,9 @@ export default function CollaborativeStoryApp() {
                 </div>
               </div>
             )}
-            <AppFooter t={t} lang={lang} setLang={setLang} onAbout={() => { window.scrollTo(0, 0); history.pushState(null, "", withLang("/#about")); setView("about"); }} style={{ padding: "48px 24px" }} />
+            {!(narrowViewport && (activeStoryMeta?.illustrated || activeStoryMeta?.artStyle)) && (
+              <AppFooter t={t} lang={lang} setLang={setLang} onAbout={() => { window.scrollTo(0, 0); history.pushState(null, "", withLang("/#about")); setView("about"); }} style={{ padding: "48px 24px" }} />
+            )}
           </>
         )}
       </div>
