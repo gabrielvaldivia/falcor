@@ -17,6 +17,15 @@ export default defineConfig(({ mode }) => {
             'anthropic-dangerous-direct-browser-access': 'true',
           },
         },
+        '/api/gemini': {
+          target: 'https://generativelanguage.googleapis.com',
+          changeOrigin: true,
+          rewrite: (path) => {
+            const rewritten = path.replace(/^\/api\/gemini/, '')
+            const separator = rewritten.includes('?') ? '&' : '?'
+            return `${rewritten}${separator}key=${env.GEMINI_API_KEY || ''}`
+          },
+        },
       },
     },
   }

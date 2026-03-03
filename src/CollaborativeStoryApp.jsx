@@ -10,6 +10,9 @@ import { translateText } from "./services/api.js";
 import { storyKey, slugify, findStoryBySlug, loadStoriesIndex, saveStoriesIndex, deleteStoryData } from "./services/storage.js";
 import { requestBrowserLocation, fetchLocation } from "./services/location.js";
 import { generatePrompt, shouldEndChapter, generateChapterTitle, generateStoryOpener, generateStoryPassage, extractCharacterNames } from "./services/storyGeneration.js";
+import { generateIllustration } from "./services/imageGeneration.js";
+import { ART_STYLES } from "./constants/artStyles.js";
+import { uploadIllustration } from "./services/imageStorage.js";
 
 import TypewriterReveal from "./components/TypewriterReveal.jsx";
 import StoryLine from "./components/StoryLine.jsx";
@@ -18,6 +21,7 @@ import HomeScreen from "./components/HomeScreen.jsx";
 import AboutScreen from "./components/AboutScreen.jsx";
 import NewStoryScreen from "./components/NewStoryScreen.jsx";
 import AppFooter from "./components/AppFooter.jsx";
+import BookView from "./components/BookView.jsx";
 
 export default function CollaborativeStoryApp() {
   // Navigation state
@@ -111,6 +115,7 @@ export default function CollaborativeStoryApp() {
   const [sliderEmotion, setSliderEmotion] = useState(4);
   const [geoEnabled, setGeoEnabled] = useState(() => localStorage.getItem("falcor_geo_enabled") === "true");
   const [geoLabel, setGeoLabel] = useState("");
+  const [loadingImages, setLoadingImages] = useState({});
   const storyEndRef = useRef(null);
   const contentRef = useRef(null);
   const pollRef = useRef(null);
@@ -481,7 +486,7 @@ export default function CollaborativeStoryApp() {
 
   const prevStoryLenRef = useRef(0);
   useEffect(() => {
-    if (view === "story" && story.length > prevStoryLenRef.current && prevStoryLenRef.current > 0 && storyEndRef.current) {
+    if (view === "story" && story.length > prevStoryLenRef.current && prevStoryLenRef.current > 0 && storyEndRef.current && !(activeStoryMeta?.illustrated || activeStoryMeta?.artStyle)) {
       storyEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
     prevStoryLenRef.current = story.length;
@@ -525,8 +530,10 @@ export default function CollaborativeStoryApp() {
       setGeneratedText(result.text);
       setGenerationSource(result.source);
       setPhase("streaming");
-      // Scroll to bottom after a tick so the streaming entry is rendered
-      setTimeout(() => storyEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+      // Scroll to bottom after a tick so the streaming entry is rendered (skip for book view)
+      if (!(activeStoryMeta?.illustrated || activeStoryMeta?.artStyle)) {
+        setTimeout(() => storyEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+      }
     } catch (e) {
       console.error("All generation failed:", e);
       setError(t("error_generation"));
@@ -574,7 +581,8 @@ export default function CollaborativeStoryApp() {
       let nextChapter = currentChapter;
       let isNewChapter = false;
       let updatedTitles = chapterTitles;
-      const chapterEnded = await shouldEndChapter(updatedStory, currentChapter);
+      const isIllustrated = activeStoryMeta?.illustrated || !!activeStoryMeta?.artStyle;
+      const chapterEnded = isIllustrated ? false : await shouldEndChapter(updatedStory, currentChapter);
       if (chapterEnded) {
         nextChapter = currentChapter + 1;
         isNewChapter = true;
@@ -644,6 +652,40 @@ export default function CollaborativeStoryApp() {
           } catch { /* ignore */ }
         }
       }).catch(() => {});
+
+      // Fire-and-forget: generate illustration if story is illustrated
+      if (activeStoryMeta?.illustrated && activeStoryMeta?.artStyle) {
+        const entryIndex = updatedStory.length - 1;
+        const storyId = activeStoryId;
+        setLoadingImages((prev) => ({ ...prev, [entryIndex]: true }));
+        const artStylePrompt = ART_STYLES.find((s) => s.id === activeStoryMeta.artStyle)?.prompt || "";
+        generateIllustration(text, getGenreVoiceCtx(), artStylePrompt)
+          .then((blob) => uploadIllustration(storyId, entryIndex, blob))
+          .then(async (imageUrl) => {
+            try {
+              const freshResult = await window.storage.get(storyKey(storyId, "data-v1"), true);
+              if (freshResult) {
+                const freshData = JSON.parse(freshResult.value);
+                if (freshData[entryIndex]) {
+                  freshData[entryIndex].imageUrl = imageUrl;
+                  await window.storage.set(storyKey(storyId, "data-v1"), JSON.stringify(freshData), true);
+                  setStory((prev) => {
+                    const next = [...prev];
+                    if (next[entryIndex]) next[entryIndex] = { ...next[entryIndex], imageUrl };
+                    return next;
+                  });
+                }
+              }
+            } catch (e) {
+              console.warn("Failed to save illustration URL:", e);
+            }
+            setLoadingImages((prev) => { const n = { ...prev }; delete n[entryIndex]; return n; });
+          })
+          .catch((e) => {
+            console.warn("Illustration generation failed:", e);
+            setLoadingImages((prev) => { const n = { ...prev }; delete n[entryIndex]; return n; });
+          });
+      }
 
       setStory(updatedStory);
       setCurrentPrompt(nextPrompt);
@@ -844,6 +886,40 @@ export default function CollaborativeStoryApp() {
           await window.storage.set(storyKey(meta.id, `prompt-${otherLang}-v1`), trPrompt, true).catch(() => {});
         }
       }).catch(() => {});
+
+      // Fire-and-forget: generate illustration for opening passage using preset art style
+      if (meta.illustrated && meta.artStyle) {
+        const storyId = meta.id;
+        setLoadingImages((prev) => ({ ...prev, 0: true }));
+        const ctx = getStoryContext(meta);
+        const artStylePrompt = ART_STYLES.find((s) => s.id === meta.artStyle)?.prompt || "";
+        generateIllustration(opener.paragraph, ctx, artStylePrompt)
+          .then((blob) => uploadIllustration(storyId, 0, blob))
+          .then(async (imageUrl) => {
+            try {
+              const freshResult = await window.storage.get(storyKey(storyId, "data-v1"), true);
+              if (freshResult) {
+                const freshData = JSON.parse(freshResult.value);
+                if (freshData[0]) {
+                  freshData[0].imageUrl = imageUrl;
+                  await window.storage.set(storyKey(storyId, "data-v1"), JSON.stringify(freshData), true);
+                  setStory((prev) => {
+                    const next = [...prev];
+                    if (next[0]) next[0] = { ...next[0], imageUrl };
+                    return next;
+                  });
+                }
+              }
+            } catch (e) {
+              console.warn("Failed to save illustration URL:", e);
+            }
+            setLoadingImages((prev) => { const n = { ...prev }; delete n[0]; return n; });
+          })
+          .catch((e) => {
+            console.warn("Illustration generation failed:", e);
+            setLoadingImages((prev) => { const n = { ...prev }; delete n[0]; return n; });
+          });
+      }
 
       history.replaceState(null, "", withLang("#story/" + slug));
     } else {
@@ -1352,13 +1428,13 @@ export default function CollaborativeStoryApp() {
                 pointerEvents: "none", zIndex: 0,
               }} />
             )}
-            <div ref={contentRef} style={{ maxWidth: "600px", margin: "0 auto", padding: narrowViewport ? "48px 24px 40px" : "60px 24px 40px", overflow: "visible", position: "relative", zIndex: 1 }}>
+            <div ref={contentRef} style={{ maxWidth: (activeStoryMeta?.illustrated || activeStoryMeta?.artStyle) ? "1200px" : "600px", margin: "0 auto", padding: narrowViewport ? "48px 24px 40px" : "60px 24px 40px", overflow: "visible", position: "relative", zIndex: 1 }}>
 
               {/* ── Spacer ── */}
               <div style={{ marginBottom: narrowViewport ? "24px" : "48px" }} />
 
               {/* ── Story Title ── */}
-              {activeStoryMeta?.title && (
+              {activeStoryMeta?.title && !(activeStoryMeta?.illustrated || activeStoryMeta?.artStyle) && (
                 <div style={{
                   display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
                   ...(narrowViewport ? {
@@ -1396,7 +1472,57 @@ export default function CollaborativeStoryApp() {
               )}
 
 
-              {/* ── Story ── */}
+              {/* ── Story (Book View for illustrated, scroll for non-illustrated) ── */}
+              {(activeStoryMeta?.illustrated || activeStoryMeta?.artStyle) ? (
+                <BookView
+                  story={story}
+                  phase={phase}
+                  generatedText={generatedText}
+                  narrowViewport={narrowViewport}
+                  activeStoryMeta={activeStoryMeta}
+                  activeStoryFont={activeStoryFont}
+                  chapterTitles={chapterTitles}
+                  translatedChapterTitles={translatedChapterTitles}
+                  translatedTexts={translatedTexts}
+                  lang={lang}
+                  t={t}
+                  currentPrompt={currentPrompt}
+                  answer={answer}
+                  setAnswer={setAnswer}
+                  error={error}
+                  setError={setError}
+                  promptLoading={promptLoading}
+                  showSliders={showSliders}
+                  setShowSliders={setShowSliders}
+                  sliderPlot={sliderPlot}
+                  setSliderPlot={setSliderPlot}
+                  sliderDialogue={sliderDialogue}
+                  setSliderDialogue={setSliderDialogue}
+                  sliderSurprise={sliderSurprise}
+                  setSliderSurprise={setSliderSurprise}
+                  sliderEmotion={sliderEmotion}
+                  setSliderEmotion={setSliderEmotion}
+                  geoEnabled={geoEnabled}
+                  setGeoEnabled={setGeoEnabled}
+                  geoLabel={geoLabel}
+                  setGeoLabel={setGeoLabel}
+                  requestBrowserLocation={requestBrowserLocation}
+                  handleSubmit={handleSubmit}
+                  handleQuickAdd={handleQuickAdd}
+                  handleRewrite={handleRewrite}
+                  handleConfirm={handleConfirm}
+                  handleStreamingComplete={handleStreamingComplete}
+                  generationSource={generationSource}
+                  setPhase={setPhase}
+                  setGeneratedText={setGeneratedText}
+                  loadingImages={loadingImages}
+                  title={activeStoryMeta?.[`title_${lang}`] || translatedTitle || activeStoryMeta?.title}
+                  storyCount={story.length}
+                  updatedAt={activeStoryMeta?.updatedAt}
+                  dateLocale={dateLocale}
+                />
+              ) : (
+                <>
               {story.length > 0 && (
                 <div style={{ marginBottom: "48px", position: "relative" }}>
                   <div
@@ -1449,6 +1575,8 @@ export default function CollaborativeStoryApp() {
                               narrow={narrowViewport}
                               isChapterStart={showChapterHeading}
                               writingStyle={activeStoryMeta?.writingStyle}
+                              imageUrl={entry.imageUrl}
+                              imageLoading={!!loadingImages[i]}
                               onHover={(e) => {
                                 if (pinnedEntry) setPinnedEntry(e);
                                 setHoveredEntry(e);
@@ -1748,6 +1876,8 @@ export default function CollaborativeStoryApp() {
                 )}
 
               </div>}
+                </>
+              )}
 
             </div>
             {/* ── Popover Dialog (narrow viewport) ── */}

@@ -3,6 +3,7 @@ import { GoArrowLeft, GoPlus, GoDash } from "react-icons/go";
 import { MONO, TYPEWRITER, SERIF } from "../constants/fonts.js";
 import { GENRES, ALL_VOICES, ALL_THEMES, ALL_PROTAGONISTS, ALL_TENSIONS, getVoicesForGenre, getThemesForGenre, getProtagonistsForGenre, getTensionsForGenre } from "../constants/genres.js";
 import { TRANSLATIONS } from "../constants/translations.js";
+import { ART_STYLES } from "../constants/artStyles.js";
 import AppFooter from "./AppFooter.jsx";
 
 export default function NewStoryScreen({ onCancel, onCreate, narrow, t, lang, setLang, onAbout }) {
@@ -12,6 +13,7 @@ export default function NewStoryScreen({ onCancel, onCreate, narrow, t, lang, se
   const [selectedProtagonist, setSelectedProtagonist] = useState(null);
   const [selectedTension, setSelectedTension] = useState(null);
   const [customInstructions, setCustomInstructions] = useState("");
+  const [selectedArtStyle, setSelectedArtStyle] = useState(null);
   const [activeStep, setActiveStep] = useState("genre");
   const [creating, setCreating] = useState(false);
 
@@ -37,6 +39,8 @@ export default function NewStoryScreen({ onCancel, onCreate, narrow, t, lang, se
       themes: selectedThemes.length > 0 ? selectedThemes : [],
       protagonist: selectedProtagonist || null,
       tension: selectedTension || null,
+      illustrated: selectedGenre === "bedtime" ? !!selectedArtStyle : false,
+      artStyle: selectedGenre === "bedtime" ? selectedArtStyle : null,
       customInstructions: customInstructions.trim() || null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -48,6 +52,7 @@ export default function NewStoryScreen({ onCancel, onCreate, narrow, t, lang, se
   const steps = [
     { key: "genre", label: t("step_genre"), optional: false },
     { key: "voice", label: t("step_voice"), optional: false },
+    ...(selectedGenre === "bedtime" ? [{ key: "illustrated", label: t("step_art_style"), optional: true }] : []),
     { key: "themes", label: t("step_themes"), optional: true },
     { key: "protagonist", label: t("step_protagonist"), optional: true },
     { key: "tension", label: t("step_tension"), optional: true },
@@ -85,6 +90,11 @@ export default function NewStoryScreen({ onCancel, onCreate, narrow, t, lang, se
         const k = tn.id.replace(/-/g, "_");
         return TRANSLATIONS[lang]?.["conflict_" + selectedGenre + "_" + k] || TRANSLATIONS[lang]?.["conflict_" + k] || tn.label;
       }
+      case "illustrated": {
+        if (!selectedArtStyle) return null;
+        const style = ART_STYLES.find((s) => s.id === selectedArtStyle);
+        return style ? t("artstyle_" + style.id) || style.label : null;
+      }
       case "custom":
         return customInstructions.trim() || null;
       default: return null;
@@ -114,6 +124,7 @@ export default function NewStoryScreen({ onCancel, onCreate, narrow, t, lang, se
   const handleSelectGenre = (id) => {
     setSelectedGenre(id);
     setSelectedVoice(null);
+    setSelectedArtStyle(null);
     setSelectedThemes([]);
     setSelectedProtagonist(null);
     setSelectedTension(null);
@@ -292,6 +303,10 @@ export default function NewStoryScreen({ onCancel, onCreate, narrow, t, lang, se
           const k = item.id.replace(/-/g, "_");
           return TRANSLATIONS[lang]?.["conflict_" + selectedGenre + "_" + k] || TRANSLATIONS[lang]?.["conflict_" + k] || item.label;
         })}
+        {step.key === "illustrated" && renderOptionGrid(ART_STYLES, selectedArtStyle, (id) => {
+          setSelectedArtStyle(selectedArtStyle === id ? null : id);
+          if (selectedArtStyle !== id) setTimeout(() => advanceFrom("illustrated"), 150);
+        }, false, (item) => t("artstyle_" + item.id) || item.label)}
         {step.key === "custom" && (
           <>
             <textarea

@@ -54,6 +54,30 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Book page flip animations */
+@keyframes flipForward {
+  0% { opacity: 0; transform: translateX(40px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes flipBackward {
+  0% { opacity: 0; transform: translateX(-40px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+.book-flip-forward {
+  animation: flipForward 0.35s ease-out both;
+}
+
+.book-flip-backward {
+  animation: flipBackward 0.35s ease-out both;
+}
+
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
