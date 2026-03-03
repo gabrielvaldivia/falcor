@@ -95,7 +95,7 @@ export default function CollaborativeStoryApp() {
   const [translatedTexts, setTranslatedTexts] = useState({});
   const [translatedChapterTitles, setTranslatedChapterTitles] = useState({});
 
-  const [narrowViewport, setNarrowViewport] = useState(false);
+  const [narrowViewport, setNarrowViewport] = useState(() => typeof window !== "undefined" && window.innerWidth < 960);
   const [visibleChapter, setVisibleChapter] = useState(1);
   const [dialogEntry, setDialogEntry] = useState(null);
   const [pinnedEntry, setPinnedEntry] = useState(null);
@@ -462,9 +462,13 @@ export default function CollaborativeStoryApp() {
   }, [view, story]);
 
   // Check if popover fits to the right of content
+  const isIllustrated = activeStoryMeta?.illustrated || activeStoryMeta?.artStyle;
   useEffect(() => {
     const check = () => {
-      if (contentRef.current) {
+      // Illustrated books don't have a sidebar popover, so just use a simple width check
+      if (isIllustrated) {
+        setNarrowViewport(window.innerWidth < 768);
+      } else if (contentRef.current) {
         const right = contentRef.current.getBoundingClientRect().right;
         setNarrowViewport(right + 304 > window.innerWidth);
       } else {
@@ -474,7 +478,7 @@ export default function CollaborativeStoryApp() {
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
-  }, [view]);
+  }, [view, isIllustrated]);
 
   useEffect(() => {
     if (view !== "story") { setTopBarScrolled(false); return; }
@@ -659,7 +663,7 @@ export default function CollaborativeStoryApp() {
         const storyId = activeStoryId;
         setLoadingImages((prev) => ({ ...prev, [entryIndex]: true }));
         const artStylePrompt = ART_STYLES.find((s) => s.id === activeStoryMeta.artStyle)?.prompt || "";
-        generateIllustration(text, getGenreVoiceCtx(), artStylePrompt)
+        generateIllustration(text, getGenreVoiceCtx(), artStylePrompt, updatedStory)
           .then((blob) => uploadIllustration(storyId, entryIndex, blob))
           .then(async (imageUrl) => {
             try {
@@ -893,7 +897,7 @@ export default function CollaborativeStoryApp() {
         setLoadingImages((prev) => ({ ...prev, 0: true }));
         const ctx = getStoryContext(meta);
         const artStylePrompt = ART_STYLES.find((s) => s.id === meta.artStyle)?.prompt || "";
-        generateIllustration(opener.paragraph, ctx, artStylePrompt)
+        generateIllustration(opener.paragraph, ctx, artStylePrompt, [{ text: opener.paragraph }])
           .then((blob) => uploadIllustration(storyId, 0, blob))
           .then(async (imageUrl) => {
             try {

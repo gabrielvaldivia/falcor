@@ -306,7 +306,7 @@ export default function BookView({
           <div style={{ ...pageBase, padding: "24px", overflowY: "auto", justifyContent: "center" }}>
             {phase === "generating" && <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}><span style={{ fontFamily: MONO, fontSize: "13px", color: "#999" }}>{t("writing")}</span></div>}
             {phase === "streaming" && generatedText && <TypewriterReveal text={generatedText} narrow={true} writingStyle={activeStoryMeta?.writingStyle} onComplete={handleStreamingComplete} />}
-            {phase === "adding" && generatedText && <div style={{ fontFamily: SERIF, fontSize: "17px", fontWeight: 300, lineHeight: 1.8, color: "#e8ddd0", opacity: 0.5, display: "flex", flexDirection: "column", gap: "12px" }}>{splitIntoParagraphs(generatedText).map((para, i) => (<p key={i} style={{ margin: 0 }}>{para}</p>))}</div>}
+            {phase === "adding" && generatedText && <div style={{ opacity: 0.5 }}><TextContent text={generatedText} writingStyle={activeStoryMeta?.writingStyle} /></div>}
             {phase === "reveal" && generatedText && renderPromptContent()}
           </div>
         );
@@ -439,7 +439,7 @@ export default function BookView({
             <div style={{ flex: 1, padding: "20px 20px 80px", overflowY: "auto" }}>
               {phase === "generating" && <span style={{ fontFamily: MONO, fontSize: "13px", color: "#999" }}>{t("writing")}</span>}
               {phase === "streaming" && generatedText && <TypewriterReveal text={generatedText} narrow={true} writingStyle={activeStoryMeta?.writingStyle} onComplete={handleStreamingComplete} />}
-              {phase === "adding" && generatedText && <div style={{ fontFamily: SERIF, fontSize: "17px", fontWeight: 300, lineHeight: 1.8, color: "#e8ddd0", opacity: 0.5 }}>{splitIntoParagraphs(generatedText).map((para, i) => (<p key={i} style={{ margin: 0 }}>{para}</p>))}</div>}
+              {phase === "adding" && generatedText && <div style={{ opacity: 0.5 }}><TextContent text={generatedText} writingStyle={activeStoryMeta?.writingStyle} /></div>}
               {phase === "reveal" && generatedText && renderPromptContent()}
             </div>
           </>
