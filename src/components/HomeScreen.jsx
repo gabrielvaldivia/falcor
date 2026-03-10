@@ -256,6 +256,7 @@ export default function HomeScreen({ stories, onSelectStory, onNewStory, onAbout
             </span>}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 }}>
+            {stories.length > 0 && (
             <div style={{ display: "flex", gap: "2px", background: "rgba(255,255,255,0.05)", borderRadius: "20px", padding: "2px" }}>
               {[{ id: "rows", icon: TbLayoutListFilled, iconOff: TbLayoutList }, { id: "carousel", icon: MdOutlineViewCarousel, iconOff: MdOutlineViewCarousel }, { id: "activity", icon: GoPulse, iconOff: GoPulse }].map((tab) => {
                 const active = homeLayout === tab.id;
@@ -279,6 +280,7 @@ export default function HomeScreen({ stories, onSelectStory, onNewStory, onAbout
                 );
               })}
             </div>
+            )}
             <button
               onClick={(e) => {
                 e.currentTarget.style.transform = "scale(1.05)";
@@ -302,10 +304,58 @@ export default function HomeScreen({ stories, onSelectStory, onNewStory, onAbout
             </button>
           </div>
         </div>
-        {homeLayout === "carousel" && isTouch && renderFilterPills()}
+        {homeLayout === "carousel" && isTouch && stories.length > 0 && renderFilterPills()}
       </div>
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", paddingTop: homeLayout === "rows" ? (isTouch ? "16px" : "24px") : 0 }}>
+        {stories.length === 0 && (
+          <div style={{
+            flex: 1, display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center",
+            textAlign: "center", padding: "0 32px",
+            minHeight: "60vh",
+          }}>
+            <div style={{
+              fontSize: "64px", marginBottom: "24px", lineHeight: 1,
+              opacity: 0.8,
+            }}>
+              {"\u{1F4D6}"}
+            </div>
+            <h2 style={{
+              fontFamily: TYPEWRITER, fontSize: isTouch ? "20px" : "24px",
+              fontWeight: 400, color: "#e8ddd0", margin: "0 0 12px",
+            }}>
+              {t("empty_state_title")}
+            </h2>
+            <p style={{
+              fontFamily: MONO, fontSize: isTouch ? "13px" : "14px",
+              color: "rgba(255,255,255,0.45)", margin: "0 0 32px",
+              maxWidth: "360px", lineHeight: 1.6,
+            }}>
+              {t("empty_state_subtitle")}
+            </p>
+            <button
+              onClick={onNewStory}
+              style={{
+                padding: isTouch ? "14px 32px" : "16px 40px",
+                borderRadius: "32px",
+                background: "#e8ddd0", border: "none", color: "#0f0e0c",
+                cursor: "pointer",
+                fontFamily: MONO, fontSize: isTouch ? "13px" : "14px",
+                fontWeight: 600, letterSpacing: "0.3px",
+                boxShadow: "0 2px 16px rgba(0,0,0,0.4)",
+                transition: "transform 0.15s, box-shadow 0.15s",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.05)"; e.currentTarget.style.boxShadow = "0 4px 24px rgba(0,0,0,0.5)"; }}
+              onMouseDown={(e) => { e.currentTarget.style.transform = "scale(0.95)"; }}
+              onMouseUp={(e) => { e.currentTarget.style.transform = "scale(1.05)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = "0 2px 16px rgba(0,0,0,0.4)"; }}
+            >
+              {t("empty_state_cta")}
+            </button>
+          </div>
+        )}
+
         {homeLayout === "rows" && genreRows.map((r) => (
           <StoryRow
             key={r.genre.id}

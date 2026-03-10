@@ -33,11 +33,12 @@ CRITICAL RULES:
     200
   );
 
-  // Call Gemini image generation via Vite proxy
-  const resp = await fetch("/api/gemini/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent", {
+  // Call Gemini image generation via serverless proxy
+  const resp = await fetch("/api/gemini/generate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
+      model: "gemini-2.0-flash-exp-image-generation",
       contents: [
         {
           parts: [{ text: imagePrompt }],
